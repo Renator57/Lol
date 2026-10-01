@@ -1303,29 +1303,51 @@ dialog{border-radius:26px;background:linear-gradient(180deg,rgba(21,31,51,.97),r
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 /* Riot-Matchdaten */
 .tool-riot{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;padding:.3rem .35rem .3rem .45rem;border-radius:14px;border:1px solid rgba(215,180,106,.28);background:rgba(215,180,106,.06)}
-.riot-logo{font-family:var(--fd);font-weight:800;font-size:.8rem;letter-spacing:.04em;color:#ff7a6b;background:rgba(255,106,92,.14);padding:.15rem .45rem;border-radius:6px}
+.riot-logo{font-family:var(--fd);font-weight:800;font-size:.72rem;letter-spacing:.06em;color:#ff7a6b;background:rgba(255,106,92,.14);padding:.18rem .45rem;border-radius:6px}
 .tool-riot select{border:1px solid var(--line-2);background:rgba(6,10,18,.5);border-radius:8px;padding:.25rem .4rem;font-size:.85rem}
-.rr-riot{grid-column:1/-1;min-width:0;display:flex;flex-direction:column;gap:.5rem;padding-top:.6rem;border-top:1px dashed var(--line)}
-.rr-riot-head{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;font-size:.82rem;color:var(--muted)}
-.rr-riot-head b{color:var(--text)}
-.rk-pill{font-weight:800;font-size:.76rem;padding:.12rem .5rem;border-radius:999px;border:1px solid var(--line-2);background:rgba(6,10,18,.5);color:var(--gold-hi)}
-.rk-pill.warn{color:var(--warn);border-color:rgba(240,181,74,.4)}
-.rk-pill.bad{color:var(--bad);border-color:rgba(255,106,92,.4)}
-.rr-riot-head .spacer{flex:1}
-.riot-champs{display:flex;gap:.45rem;overflow-x:auto;padding-bottom:.2rem;scrollbar-width:thin}
-.riot-champ{flex:none;display:flex;align-items:center;gap:.45rem;padding:.3rem .55rem .3rem .3rem;border-radius:12px;border:1px solid var(--line);background:rgba(6,10,18,.45);font-size:.8rem;line-height:1.25}
-.riot-champ.in{border-color:rgba(215,180,106,.45)}
-.riot-champ .mini{width:32px;height:32px}
-.riot-champ b{display:block;font-size:.84rem;color:var(--text)}
-.riot-champ small{color:var(--muted);white-space:nowrap}
-.riot-champ small .w{color:var(--good)} .riot-champ small .l{color:var(--bad)}
-.riot-recent{display:flex;gap:3px}
-.riot-recent i{width:7px;height:16px;border-radius:2px;background:var(--bad);opacity:.8}
-.riot-recent i.w{background:var(--good)}
-.rr-riot-head .w{color:var(--good)} .rr-riot-head .l{color:var(--bad)}
+.rr-riot{grid-column:1/-1;min-width:0;display:flex;flex-direction:column;gap:.7rem;padding:.8rem;margin-top:.1rem;border-radius:16px;background:linear-gradient(180deg,rgba(6,10,18,.55),rgba(6,10,18,.3));border:1px solid var(--line)}
+.rr-riot.busy{opacity:.75}
+/* Kopfzeile: Kennzahlen links, Aktionen rechts */
+.rh{display:flex;align-items:center;gap:.6rem 1rem;flex-wrap:wrap}
+.rh-stats>.riot-logo{align-self:center}
+.rh-stats{display:flex;align-items:center;gap:.5rem .9rem;flex-wrap:wrap;min-width:0}
+.rh-act{display:flex;align-items:center;gap:.4rem;margin-left:auto;flex-wrap:nowrap}
+.rh-time{font-size:.75rem;color:var(--muted);white-space:nowrap}
+.rk{display:inline-flex;align-items:center;gap:.45rem;padding:.25rem .65rem .25rem .3rem;border-radius:999px;background:color-mix(in srgb,var(--tc,#8b97ab) 14%,transparent);border:1px solid color-mix(in srgb,var(--tc,#8b97ab) 45%,transparent);white-space:nowrap}
+.rk i{width:1.35rem;height:1.35rem;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:.62rem;font-weight:800;color:#0b1120;background:var(--tc,#8b97ab);box-shadow:0 0 12px -2px var(--tc,#8b97ab)}
+.rk b{font-size:.84rem;color:var(--text)}
+.rk small{font-size:.75rem;color:var(--muted);font-weight:700}
+.rs{display:flex;flex-direction:column;line-height:1.1}
+.rs b{font-family:var(--fd);font-size:1.15rem;font-weight:800}
+.rs small{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+.rs .w,.rc .w{color:var(--good)} .rs .l,.rc .l{color:var(--bad)}
+.rform{display:flex;gap:3px;align-items:flex-end;height:1.35rem}
+.rform i{width:6px;height:60%;border-radius:2px;background:var(--bad);opacity:.85}
+.rform i.w{height:100%;background:var(--good)}
+.rwarn{font-size:.75rem;font-weight:800;color:var(--warn);background:rgba(240,181,74,.1);border:1px solid rgba(240,181,74,.35);padding:.2rem .55rem;border-radius:999px;white-space:nowrap}
+.rbusy{font-size:.85rem;color:var(--muted)}
+/* Champion-Karten */
+.rcs{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:.5rem}
+.rc{position:relative;display:grid;grid-template-columns:40px minmax(0,1fr);gap:.2rem .6rem;align-items:center;padding:.5rem .6rem;border-radius:12px;border:1px solid var(--line);background:rgba(19,30,50,.55);transition:border-color .15s,background .15s}
+.rc:hover{border-color:var(--line-2);background:rgba(25,38,62,.7)}
+.rc .mini{width:40px;height:40px;border-radius:10px;grid-row:1/3}
+.rc-top{display:flex;align-items:baseline;gap:.4rem;min-width:0}
+.rc-top b{font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+.rc-top span{margin-left:auto;font-size:.74rem;font-weight:700;color:var(--muted);white-space:nowrap}
+.rc-bar{display:flex;height:5px;border-radius:3px;overflow:hidden;background:rgba(255,106,92,.55)}
+.rc-bar i{background:var(--good)}
+.rc-sub{grid-column:2;display:flex;gap:.6rem;font-size:.74rem;color:var(--muted);white-space:nowrap}
+.rc-sub b{font-weight:800}
+.rc.main{border-color:rgba(215,180,106,.55);background:linear-gradient(135deg,rgba(215,180,106,.14),rgba(19,30,50,.55) 60%)}
+.rc-tag{position:absolute;top:-.45rem;right:.5rem;font-size:.6rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:.05rem .4rem;border-radius:5px;background:var(--gold);color:#1a1206}
+.rc-in{position:absolute;top:.2rem;left:.2rem;width:1rem;height:1rem;border-radius:50%;display:grid;place-items:center;font-size:.6rem;font-weight:900;background:var(--gold);color:#1a1206;box-shadow:0 0 0 2px var(--bg)}
+.rmore{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;font-size:.75rem;color:var(--muted)}
+.rmore .mini{width:26px;height:26px;border-radius:7px;font-size:.55rem}
 .riot-err{margin:0;font-size:.82rem;color:var(--bad)}
 @keyframes riotspin{to{transform:rotate(360deg)}}
 .riot-spin{display:inline-block;width:.8rem;height:.8rem;border:2px solid var(--line-2);border-top-color:var(--gold);border-radius:50%;animation:riotspin .8s linear infinite;vertical-align:-2px}
+@media (max-width:600px){.rr-riot{padding:.6rem;gap:.6rem}.rh-stats{gap:.5rem .8rem}.rs b{font-size:1.02rem}.rcs{grid-template-columns:1fr 1fr;gap:.4rem}.rc{grid-template-columns:30px minmax(0,1fr);gap:.15rem .45rem;padding:.45rem .5rem}.rc .mini{width:30px;height:30px;border-radius:8px}.rc-top b{font-size:.82rem}.rc-sub{gap:.45rem;font-size:.7rem}.rh-act{margin-left:0;width:100%}.rh-act .rh-time{margin-right:auto}}
+@media (max-width:360px){.rcs{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -1992,31 +2014,53 @@ function riotTake(teamId, r){
 }
 const kda = c => c.d ? ((c.k + c.a) / c.d).toFixed(1) : "Perfekt";
 const pct = (w, g) => g ? Math.round(w / g * 100) : 0;
+const TIER_COLOR = { IRON:"#8a7f7a", BRONZE:"#c08a62", SILVER:"#aab6c6", GOLD:"#e2b552", PLATINUM:"#3fc1ac", EMERALD:"#33d17a", DIAMOND:"#7b95ff", MASTER:"#c67cf2", GRANDMASTER:"#ff6464", CHALLENGER:"#f6d775" };
 function riotBlock(t, r, sr, ed){
   const rd = sr.riot, busy = riotBusy.has(viewId + ":" + r), hasId = !!parseRiotId(sr.player, t.region);
   if (!rd && !busy) return "";
   const have = new Set(sr.champs.map(x => x.c));
+  const g = rd && rd.games || 0, w = rd && rd.wins || 0;
   const mainPos = rd && rd.pos ? Object.entries(rd.pos).sort((a, b) => b[1] - a[1])[0] : null;
-  const offRole = mainPos && RIOT_POS[mainPos[0]] && RIOT_POS[mainPos[0]] !== r && mainPos[1] / (rd.games || 1) >= .5;
+  const offRole = mainPos && RIOT_POS[mainPos[0]] && RIOT_POS[mainPos[0]] !== r && mainPos[1] / (g || 1) >= .5;
   const rk = rd && rd.rank;
   const qLabel = rd && rd.q ? (RIOT_QUEUES.find(x => x[0] === rd.q) || [, rd.q])[1] : "";
-  const head = `<div class="rr-riot-head">
-      <span class="riot-logo">RIOT</span>
-      ${busy ? `<span><span class="riot-spin"></span> lade Matchdaten…</span>` : ""}
-      ${rk ? `<span class="rk-pill" title="${esc(rk.q)}: ${rk.w}S / ${rk.l}N">${esc(TIER_DE[rk.tier] || rk.tier)}${["MASTER","GRANDMASTER","CHALLENGER"].includes(rk.tier) ? "" : " " + esc(rk.div || "")} · ${rk.lp} LP</span>` : rd && rd.games != null && !busy ? `<span class="rk-pill">Unranked</span>` : ""}
-      ${rd && rd.games ? `<span><b>${rd.games}</b> ${esc(qLabel)}-Spiele · <b class="${pct(rd.wins, rd.games) >= 50 ? "w" : "l"}">${pct(rd.wins, rd.games)}%</b> Siege</span>` : rd && rd.games === 0 && !busy ? `<span>Keine ${esc(qLabel)}-Spiele gefunden</span>` : ""}
-      ${rd && rd.recent && rd.recent.length ? `<span class="riot-recent" title="Letzte Spiele, neuestes links">${rd.recent.map(w => `<i class="${w ? "w" : ""}"></i>`).join("")}</span>` : ""}
-      ${offRole ? `<span class="rk-pill warn" title="Meistgespielte Position in den geladenen Spielen">spielt meist ${RIOT_POS[mainPos[0]]}</span>` : ""}
-      <span class="spacer"></span>
-      ${rd && rd.at ? `<span title="${esc(new Date(rd.at).toLocaleString("de-DE"))}">${relTime(rd.at)}</span>` : ""}
-      ${ed && hasId && riotUrl && !busy ? `<button class="btn sm ghost" data-action="riot-role" data-role="${r}">Neu laden</button>` : ""}
-      ${ed && rd && rd.champs && rd.champs.some(c => !have.has(c.c)) ? `<button class="btn sm" data-action="riot-take" data-role="${r}" title="Meistgespielte Champions als Top-Picks eintragen">Als Top-Picks</button>` : ""}
+  const apex = rk && ["MASTER","GRANDMASTER","CHALLENGER"].includes(rk.tier);
+  const rank = rk ? `<span class="rk" style="--tc:${TIER_COLOR[rk.tier] || "#8b97ab"}" title="${esc(rk.q)}: ${rk.w} Siege / ${rk.l} Niederlagen (${pct(rk.w, rk.w + rk.l)}%)"><i>${esc((TIER_DE[rk.tier] || rk.tier || "?")[0])}</i><b>${esc(TIER_DE[rk.tier] || rk.tier)}${apex ? "" : " " + esc(rk.div || "")}</b><small>${rk.lp} LP</small></span>`
+    : rd && rd.games != null ? `<span class="rk"><i>–</i><b>Unranked</b></span>` : "";
+  const stats = g ? `<span class="rs"><b class="${pct(w, g) >= 50 ? "w" : "l"}">${pct(w, g)}%</b><small>${w}S ${g - w}N</small></span>
+      <span class="rs"><b>${g}</b><small>${esc(qLabel)}</small></span>
+      ${rd.recent && rd.recent.length ? `<span class="rs"><span class="rform" title="Letzte ${rd.recent.length} Spiele, neuestes links">${rd.recent.map(x => `<i class="${x ? "w" : ""}"></i>`).join("")}</span><small>Form</small></span>` : ""}`
+    : rd && rd.games === 0 ? `<span class="rbusy">Keine ${esc(qLabel)}-Spiele gefunden</span>` : "";
+  const head = `<div class="rh">
+      <div class="rh-stats"><span class="riot-logo">RIOT</span>
+        ${busy ? `<span class="rbusy"><span class="riot-spin"></span> lade Matchdaten…</span>` : `${rank}${stats}`}
+        ${offRole && !busy ? `<span class="rwarn" title="Meistgespielte Position in den geladenen Spielen">⚠ spielt meist ${RIOT_POS[mainPos[0]]}</span>` : ""}
+      </div>
+      <div class="rh-act">
+        ${rd && rd.at ? `<span class="rh-time" title="Geladen ${esc(new Date(rd.at).toLocaleString("de-DE"))}">${relTime(rd.at)}</span>` : ""}
+        ${ed && hasId && riotUrl && !busy ? `<button class="btn sm ghost" data-action="riot-role" data-role="${r}" title="Neu laden" aria-label="Neu laden">↻</button>` : ""}
+        ${ed && rd && rd.champs && rd.champs.some(c => !have.has(c.c)) && !busy ? `<button class="btn sm gold" data-action="riot-take" data-role="${r}" title="Meistgespielte Champions als Top-Picks eintragen">+ Top-Picks</button>` : ""}
+      </div>
     </div>`;
   const err = rd && rd.err && (!rd.at || rd.errAt > rd.at) ? `<p class="riot-err">${esc(rd.err)}</p>` : "";
-  const list = rd && rd.champs && rd.champs.length ? `<div class="riot-champs">${rd.champs.map(c => `<div class="riot-champ ${have.has(c.c) ? "in" : ""}" title="${esc(c.c)}: ${c.g} Spiele, ${c.w} Siege, KDA ${(c.k / c.g).toFixed(1)}/${(c.d / c.g).toFixed(1)}/${(c.a / c.g).toFixed(1)}">
+  const champs = (rd && rd.champs) || [];
+  // Champions mit mehreren Spielen groß, Einzelspiele nur als Icons
+  let big = champs.filter(c => c.g >= 2);
+  if (big.length < 3) big = champs.slice(0, Math.min(champs.length, 4));
+  big = big.slice(0, 8);
+  const rest = champs.filter(c => !big.includes(c));
+  const mainC = big[0] && g && big[0].g / g >= .3 ? big[0] : null;
+  const card = c => `<div class="rc ${c === mainC ? "main" : ""}" title="${esc(c.c)}: ${c.g} Spiele · ${c.w} Siege · Ø ${(c.k / c.g).toFixed(1)} / ${(c.d / c.g).toFixed(1)} / ${(c.a / c.g).toFixed(1)}">
+      ${c === mainC ? `<span class="rc-tag">Main</span>` : ""}
       <span class="mini">${initials(c.c)}${img(iconUrl(c.c))}</span>
-      <span><b>${esc(c.c)}</b><small>${c.g} Sp · <span class="${pct(c.w, c.g) >= 50 ? "w" : "l"}">${pct(c.w, c.g)}%</span> · ${kda(c)} KDA</small></span></div>`).join("")}</div>` : "";
-  return `<div class="rr-riot">${head}${err}${list}</div>`;
+      ${have.has(c.c) ? `<span class="rc-in" title="Schon in den Top-Picks">✓</span>` : ""}
+      <div class="rc-top"><b>${esc(c.c)}</b><span>${c.g} Sp</span></div>
+      <div class="rc-bar" aria-hidden="true"><i style="width:${pct(c.w, c.g)}%"></i></div>
+      <div class="rc-sub"><b class="${pct(c.w, c.g) >= 50 ? "w" : "l"}">${pct(c.w, c.g)}%</b><span>${kda(c)} KDA</span></div>
+    </div>`;
+  const list = big.length ? `<div class="rcs">${big.map(card).join("")}</div>
+    ${rest.length ? `<div class="rmore"><span>Außerdem je ${rest.every(c => c.g === 1) ? "1 Spiel" : "wenige Spiele"}:</span>${rest.map(c => `<span class="mini" title="${esc(c.c)}: ${c.g} Sp · ${pct(c.w, c.g)}% · ${kda(c)} KDA">${initials(c.c)}${img(iconUrl(c.c))}</span>`).join("")}</div>` : ""}` : "";
+  return `<div class="rr-riot ${busy ? "busy" : ""}">${head}${err}${list}</div>`;
 }
 let polls = {}, tasks = [], showDoneTasks = false, meta = {};
 // Eine Stimme abgeben – gilt für Chat-Umfragen und Termine, landet auch in der Verfügbarkeit
