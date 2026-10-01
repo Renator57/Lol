@@ -603,6 +603,18 @@ dialog::backdrop{background:rgba(3,6,12,.65);backdrop-filter:blur(6px)}
 .pe-head .x{margin-left:auto}
 .pe-avatar{position:relative;width:48px;height:48px;border-radius:14px;overflow:hidden;flex:none;display:grid;place-items:center;font-family:var(--fd);font-weight:800;color:var(--gold);background:var(--panel-3);box-shadow:0 0 0 2px rgba(215,180,106,.45)}
 .pe-avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scale(1.1)}
+.avatar img.pa,.ch-av img.pa,.pe-avatar img.pa,.slot-face-badge img.pa{transform:none}
+.pe-photo{display:flex;align-items:center;gap:.9rem}
+.pe-avatar.big{width:76px;height:76px;border-radius:50%;font-size:1.3rem;background:color-mix(in srgb,var(--c,#3a4660) 35%,var(--panel-3))}
+.pe-photo-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:.45rem}
+.pe-photo-btns{display:flex;gap:.4rem;flex-wrap:wrap}
+.pe-photo-btns label{cursor:pointer}
+.slot .slot-face{opacity:.3;filter:saturate(.6)}
+.slot-face-badge{position:absolute;top:.55rem;left:.55rem;z-index:1;width:30px;height:30px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 2px rgba(215,180,106,.7),0 4px 10px rgba(0,0,0,.6)}
+.slot-face-badge img{width:100%;height:100%;object-fit:cover;display:block}
+.av-who{display:flex;align-items:center;gap:.45rem;min-width:0}
+.ch-av.sm{width:24px;height:24px;font-size:.55rem}
+
 .pe-title h2{font-size:1.2rem;line-height:1.2}
 .pe-title span{font-size:.82rem;color:var(--muted)}
 .pe-body{padding:1.1rem 1.2rem}
@@ -1408,6 +1420,9 @@ dialog{border-radius:26px;background:linear-gradient(180deg,rgba(21,31,51,.97),r
   .rh-act{margin-left:auto}
   .rsec .rh-time{display:none}
 }
+/* Profilbilder in der Verfügbarkeit */
+.av-table thead th:first-child{width:118px}
+@media (max-width:600px){.av-who .ch-av{display:none}.av-table thead th:first-child{width:62px}}
 </style>
 </head>
 <body>
@@ -1582,6 +1597,26 @@ const tierBadge = (t, cls = "") => TIERS.includes(t) ? `<b class="tier t-${t} ${
 const initials = n => String(n).replace(/[^A-Za-zÀ-ÿ ]/g, "").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() || "?";
 const cl = v => String(v ?? "").replace(/[^\w-]/g, ""); // gespeicherte Werte sicher als CSS-Klasse
 const N = v => { const n = +v; return Number.isFinite(n) ? n : 0; };
+// Profilbild eines Spielers: hochgeladen (Data-URL) oder https-Link
+const safeImg = u => typeof u === "string" && u.length < 400000 && (/^data:image\/(png|jpe?g|webp|gif);base64,[a-z0-9+/=]+$/i.test(u) || /^https:\/\/[^\s"'<>()]+$/i.test(u)) ? u : "";
+const avatarImg = p => { const a = p && safeImg(p.avatar); return a ? `<img src="${esc(a)}" alt="" class="pa" loading="lazy" onerror="this.remove()">` : ""; };
+// Bild quadratisch zuschneiden und verkleinern, damit es klein im Spieler-Dokument liegt
+async function resizeAvatar(file, size = 160){
+  if (!file || !/^image\//.test(file.type)) throw new Error("Bitte eine Bilddatei wählen.");
+  if (file.size > 20e6) throw new Error("Das Bild ist zu groß (max. 20 MB).");
+  const url = URL.createObjectURL(file);
+  try {
+    const im = new Image(); im.src = url;
+    try { await im.decode(); } catch(e){ throw new Error("Dieses Bildformat kann der Browser nicht lesen – bitte JPG oder PNG nehmen."); }
+    const w = im.naturalWidth, h = im.naturalHeight, sq = Math.min(w, h); if (!sq) throw new Error("Bild ist leer.");
+    const cv = document.createElement("canvas"); cv.width = cv.height = size;
+    const ctx = cv.getContext("2d"); ctx.fillStyle = "#13243b"; ctx.fillRect(0, 0, size, size); ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(im, (w - sq) / 2, (h - sq) / 2, sq, sq, 0, 0, size, size);
+    let out = cv.toDataURL("image/webp", .85);
+    if (!out.startsWith("data:image/webp")) out = cv.toDataURL("image/jpeg", .85);
+    return out;
+  } finally { URL.revokeObjectURL(url); }
+}
 
 // ---------- Data Dragon (Champion-Bilder & Namensliste) ----------
 const DD = { v:null, byNorm:{}, names:[], byKey:{}, idName:{} };
@@ -1849,7 +1884,8 @@ function renderDraft(picks, types, rec){
       (sorted.some(x => x.role !== r) ? `<optgroup label="Andere Rollen">${sorted.filter(x => x.role !== r).map(x => `<option value="${esc(x.id)}" ${p && p.id === x.id ? "selected" : ""}>${esc(x.name)} (${esc(x.role || "")})</option>`).join("")}</optgroup>` : "");
     return `<div class="slot ${c ? "" : "empty-slot"} ${p && p.id === active && mode === "pick" ? "active" : ""}">
       ${p ? `<button class="slot-hit" data-slot="${esc(p.id)}" aria-label="Für ${esc(p.name)} (${r}) picken${c ? ", aktuell " + esc(c) : ""}"></button>` : ""}
-      ${c ? img(artUrl(c), "art") : `<span class="empty">+</span>`}
+      ${c ? img(artUrl(c), "art") : `${p && safeImg(p.avatar) ? `<img src="${esc(safeImg(p.avatar))}" alt="" class="art slot-face" onerror="this.remove()">` : ""}<span class="empty">+</span>`}
+      ${c && p && safeImg(p.avatar) ? `<span class="slot-face-badge" title="${esc(p.name)}">${avatarImg(p)}</span>` : ""}
       ${c ? `<span class="dmg ${cl(types[c] || "UT")}">${types[c] === "UT" ? "UTIL" : esc(types[c] || "")}</span>` : ""}
       <span class="info"><span class="role">${r}</span>
         <span class="cname">${c ? tierBadge(t, "inline") + esc(c) : `<span class="pname">${p ? "Pick offen" : "Kein Spieler"}</span>`}</span>
@@ -1989,7 +2025,7 @@ function renderPools(){
     const groups = (p.groups||[]).map(g => `<div class="gl"><span class="dot ${esc(g.type)}"></span>${esc(g.label)}</div>
       <div class="tiles">${[...(g.champs||[])].sort((a, b) => tierRank((p.tiers||{})[a]) - tierRank((p.tiers||{})[b])).map(c => `<div class="tile ${esc(g.type)}"><span class="portrait">${initials(c)}${img(iconUrl(c))}${tierBadge((p.tiers||{})[c])}</span><span class="nm">${esc(c)}</span></div>`).join("") || `<span class="hint">leer</span>`}</div>`).join("");
     return `<article class="card">
-      <div class="card-head"><span class="avatar">${initials(p.name)}${main ? img(iconUrl(main)) : ""}</span><div><h2>${esc(p.name)}</h2><div class="sub">${esc(p.role || "")} · ${(mainFor(p.role) || {}).id === p.id ? `<span class="stamm">Stammspieler</span>` : "Ersatz"} · ${champsOf(p).length} Champions</div></div></div>
+      <div class="card-head"><span class="avatar">${initials(p.name)}${avatarImg(p) || (main ? img(iconUrl(main)) : "")}</span><div><h2>${esc(p.name)}</h2><div class="sub">${esc(p.role || "")} · ${(mainFor(p.role) || {}).id === p.id ? `<span class="stamm">Stammspieler</span>` : "Ersatz"} · ${champsOf(p).length} Champions</div></div></div>
       ${groups}
       ${p.note ? `<p class="note">${esc(p.note)}</p>` : ""}
       ${canEdit() ? `<div class="card-foot"><button class="btn sm gold" data-action="edit-player" data-id="${esc(p.id)}">Bearbeiten</button><span class="spacer"></span>
@@ -2411,7 +2447,7 @@ function renderTeam(){
     </div>
     <div class="av-scroll"><table class="av-table">
       <thead><tr><th></th>${info.days.map((d, i) => `<th class="${ymd(d) === today ? "today" : ""}"><span>${DAYS[i]}</span><small>${d.getDate()}.${d.getMonth() + 1}.</small>${(evByDay[ymd(d)] || []).length ? `<i class="ev-dot ${cl(evByDay[ymd(d)][0].type)}" title="${esc(evByDay[ymd(d)].map(evTitle).join(", "))}"></i>` : ""}</th>`).join("")}</tr></thead>
-      <tbody>${teamOrder().map(p => `<tr class="${lp.includes(p) ? "" : "sub"} ${p.name === me ? "me" : ""}"><th scope="row"><span class="av-name">${esc(p.name)}</span><small>${lp.includes(p) ? esc(p.role || "") : "Ersatz"}</small></th>${info.days.map((_, i) => `<td>${cell(p, i)}</td>`).join("")}</tr>`).join("")}</tbody>
+      <tbody>${teamOrder().map(p => `<tr class="${lp.includes(p) ? "" : "sub"} ${p.name === me ? "me" : ""}"><th scope="row"><span class="av-who"><span class="ch-av sm" style="--c:${nameColor(p.name)}">${initials(p.name)}${avatarImg(p)}</span><span><span class="av-name">${esc(p.name)}</span><small>${lp.includes(p) ? esc(p.role || "") : "Ersatz"}</small></span></span></th>${info.days.map((_, i) => `<td>${cell(p, i)}</td>`).join("")}</tr>`).join("")}</tbody>
       <tfoot><tr><th scope="row"><span class="av-name">Team</span></th>${info.days.map((_, i) => { const st = dayStatus(info.key, i);
         return `<td><span class="av-sum ${st.ok ? "ok" : st.subOk ? "sub" : st.yes ? "part" : ""}" title="${st.yes} von ${st.total} Stammspielern${st.subs ? ", " + st.subs + " Ersatz" : ""}">${st.ok ? "Alle" : st.subOk ? "+Ers." : st.yes + "/" + st.total}</span></td>`; }).join("")}</tr></tfoot>
     </table></div>
@@ -2473,7 +2509,7 @@ function renderTeam(){
 function chatAvatar(name){
   const p = players.find(x => x.name === name);
   const best = p ? champsOf(p).sort((a, b) => tierRank((p.tiers || {})[a]) - tierRank((p.tiers || {})[b]))[0] : null;
-  return `<span class="ch-av" style="--c:${nameColor(name)}">${initials(name || "?")}${best ? img(iconUrl(best)) : ""}</span>`;
+  return `<span class="ch-av" style="--c:${nameColor(name)}">${initials(name || "?")}${avatarImg(p) || (best ? img(iconUrl(best)) : "")}</span>`;
 }
 function renderChat(){
   const me = myName() || "", lastRead = +(lsGet(LS_READ) || 0);
@@ -2878,7 +2914,7 @@ const modal = $("#modal");
 function openEditor(kind, id){
   if (kind === "p"){
     const p = players.find(x => x.id === id);
-    edit = { kind, isNew: !p, buf: p ? JSON.parse(JSON.stringify({ id:p.id, name:p.name, role:p.role || "Top", main: !!p.main || (mainFor(p.role) || {}).id === p.id, note:p.note || "", tiers:p.tiers || {}, groups:p.groups || [] })) : { id:"", name:"", role:"Top", main:false, note:"", tiers:{}, groups:[{ label:"AD", type:"AD", champs:[] }] } };
+    edit = { kind, isNew: !p, buf: p ? JSON.parse(JSON.stringify({ id:p.id, name:p.name, role:p.role || "Top", main: !!p.main || (mainFor(p.role) || {}).id === p.id, note:p.note || "", tiers:p.tiers || {}, groups:p.groups || [], avatar: safeImg(p.avatar) })) : { id:"", name:"", role:"Top", main:false, note:"", tiers:{}, groups:[{ label:"AD", type:"AD", champs:[] }], avatar:"" } };
   } else if (kind === "k"){
     fillOurList();
     const k = counters[id];
@@ -2923,11 +2959,20 @@ function renderModal(focusSel){
     const allC = b.groups.flatMap(g => g.champs), best = [...allC].sort((x, y) => tierRank(b.tiers[x]) - tierRank(b.tiers[y]))[0];
     modal.innerHTML = `
       <div class="m-head pe-head">
-        <span class="pe-avatar">${initials(b.name || "?")}${best ? img(iconUrl(best)) : ""}</span>
+        <span class="pe-avatar">${initials(b.name || "?")}${avatarImg(b) || (best ? img(iconUrl(best)) : "")}</span>
         <div class="pe-title"><h2 id="mTitle">${edit.isNew ? "Neuer Spieler" : esc(b.name || "Spieler")}</h2><span>${esc(b.role)} · ${allC.length} Champion${allC.length === 1 ? "" : "s"}</span></div>
         <button class="x" data-action="close" aria-label="Schließen">×</button></div>
       <div class="m-body pe-body">
         <div class="field"><label for="f-name">Name</label><input class="inp" id="f-name" data-bind="name" value="${esc(b.name)}" maxlength="40" placeholder="Spielername"></div>
+        <div class="field"><span class="flabel">Profilbild</span>
+          <div class="pe-photo">
+            <span class="pe-avatar big" style="--c:${nameColor(b.name || "?")}">${initials(b.name || "?")}${avatarImg(b)}</span>
+            <div class="pe-photo-main">
+              <div class="pe-photo-btns"><label class="btn sm gold">${b.avatar ? "Anderes Bild" : "Bild hochladen"}<input type="file" accept="image/*" id="avatarFile" hidden></label>${b.avatar ? `<button class="btn sm ghost" data-action="avatar-del">Entfernen</button>` : ""}</div>
+              <input class="inp" id="avatarUrl" value="${esc(b.avatar && /^https:/.test(b.avatar) ? b.avatar : "")}" placeholder="oder Bild-Link einfügen (https://…)" autocomplete="off" aria-label="Link zum Profilbild">
+            </div>
+          </div>
+          <small class="small-hint">Wird quadratisch zugeschnitten und klein gespeichert. Erscheint in Pools, Draft, Chat und Verfügbarkeit.</small></div>
         <div class="field"><span class="flabel">Rolle</span>
           <div class="role-pick" role="group" aria-label="Rolle">${ROLES.map(r => `<button data-action="p-role" data-v="${r}" aria-pressed="${r === b.role}">${r}</button>`).join("")}</div></div>
         <label class="switch-row"><input type="checkbox" data-action="p-main" ${b.main ? "checked" : ""}><span class="switch" aria-hidden="true"></span>
@@ -3081,7 +3126,7 @@ function renderModal(focusSel){
         <h3 class="sh">Chat-Namen</h3>
         <p class="small-hint" style="margin:0 0 .6rem">Jeder Spielername ist fest mit einem Gerät verbunden. Wechselt jemand das Handy oder den Browser, hier den Namen freigeben.</p>
         <div class="claim-list">${teamOrder().map(p => { const c = claims[p.id], mine = c && c.dev === myDev, taken = c && c.dev;
-          return `<div class="claim-row"><span class="ch-av" style="--c:${nameColor(p.name)}">${initials(p.name)}</span><b>${esc(p.name)}</b>
+          return `<div class="claim-row"><span class="ch-av" style="--c:${nameColor(p.name)}">${initials(p.name)}${avatarImg(p)}</span><b>${esc(p.name)}</b>
             <span class="claim-st ${taken ? "on" : ""}">${mine ? "dieses Gerät" : taken ? "vergeben seit " + new Date(c.at).toLocaleDateString("de-DE") : "frei"}</span>
             ${taken && canManage() ? `<button class="btn sm ghost" data-action="claim-release" data-id="${esc(p.id)}">Freigeben</button>` : ""}</div>`; }).join("")}</div>
         ${adminHash && !isAdmin() ? `<p class="small-hint">Nur der Admin kann vergebene Namen freigeben.</p>` : ""}
@@ -3509,7 +3554,7 @@ document.addEventListener("click", async e => {
       const id = b.id || (b.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "spieler") + "-" + Math.random().toString(36).slice(2, 6);
       const order = existing ? (existing.order ?? 0) : Math.max(0, ...players.map(x => x.order ?? 0)) + 1;
       const all = new Set(b.groups.flatMap(g => g.champs));
-      const body = { name: b.name.trim(), role: b.role, main: !!b.main, note: (b.note || "").trim(), order,
+      const body = { name: b.name.trim(), role: b.role, main: !!b.main, note: (b.note || "").trim(), order, ...(safeImg(b.avatar) ? { avatar: safeImg(b.avatar) } : {}),
         tiers: Object.fromEntries(Object.entries(b.tiers).filter(([c, v]) => all.has(c) && v)),
         groups: b.groups.filter(g => g.label.trim() || g.champs.length).map(g => ({ label: g.label.trim() || "Pool", type: g.type, champs: g.champs })) };
       a.disabled = true;
@@ -3530,6 +3575,7 @@ document.addEventListener("click", async e => {
         toast("Spieler gelöscht."); } catch(err){ writeError(err); }
       break;
     }
+    case "avatar-del": b.avatar = ""; renderModal(); break;
     case "c-style": b.style = b.style === a.dataset.v ? "" : a.dataset.v; renderModal(); break;
     case "ce-toggle": { const row = b.rows[+a.dataset.i], c = a.dataset.c; row.options = row.options.includes(c) ? row.options.filter(x => x !== c) : [...row.options, c]; renderModal(); break; }
     case "ce-del": { const row = b.rows[+a.dataset.i]; row.options = row.options.filter(x => x !== a.dataset.c); renderModal(); break; }
@@ -3627,6 +3673,19 @@ document.addEventListener("input", e => {
 });
 document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.dataset && e.target.dataset.cbind){ e.preventDefault(); addNote(e.target.dataset.id); } });
 
+modal.addEventListener("change", async e => {
+  if (!edit || edit.kind !== "p") return;
+  if (e.target.id === "avatarFile"){
+    const f = e.target.files[0]; if (!f) return;
+    try { edit.buf.avatar = await resizeAvatar(f); renderModal(); toast("Bild übernommen – zum Behalten speichern."); }
+    catch(err){ toast(err.message || "Bild konnte nicht gelesen werden."); }
+  } else if (e.target.id === "avatarUrl"){
+    const u = e.target.value.trim();
+    if (!u) return;
+    if (!/^https:\/\//.test(u) || !safeImg(u)) return toast("Bitte einen https-Link zu einem Bild einfügen.");
+    edit.buf.avatar = u; renderModal();
+  }
+});
 modal.addEventListener("change", async e => {
   if (e.target.id !== "importFile" || !edit) return;
   const f = e.target.files[0]; if (!f) return;
