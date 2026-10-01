@@ -98,11 +98,12 @@ export default {
     } catch (e) {
       const status = e.status || 502;
       const msg = status === 404 ? "Riot-ID nicht gefunden."
+        : status === 400 ? "Ungültige Riot-ID – Schreibweise Name#TAG prüfen."
         : status === 429 ? "Riot-Limit erreicht."
         : status === 401 || status === 403 ? "API-Key ungültig oder abgelaufen."
         : "Riot-API nicht erreichbar.";
       const retryAfter = status === 429 ? (e.retryAfter || retryEstimate(reg.regional)) : 0;
-      return json({ error: msg, status, ...(retryAfter ? { retryAfter } : {}) }, status === 404 ? 404 : status === 429 ? 429 : 502, { ...cors, ...(retryAfter ? { "Retry-After": String(retryAfter) } : {}) });
+      return json({ error: msg, status, ...(retryAfter ? { retryAfter } : {}) }, status === 404 || status === 400 ? status : status === 429 ? 429 : 502, { ...cors, ...(retryAfter ? { "Retry-After": String(retryAfter) } : {}) });
     }
   },
 };

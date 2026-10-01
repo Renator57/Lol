@@ -1423,6 +1423,14 @@ dialog{border-radius:26px;background:linear-gradient(180deg,rgba(21,31,51,.97),r
 /* Profilbilder in der Verfügbarkeit */
 .av-table thead th:first-child{width:118px}
 @media (max-width:600px){.av-who .ch-av{display:none}.av-table thead th:first-child{width:62px}}
+/* Draft-Art und Fearless */
+.mode-seg button{padding:.38rem .8rem}
+.fearless-bar{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-top:.7rem;padding:.5rem .65rem;border-radius:12px;border:1px solid rgba(157,134,255,.35);background:rgba(157,134,255,.08)}
+.fearless-bar .flabel{color:#c7b9ff}
+.fearless-bar .mini{filter:grayscale(.7) brightness(.8)}
+.e-riot{display:block;font-size:.72rem;font-weight:700;color:#ffd0c9;text-shadow:0 1px 6px rgba(0,0,0,.8)}
+.tile .owner.riot{color:#ffb3aa;font-weight:700}
+.mini-btn small{display:block;font-size:.66rem;color:var(--muted);font-weight:700}
 </style>
 </head>
 <body>
@@ -1533,7 +1541,7 @@ dialog{border-radius:26px;background:linear-gradient(180deg,rgba(21,31,51,.97),r
   <!-- HISTORY -->
   <section class="view" id="view-history" hidden>
     <div class="view-head">
-      <div><h2>Verlauf</h2><p>Liga-Spiele und Scrims mit Ergebnis, Notizen und Statistik.</p></div>
+      <div><h2>Verlauf</h2><p>Liga-Spiele, Scrims und Ranked mit Ergebnis, Notizen und Statistik.</p></div>
       <div class="stats" id="histStats"></div>
     </div>
     <div class="hist-tools" id="histTools"></div>
@@ -1895,16 +1903,18 @@ function renderDraft(picks, types, rec){
   }).join("") : `<p class="loading" style="grid-column:1/-1">${loaded ? "Noch keine Spieler – leg sie unter „Champion-Pools“ an." : "Lade…"}</p>`;
 
   // Draft-Ablauf: Seite, Pick-Reihenfolge, Pläne
-  const steps = draftSteps(), next = steps.find(x => !x.done), ot = at();
+  const steps = draftSteps(), next = steps.find(x => !x.done), ot = at(), ranked = draft.mode === "ranked";
   const nextTxt = !next ? "Draft komplett." : next.t === "ban"
-    ? `Als Nächstes: ${next.us ? "Ihr bannt" : "Gegner bannt"} (Bann ${next.n} ${next.s === "B" ? "Blau" : "Rot"})`
+    ? (ranked ? "Als Nächstes: Banns (je 5, gleichzeitig)" : `Als Nächstes: ${next.us ? "Ihr bannt" : "Gegner bannt"} (Bann ${next.n} ${next.s === "B" ? "Blau" : "Rot"})`)
     : (() => { let k = next.i, n = 0; while (steps[k] && steps[k].t === "pick" && steps[k].s === next.s && !steps[k].done){ n++; k++; } return `Als Nächstes: ${next.us ? "Ihr pickt" : "Gegner pickt"} ${n > 1 ? n + " Champions" : "1 Champion"}`; })();
   const tip = !draft.side ? "Wählt eure Seite, dann zeigt das Board die Pick-Reihenfolge."
+    : ranked ? (draft.side === "blue" ? "Ranked: Blau hat First Pick, danach pickt jede Seite zwei im Wechsel." : "Ranked: Rot hat Last Pick – hebt einen Counter bis zum Schluss auf.")
     : draft.side === "blue" ? "Blau hat First Pick: sichert euren stärksten oder Flex-Champion zuerst."
     : "Rot hat Last Pick: hebt einen Counter für Top oder Mid bis zum Schluss auf.";
   const plans = ot ? (ot.plans || []) : [];
   $("#flow").innerHTML = `
     <div class="flow-top">
+      <div class="seg mode-seg" role="group" aria-label="Draft-Art"><button data-action="draft-mode" data-v="" aria-pressed="${!ranked}" ${canEdit() ? "" : "disabled"} title="Turnier-Draft (Liga, Scrims)">Turnier</button><button data-action="draft-mode" data-v="ranked" aria-pressed="${ranked}" ${canEdit() ? "" : "disabled"} title="Ranked-Draft (5er-Flex)">Ranked</button></div>
       <div class="side-pick" role="group" aria-label="Seite">
         <button class="sb-blue" data-action="set-side" data-v="blue" aria-pressed="${draft.side === "blue"}" ${canEdit() ? "" : "disabled"}>Blaue Seite</button>
         <button class="sb-red" data-action="set-side" data-v="red" aria-pressed="${draft.side === "red"}" ${canEdit() ? "" : "disabled"}>Rote Seite</button>
@@ -1914,8 +1924,9 @@ function renderDraft(picks, types, rec){
         ${plans.map(pl => `<button class="btn sm" data-action="plan-load" data-id="${esc(pl.id)}" ${canEdit() ? "" : "disabled"} title="${esc(pl.note || "")}">${esc(pl.name)}</button>`).join("")}
         ${canEdit() && Object.keys(livePicks()).length ? `<button class="btn sm ghost" data-action="plan-save">+ Als Plan speichern</button>` : ""}</div>` : ""}
     </div>
+    ${render.locked && render.locked.size ? `<div class="fearless-bar"><span class="flabel" style="margin:0">Fearless · gesperrt</span><div class="opts-row">${miniRow([...render.locked])}</div></div>` : ""}
     ${draft.side ? `<button class="flow-toggle" data-action="toggle-order" aria-expanded="${!!render.showOrder}">${render.showOrder ? "Reihenfolge ausblenden ▴" : "Pick-Reihenfolge anzeigen ▾"}</button>` : ""}
-    ${draft.side && render.showOrder ? `<div class="flow-strip">${steps.map((x, k) => `${k === 6 || k === 12 || k === 16 ? `<span class="fs-sep"></span>` : ""}<span class="fs ${x.t} ${x.s === "B" ? "blue" : "red"} ${x.us ? "us" : ""} ${x.done ? "done" : ""} ${next && next.i === x.i ? "now" : ""}" title="${x.t === "ban" ? "Bann" : "Pick"} ${x.s === "B" ? "Blau" : "Rot"} ${x.n}${x.us ? " (ihr)" : ""}">${x.t === "ban" ? "✕" : x.n}</span>`).join("")}</div>
+    ${draft.side && render.showOrder ? `<div class="flow-strip">${steps.map((x, k) => `${(ranked ? k === 10 : k === 6 || k === 12 || k === 16) ? `<span class="fs-sep"></span>` : ""}<span class="fs ${x.t} ${x.s === "B" ? "blue" : "red"} ${x.us ? "us" : ""} ${x.done ? "done" : ""} ${next && next.i === x.i ? "now" : ""}" title="${x.t === "ban" ? "Bann" : "Pick"} ${x.s === "B" ? "Blau" : "Rot"} ${x.n}${x.us ? " (ihr)" : ""}">${x.t === "ban" ? "✕" : x.n}</span>`).join("")}</div>
       <div class="fs-legend"><span><i class="fs pick blue us"></i>eure Picks</span><span><i class="fs pick red"></i>Gegner</span><span><i class="fs ban blue"></i>Bann</span></div>` : ""}`;
 
   // Gegnerteam: 5 feste Rollen wie bei uns
@@ -1928,7 +1939,7 @@ function renderDraft(picks, types, rec){
         ${canEdit() ? `<button class="slot-hit" data-action="enemy-slot" data-role="${r}" aria-label="Gegner ${r}${c ? ": " + esc(c) + " ändern" : " wählen"}"></button>` : ""}
         ${c ? img(artUrl(c), "art") : `<span class="empty">+</span>`}
         ${c && canEdit() ? `<button class="eslot-x" data-action="enemy-clear" data-role="${r}" aria-label="${esc(c)} entfernen">×</button>` : ""}
-        <span class="info"><span class="role">${r}</span><span class="cname">${c ? esc(c) : `<span class="pname">offen</span>`}</span>
+        <span class="info"><span class="role">${r}</span><span class="cname">${c ? esc(c) : `<span class="pname">offen</span>`}</span>${c && ot ? (line => line ? `<span class="e-riot" title="Matchdaten von ${esc(roleOf(ot, r).player)}">${line}</span>` : "")(riotChampLine(roleOf(ot, r), c, ot)) : ""}
           ${c ? `<button class="eslot-note ${counters[c] ? "has" : ""}" data-action="counter-for" data-c="${esc(c)}">${counters[c] ? "Counter-Notiz ansehen" : "+ Counter-Notiz"}</button>` : ""}</span>
       </div>`; }).join("")}</div>`;
 
@@ -2191,8 +2202,8 @@ function riotBanIdeas(t){
   return out.sort((a, b) => b.score - a.score).filter(x => !t.banPlan.includes(x.c) && !seen.has(x.c) && seen.add(x.c)).slice(0, 5);
 }
 // Matchdaten-Zeile eines Gegners zu einem Champion (für Draft und Pick-Dialog)
-function riotChampLine(sr, c){
-  const rd = riotView(sr.riot); if (!rd) return "";
+function riotChampLine(sr, c, t){
+  const rd = riotView(sr.riot); if (!rd || (t && !riotFresh(sr, t, rd))) return "";
   const x = rd.champs.find(y => y.c === c); if (!x) return "";
   return `${x.g} Sp · ${pct(x.w, x.g)}%`;
 }
@@ -2301,7 +2312,11 @@ function shareDraft(){
 function shareTeam(t){
   const lines = [`**Gegner: ${t.name || t.tag || "?"}${t.tag && t.name ? " (" + t.tag + ")" : ""}**${t.date ? " · " + fmtDay(t.date) : ""}`];
   if (t.note) lines.push(`_${t.note}_`);
-  ROLES.forEach(r => { const sr = roleOf(t, r); if (sr.player || sr.champs.length) lines.push(`${r}${sr.player ? " – " + sr.player : ""}: ${sr.champs.map(x => x.danger ? "**" + x.c + "**" : x.c).join(", ") || "–"}`); });
+  ROLES.forEach(r => { const sr = roleOf(t, r); if (!sr.player && !sr.champs.length) return;
+    const rd = riotView(sr.riot), fresh = rd && rd.games && riotFresh(sr, t, rd);
+    const rk = fresh ? (rd.rank ? (TIER_DE[rd.rank.tier] || rd.rank.tier) + (["MASTER","GRANDMASTER","CHALLENGER"].includes(rd.rank.tier) ? "" : " " + rd.rank.div) : "Unranked") + `, ${pct(rd.wins, rd.games)} % in ${rd.games}` : "";
+    const most = fresh ? rd.champs.filter(c => c.g >= 2).slice(0, 3).map(c => `${c.c} ${c.g}×`).join(", ") : "";
+    lines.push(`${r}${sr.player ? " – " + sr.player : ""}${rk ? " (" + rk + ")" : ""}: ${sr.champs.map(x => x.danger ? "**" + x.c + "**" : x.c).join(", ") || "–"}${most ? " · meistgespielt: " + most : ""}`); });
   if (t.banPlan.length) lines.push(`Bann-Plan: ${t.banPlan.map((c, i) => (i + 1) + ". " + c).join("  ")}`);
   if (t.link) lines.push(t.link);
   return lines.join("\n");
@@ -2335,11 +2350,14 @@ const DRAFT_ORDER = [["ban","B"],["ban","R"],["ban","B"],["ban","R"],["ban","B"]
   ["pick","B"],["pick","R"],["pick","R"],["pick","B"],["pick","B"],["pick","R"],
   ["ban","R"],["ban","B"],["ban","R"],["ban","B"],
   ["pick","R"],["pick","B"],["pick","B"],["pick","R"]];
+// Ranked (Solo/Flex): alle 10 Banns gleichzeitig, dann Picks 1-2-2-2-2-1
+const DRAFT_ORDER_RANKED = [["ban","B"],["ban","R"],["ban","B"],["ban","R"],["ban","B"],["ban","R"],["ban","B"],["ban","R"],["ban","B"],["ban","R"],
+  ["pick","B"],["pick","R"],["pick","R"],["pick","B"],["pick","B"],["pick","R"],["pick","R"],["pick","B"],["pick","B"],["pick","R"]];
 function draftSteps(){
   const side = draft.side === "red" ? "R" : "B";
   let bans = Math.min(draft.bans.length, 10), ours = Object.keys(livePicks()).length, theirs = (draft.enemy || []).length;
   const bn = { B:0, R:0 }, pk = { B:0, R:0 };
-  return DRAFT_ORDER.map(([t, s], i) => {
+  return (draft.mode === "ranked" ? DRAFT_ORDER_RANKED : DRAFT_ORDER).map(([t, s], i) => {
     const us = s === side; let done;
     if (t === "ban"){ done = bans > 0; if (done) bans--; bn[s]++; }
     else { pk[s]++; done = us ? pk[s] <= ours : pk[s] <= theirs; }
@@ -2763,6 +2781,8 @@ function renderScout(){
       return `<div class="md-grid">
         <section class="panel md-panel"><div class="md-head"><h3>Spieltag · Bo3</h3>${sc.length ? `<span class="md-score"><b class="w">${sw}</b> : <b class="l">${sl2}</b></span>` : ""}${decided ? `<span class="md-result ${decided}">${decided === "win" ? "Serie gewonnen" : "Serie verloren"}</span>` : ""}${t.date ? `<span class="hint" style="margin:0">${fmtDay(t.date)}</span>` : ""}</div>
           <div class="md-games">${gameBox(g1, 1)}${gameBox(g2, 2)}${g3skip ? `<div class="md-game empty"><span class="md-n">Spiel 3</span><span class="hint" style="margin:0">Nicht nötig</span></div>` : gameBox(g3, 3)}</div>
+          <label class="switch-row" style="margin:.7rem 0 0"><input type="checkbox" data-action="team-fearless" ${t.fearless ? "checked" : ""} ${dis}><span class="switch" aria-hidden="true"></span><span><b>Fearless Draft</b><small>Champions aus früheren Spielen der Serie sind für beide Teams gesperrt</small></span></label>
+          ${t.fearless ? (() => { const lk = new Set(); seriesGames(viewId, true).forEach(h => { (h.team || []).forEach(x => x.champ && lk.add(x.champ)); (h.enemy || []).forEach(c => c && lk.add(c)); }); return lk.size ? `<div class="fearless-bar" style="margin-top:.5rem"><span class="flabel" style="margin:0">Gesperrt (${lk.size})</span><div class="opts-row">${miniRow([...lk])}</div></div>` : ""; })() : ""}
           <p class="small-hint" style="margin:.6rem 0 0">Beim Speichern eines Drafts „Liga“ und Spiel 1, 2 oder 3 wählen, dann erscheint es hier.</p></section>
         <section class="panel md-panel"><div class="md-head"><h3>Draft-Pläne</h3><span class="hint" style="margin:0">Plan A, B und C für das Bo3</span></div>
           ${plans.length ? `<div class="plan-list-cards">${plans.map(pl => `<div class="plan-card"><div class="pc-top"><b>${esc(pl.name)}</b>${pl.side ? `<span class="side-dot ${cl(pl.side)}">${pl.side === "blue" ? "Blau" : "Rot"}</span>` : ""}<span class="spacer"></span>
@@ -2810,6 +2830,7 @@ function renderScout(){
         ${plan.length > 5 ? `<p class="hint" style="margin:.5rem 0 0">+ ${plan.slice(5).map(esc).join(", ")}</p>` : ""}
         ${plan.length ? `<ol class="bp-list">${plan.map((c, i) => `<li><span class="bs-num">${i + 1}</span><b>${esc(c)}</b>${draft.bans.includes(c) ? `<em>im Draft</em>` : ""}${ed && i > 0 ? `<button class="ib" data-action="plan-move" data-i="${i}" data-dir="-1" title="Nach vorne">${I.up}</button>` : ""}</li>`).join("")}</ol>`
           : `<p class="hint bp-empty">Tippe unter einem Champion auf ${I.ban}, um ihn zu bannen.</p>`}
+        ${(() => { const ideas = riotBanIdeas(t).filter(x => !dangerNotPlanned.some(y => y.c === x.c)); return ideas.length ? `<div class="suggest"><span class="flabel">Vorschläge aus Matchdaten</span><div class="opts-row">${ideas.map(x => `<button class="mini-btn" data-action="sc-ban" data-c="${esc(x.c)}" ${dis} title="${esc(x.c)} (${x.r}): ${x.g} Spiele, ${pct(x.w, x.g)} % Siege – in den Bann-Plan"><span class="mini">${initials(x.c)}${img(iconUrl(x.c))}</span><span>${esc(x.c)}<small>${x.r} · ${x.g} Sp · ${pct(x.w, x.g)} %</small></span></button>`).join("")}</div></div>` : ""; })()}
         ${dangerNotPlanned.length ? `<div class="suggest"><span class="flabel">Gefährlich, noch nicht geplant</span><div class="opts-row">${dangerNotPlanned.map(x => `<button class="mini-btn" data-action="sc-ban" data-c="${esc(x.c)}" title="${esc(x.c)} (${x.r}) einplanen"><span class="mini">${initials(x.c)}${img(iconUrl(x.c))}</span>${esc(x.c)}</button>`).join("")}</div></div>` : ""}
         <div class="bp-actions">
           ${ed && plan.length ? `<button class="btn gold" data-action="plan-apply">Banns in den Draft</button>` : ""}
@@ -2837,14 +2858,16 @@ function renderPickGrid(){
       : `<p class="empty-state">Kein Champion gefunden.${typed ? ` <button class="btn sm" data-action="pick-enemy" data-c="${esc(typed)}">„${esc(typed)}“ trotzdem eintragen</button>` : ""}</p>`;
     return;
   }
-  const eb = draft.enemyBy || {}, ours = new Set(Object.values(livePicks())), role = edit.buf.role;
+  const eb = draft.enemyBy || {}, ours = new Set(Object.values(livePicks())), role = edit.buf.role, locked = render.locked || new Set();
   const list = pickMatches();
-  const scouted = roleOf(at(), role).champs.map(x => x.c).filter(n => !typed || norm(n).includes(norm(typed)));
-  const top = scouted.length ? `<span class="flabel">Top-Picks von ${esc(roleOf(at(), role).player || "diesem Gegner")}${at() && at().name ? " (" + esc(at().tag || at().name) + ")" : ""}</span><div class="tiles pick-tiles top-picks">${scouted.map(n => `<button class="tile ${eb[role] === n ? "picked" : ""}" data-action="pick-enemy" data-c="${esc(n)}" ${ours.has(n) || draft.bans.includes(n) ? "disabled" : ""}><span class="portrait">${initials(n)}${img(iconUrl(n))}</span><span class="nm">${esc(n)}</span></button>`).join("")}</div><span class="flabel" style="margin-top:.6rem">Alle Champions</span>` : "";
+  const ot = at(), srA = roleOf(ot, role), rdA = ot && riotView(srA.riot);
+  const riotExtra = rdA && riotFresh(srA, ot, rdA) ? rdA.champs.filter(c => c.g >= 2 && !srA.champs.some(x => x.c === c.c)).map(c => c.c) : [];
+  const scouted = [...srA.champs.map(x => x.c), ...riotExtra].filter(n => !typed || norm(n).includes(norm(typed)));
+  const top = scouted.length ? `<span class="flabel">Top-Picks von ${esc(roleOf(at(), role).player || "diesem Gegner")}${at() && at().name ? " (" + esc(at().tag || at().name) + ")" : ""}</span><div class="tiles pick-tiles top-picks">${scouted.map(n => { const line = ot ? riotChampLine(srA, n, ot) : ""; return `<button class="tile ${eb[role] === n ? "picked" : ""} ${ours.has(n) || draft.bans.includes(n) || locked.has(n) ? "banned" : ""}" data-action="pick-enemy" data-c="${esc(n)}" ${ours.has(n) || draft.bans.includes(n) || locked.has(n) ? "disabled" : ""}><span class="portrait">${initials(n)}${img(iconUrl(n))}</span><span class="nm">${esc(n)}</span>${line ? `<span class="owner riot">${line}</span>` : ""}</button>`; }).join("")}</div><span class="flabel" style="margin-top:.6rem">Alle Champions</span>` : "";
   g.innerHTML = top + (list.length ? `<div class="tiles pick-tiles">${list.map(n => {
       const takenRole = ROLES.find(r => r !== role && eb[r] === n);
-      const blocked = ours.has(n) || draft.bans.includes(n);
-      return `<button class="tile ${eb[role] === n ? "picked" : ""} ${blocked ? "banned" : ""}" data-action="pick-enemy" data-c="${esc(n)}" ${blocked ? "disabled" : ""} title="${esc(n)}${ours.has(n) ? " – von euch gepickt" : draft.bans.includes(n) ? " – gebannt" : takenRole ? " – steht auf " + takenRole : ""}">
+      const blocked = ours.has(n) || draft.bans.includes(n) || locked.has(n);
+      return `<button class="tile ${eb[role] === n ? "picked" : ""} ${blocked ? "banned" : ""}" data-action="pick-enemy" data-c="${esc(n)}" ${blocked ? "disabled" : ""} title="${esc(n)}${ours.has(n) ? " – von euch gepickt" : draft.bans.includes(n) ? " – gebannt" : locked.has(n) ? " – durch Fearless gesperrt" : takenRole ? " – steht auf " + takenRole : ""}">
         ${takenRole ? `<span class="rec-badge" style="background:var(--gold);color:#1a1206">${takenRole}</span>` : ""}
         <span class="portrait">${initials(n)}${img(iconUrl(n))}</span><span class="nm">${esc(n)}</span></button>`; }).join("")}</div>`
     : `<p class="empty-state">Kein Champion gefunden.${typed ? ` <button class="btn sm" data-action="pick-enemy" data-c="${esc(typed)}">„${esc(typed)}“ trotzdem eintragen</button>` : ""}</p>`);
@@ -2877,7 +2900,7 @@ document.getElementById("modal").addEventListener("input", e => { if (e.target.i
 document.getElementById("modal").addEventListener("keydown", e => {
   if (e.target.id !== "pickQ" || e.key !== "Enter") return;
   e.preventDefault();
-  const first = edit.buf.target === "scout" ? pickMatches()[0] : pickMatches().find(n => !Object.values(livePicks()).includes(n) && !draft.bans.includes(n));
+  const first = edit.buf.target === "scout" ? pickMatches()[0] : pickMatches().find(n => !Object.values(livePicks()).includes(n) && !draft.bans.includes(n) && !(render.locked || new Set()).has(n));
   pickEnemy(first || edit.buf.q.trim());
 });
 function addNote(hid){
@@ -3047,7 +3070,7 @@ function renderModal(focusSel){
           <div class="field"><label for="po-t">Uhrzeit</label><input class="inp" type="time" id="po-t" data-bind="time" value="${esc(b.time)}" style="color-scheme:dark"></div></div>
         <p class="small-hint" style="margin:-.3rem 0 .8rem">Mit Tag werden Ja / Vielleicht / Nein automatisch in die Verfügbarkeit übernommen.</p>
         <label class="switch-row"><input type="checkbox" data-action="po-ev" ${b.mkEvent ? "checked" : ""}><span class="switch" aria-hidden="true"></span><span><b>Auch als Termin eintragen</b><small>Erscheint dann unter Team → Termine</small></span></label>
-        ${b.mkEvent ? `<div class="seg" style="margin-top:-.6rem">${[["scrim","Scrim"],["training","Training"]].map(([v, l]) => `<button data-action="po-evtype" data-v="${v}" aria-pressed="${b.evType === v}">${l}</button>`).join("")}</div>` : ""}
+        ${b.mkEvent ? `<div class="seg" style="margin-top:-.6rem">${[["scrim","Scrim"],["ranked","Ranked"],["training","Training"]].map(([v, l]) => `<button data-action="po-evtype" data-v="${v}" aria-pressed="${b.evType === v}">${l}</button>`).join("")}</div>` : ""}
       </div>
       <div class="m-foot"><button class="btn gold" data-action="poll-send">Umfrage senden</button><button class="btn" data-action="close">Abbrechen</button></div>`;
   } else if (edit.kind === "ev"){
@@ -3268,6 +3291,7 @@ document.addEventListener("click", async e => {
       closeEditor(); toast(`${lines.length} Riot-IDs eingetragen.`); break;
     }
     case "team-new": newTeam(); break;
+    case "team-fearless": mutTeam(viewId, t => { t.fearless = a.checked; }); toast(a.checked ? "Fearless an: frühere Champions der Serie sind gesperrt." : "Fearless aus."); break;
     case "team-activate": setActive(viewId); toast("Ist jetzt der Draft-Gegner."); break;
     case "team-clear": { const prev = JSON.parse(JSON.stringify(vt())), id = viewId; mutTeam(id, t => { t.roles = {}; t.banPlan = []; });
       toast("Picks geleert.", { label: "Rückgängig", fn: () => { teams = { ...teams, [id]: prev }; saveTeam(id, true); render(); } }); break; }
@@ -3418,6 +3442,7 @@ document.addEventListener("click", async e => {
     case "patch-ok": meta = { ...meta, patch: patchName(DD.v) }; render(); fs.doc("config/meta").set({ patch: patchName(DD.v), at: Date.now() }, { merge: true }).catch(writeError); toast("Patch als geprüft markiert."); break;
     case "patch-pools": tab = "pools"; render(); window.scrollTo({ top: 0 }); break;
     case "remind-on": b.remind = a.checked; if (discordUrl){ remindOn = b.remind; db.doc("config/discord").set({ remind: b.remind, lead: b.lead }, { merge: true }).catch(writeError); } break;
+    case "draft-mode": setDraft({ mode: a.dataset.v === "ranked" ? "ranked" : "" }); break;
     case "set-side": setDraft({ side: draft.side === a.dataset.v ? "" : a.dataset.v }); break;
     case "plan-save": if (!at()) return toast("Erst ein Gegner-Team wählen."); openEditor("plan"); break;
     case "pl-bans": b.withBans = a.checked; break;
