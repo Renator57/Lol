@@ -1670,7 +1670,7 @@ const LS_DEV = "draftboard-device";
 const myDev = (() => { let d = lsGet(LS_DEV); if (!d){ d = "d" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); lsSet(LS_DEV, d); } return d; })();
 // Eigener Name: nur gültig, wenn dieses Gerät den Spieler belegt hat
 function myName(){
-  const mine = p => { const c = claims[p.id]; return !!(c && c.dev === myDev && !c.released); };
+  const mine = p => { const c = claims[p.id]; return !!(c && c.dev && c.dev === myDev); };
   const n = lsGet(LS_ME), byName = n && players.find(x => x.name === n);
   if (byName && mine(byName)) return byName.name;
   const p = players.find(mine); // z. B. nach Umbenennen: die Zuordnung hängt am Gerät, nicht am Namen
@@ -2551,8 +2551,8 @@ function renderChat(){
   if (!me){
     list.innerHTML = `<div class="ch-pick"><h4>Wer bist du?</h4><p>Wähle deinen Spielernamen. Er bleibt fest mit diesem Gerät verbunden.</p>
       <div class="ch-pick-grid">${teamOrder().map(p => { const taken = claimedByOther(p);
-        return `<div class="ch-pick-cell"><button data-action="chat-me" data-v="${esc(p.name)}" ${taken ? "disabled" : ""} class="${taken ? "taken" : ""}">${chatAvatar(p.name)}<span>${esc(p.name)}</span>${taken ? `<small>vergeben</small>` : ""}</button>${taken && isAdmin() ? `<button class="ch-free" data-action="claim-release" data-id="${esc(p.id)}">Freigeben</button>` : ""}</div>`; }).join("")}</div>
-      <p class="ch-pick-hint">Jeder Name kann nur auf einem Gerät benutzt werden. Neues Handy oder Browser? Den Admin bitten, deinen Namen freizugeben.</p></div>`;
+        return `<div class="ch-pick-cell"><button data-action="chat-me" data-v="${esc(p.name)}" ${taken ? "disabled" : ""} class="${taken ? "taken" : ""}">${chatAvatar(p.name)}<span>${esc(p.name)}</span>${taken ? `<small>vergeben</small>` : ""}</button>${taken && canManage() ? `<button class="ch-free" data-action="claim-release" data-id="${esc(p.id)}">Freigeben</button>` : ""}</div>`; }).join("")}</div>
+      <p class="ch-pick-hint">Jeder Name kann nur auf einem Gerät benutzt werden. ${canManage() ? "Dein Name ist „vergeben“, weil du ein neues Handy oder einen anderen Browser nutzt? Tippe darunter auf „Freigeben“ und wähle ihn dann neu." : "Neues Handy oder Browser? Den Admin bitten, deinen Namen freizugeben."}</p></div>`;
     $("#chatForm").hidden = true; return;
   }
   $("#chatForm").hidden = !canEdit();
@@ -3398,7 +3398,7 @@ document.addEventListener("click", async e => {
       const p = players.find(x => x.name === a.dataset.v); if (!p) break;
       if (claimedByOther(p)) return toast(`${p.name} ist schon vergeben.`);
       claims = { ...claims, [p.id]: { dev: myDev, name: p.name, at: Date.now() } }; lsSet(LS_ME, p.name); render();
-      fs.doc("config/claims").set({ byPlayer: { [p.id]: { dev: myDev, name: p.name, at: Date.now() } } }, { merge: true }).catch(writeError);
+      fs.doc("config/claims").set({ byPlayer: { [p.id]: { dev: myDev, name: p.name, at: Date.now(), released: FV().delete() } } }, { merge: true }).catch(writeError);
       setTimeout(() => $("#chatInput")?.focus(), 30); break;
     }
     case "admin-set": {
