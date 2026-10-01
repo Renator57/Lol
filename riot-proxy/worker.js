@@ -175,7 +175,7 @@ class RiotError extends Error {
 
 function summarize(acc, puuid, matches, leagues, meta) {
   const champs = {}, positions = {};
-  let games = 0, wins = 0;
+  let games = 0, wins = 0, k = 0, d = 0, a = 0;
   const recent = [];
   for (const m of matches) {
     const info = m.info || {};
@@ -183,6 +183,7 @@ function summarize(acc, puuid, matches, leagues, meta) {
     const p = (info.participants || []).find(x => x.puuid === puuid);
     if (!p) continue;
     games++; if (p.win) wins++;
+    k += p.kills; d += p.deaths; a += p.assists;
     const pos = p.teamPosition || p.individualPosition || "";
     if (pos && pos !== "Invalid") positions[pos] = (positions[pos] || 0) + 1;
     const c = champs[p.championName] || (champs[p.championName] = { id: p.championName, games: 0, wins: 0, k: 0, d: 0, a: 0, pos: {} });
@@ -196,6 +197,7 @@ function summarize(acc, puuid, matches, leagues, meta) {
     region: meta.region, queue: meta.queue,
     fetchedAt: Date.now(),
     games, wins,
+    kda: { k, d, a },
     positions,
     champs: Object.values(champs).sort((a, b) => b.games - a.games || b.wins - a.wins),
     rank: (Array.isArray(leagues) ? leagues : []).map(l => ({ queue: l.queueType, tier: l.tier, rank: l.rank, lp: l.leaguePoints, wins: l.wins, losses: l.losses })),

@@ -1341,6 +1341,12 @@ dialog{border-radius:26px;background:linear-gradient(180deg,rgba(21,31,51,.97),r
 .rform i:first-child{outline:1px solid rgba(255,255,255,.35);outline-offset:1px}
 .rwarn{font-size:.72rem;font-weight:800;color:var(--warn);background:rgba(240,181,74,.1);border:1px solid rgba(240,181,74,.35);padding:.18rem .55rem;border-radius:999px;white-space:nowrap}
 .rbusy{font-size:.85rem;color:var(--muted)}
+.rkda b span{font-size:.7rem;font-weight:800;color:var(--muted);letter-spacing:.04em}
+.rkda small{text-transform:none;letter-spacing:.02em;font-size:.74rem;font-variant-numeric:tabular-nums}
+.kda-top{color:var(--gold-hi)} .kda-top{text-shadow:0 0 14px rgba(215,180,106,.45)} .kda-good{color:var(--good)} .kda-bad{color:var(--bad)}
+.kk{color:var(--text)} .kd{color:var(--bad)} .ka{color:var(--text)}
+.rc-kda{font-variant-numeric:tabular-nums;color:var(--muted)}
+.rform i[title]{cursor:help}
 /* Champion-Karten */
 .rsec{display:flex;align-items:center;gap:.6rem;font-size:.66rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .rsec i{flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
@@ -2025,7 +2031,8 @@ function riotCompact(d){
     pos: d.positions || {},
     rank: solo ? { q: solo.queue === "RANKED_FLEX_SR" ? "Flex" : "Solo", tier: solo.tier, div: solo.rank, lp: solo.lp, w: solo.wins, l: solo.losses } : null,
     champs: (d.champs || []).slice(0, 10).map(c => ({ c: DD.idName[c.id] || c.id, g: c.games, w: c.wins, k: c.k, d: c.d, a: c.a })),
-    recent: (d.recent || []).map(x => x.win ? 1 : 0),
+    kda: d.kda || null,
+    recent: (d.recent || []).map(x => ({ w: x.win ? 1 : 0, c: DD.idName[x.champ] || x.champ || "", k: x.k, d: x.d, a: x.a })),
     part: d.partial ? { got: d.loaded || 0, of: d.requested || 0 } : null
   };
 }
@@ -2087,6 +2094,10 @@ function riotBlock(t, r, sr, ed){
   if (!rd && !busy) return "";
   const have = new Set(sr.champs.map(x => x.c));
   const g = rd && rd.games || 0, w = rd && rd.wins || 0;
+  const tot = rd && (rd.kda || (rd.champs || []).reduce((s, c) => ({ k: s.k + c.k, d: s.d + c.d, a: s.a + c.a }), { k: 0, d: 0, a: 0 }));
+  const kdaV = tot && tot.d ? (tot.k + tot.a) / tot.d : null;
+  const kdaCls = kdaV == null ? "kda-top" : kdaV >= 4 ? "kda-top" : kdaV >= 3 ? "kda-good" : kdaV >= 2 ? "" : "kda-bad";
+  const avg = v => (v / (g || 1)).toFixed(1);
   const mainPos = rd && rd.pos ? Object.entries(rd.pos).sort((a, b) => b[1] - a[1])[0] : null;
   const offRole = mainPos && RIOT_POS[mainPos[0]] && RIOT_POS[mainPos[0]] !== r && mainPos[1] / (g || 1) >= .5;
   const rk = rd && rd.rank;
@@ -2095,9 +2106,9 @@ function riotBlock(t, r, sr, ed){
   const rank = rk ? `<span class="rk" title="${esc(rk.q)}: ${rk.w} Siege / ${rk.l} Niederlagen"><span class="rk-em">${esc((TIER_DE[rk.tier] || rk.tier || "?")[0])}</span>
       <span class="rk-tx"><b>${esc(TIER_DE[rk.tier] || rk.tier)}${apex ? "" : " " + esc(rk.div || "")}</b><small><em>${rk.lp} LP</em> · ${esc(rk.q)} ${pct(rk.w, rk.w + rk.l)}%</small></span></span>`
     : rd && rd.games != null ? `<span class="rk"><span class="rk-em none">–</span><span class="rk-tx"><b>Unranked</b><small>keine Platzierung</small></span></span>` : "";
-  const stats = g ? `<span class="rwr"><span class="ring ${pct(w, g) >= 50 ? "" : "l"}" style="--p:${pct(w, g)}"><span>${pct(w, g)}%</span></span><span class="rs"><b>${w}<span style="color:var(--muted);font-weight:600"> – </span>${g - w}</b><small>Siege – Niederl.</small></span></span>
-      <span class="rs"><b>${g}</b><small>${esc(qLabel)}</small></span>
-      ${rd.recent && rd.recent.length ? `<span class="rs"><span class="rform" title="Letzte ${rd.recent.length} Spiele, neuestes links">${rd.recent.map(x => `<i class="${x ? "w" : ""}"></i>`).join("")}</span><small>Form</small></span>` : ""}`
+  const stats = g ? `<span class="rwr"><span class="ring ${pct(w, g) >= 50 ? "" : "l"}" style="--p:${pct(w, g)}"><span>${pct(w, g)}%</span></span><span class="rs"><b>${w}<span style="color:var(--muted);font-weight:600"> – </span>${g - w}</b><small>${g} ${esc(qLabel)} · S – N</small></span></span>
+      ${tot ? `<span class="rs rkda" title="Ø Kills / Deaths / Assists pro Spiel"><b class="${kdaCls}">${kdaV == null ? "Perfekt" : kdaV.toFixed(2)}<span> KDA</span></b><small><span class="kk">${avg(tot.k)}</span> / <span class="kd">${avg(tot.d)}</span> / <span class="ka">${avg(tot.a)}</span></small></span>` : ""}
+      ${rd.recent && rd.recent.length ? `<span class="rs"><span class="rform" title="Letzte ${rd.recent.length} Spiele, neuestes links">${rd.recent.map(x => typeof x === "object" ? `<i class="${x.w ? "w" : ""}" title="${x.w ? "Sieg" : "Niederlage"}${x.c ? " · " + esc(x.c) : ""}${x.k != null ? ` · ${x.k}/${x.d}/${x.a}` : ""}"></i>` : `<i class="${x ? "w" : ""}"></i>`).join("")}</span><small>Form</small></span>` : ""}`
     : rd && rd.games === 0 ? `<span class="rbusy">Keine ${esc(qLabel)}-Spiele gefunden</span>` : "";
   const head = `<div class="rh">
       <div class="rh-stats">
@@ -2124,7 +2135,7 @@ function riotBlock(t, r, sr, ed){
       <span class="rc-ic"><span class="mini">${initials(c.c)}${img(iconUrl(c.c))}</span>${have.has(c.c) ? `<span class="rc-in" title="Schon in den Top-Picks">✓</span>` : ""}</span>
       <div class="rc-top"><b>${esc(c.c)}</b>${c === mainC ? `<span class="rc-tag">Main</span>` : ""}<span>${c.g} Sp</span></div>
       <div class="rc-bar" aria-hidden="true"><i style="width:${pct(c.w, c.g)}%"></i></div>
-      <div class="rc-sub"><b class="${pct(c.w, c.g) >= 50 ? "w" : "l"}">${pct(c.w, c.g)}%</b><span>${kda(c)} KDA</span></div>
+      <div class="rc-sub"><b class="${pct(c.w, c.g) >= 50 ? "w" : "l"}">${pct(c.w, c.g)}%</b><span>${kda(c)} KDA</span>${c === mainC ? `<span class="rc-kda"><span class="kk">${(c.k / c.g).toFixed(1)}</span>/<span class="kd">${(c.d / c.g).toFixed(1)}</span>/<span class="ka">${(c.a / c.g).toFixed(1)}</span></span>` : ""}</div>
     </div>`;
   const list = big.length ? `<div class="rsec"><span>Meistgespielt</span><i></i>${offRole ? `<span class="rwarn" title="Meistgespielte Position in den geladenen Spielen">⚠ spielt meist ${RIOT_POS[mainPos[0]]}</span>` : ""}${rd.at ? `<span class="rh-time" title="Geladen ${esc(new Date(rd.at).toLocaleString("de-DE"))}">${relTime(rd.at)}</span>` : ""}</div><div class="rcs">${big.map(card).join("")}</div>
     ${rest.length ? `<div class="rmore"><span>Außerdem je ${rest.every(c => c.g === 1) ? "1 Spiel" : "wenige Spiele"}:</span>${rest.map(c => `<span class="mini" title="${esc(c.c)}: ${c.g} Sp · ${pct(c.w, c.g)}% · ${kda(c)} KDA">${initials(c.c)}${img(iconUrl(c.c))}</span>`).join("")}</div>` : ""}` : "";
