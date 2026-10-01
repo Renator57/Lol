@@ -28,6 +28,7 @@ const QUEUES = {
   tournament: "type=tournament", // Turnier-Codes (z. B. Prime League)
   all:        "",
 };
+const VERSION = 2;           // vom Board geprüft (Einstellungen → Testen)
 const MAX_COUNT = 30;
 // Cloudflare-eigener Standard-Cache (caches.default fehlt in den Browser-Typen)
 const edgeCache = () => /** @type {Cache} */ (/** @type {any} */ (caches).default);
@@ -45,7 +46,7 @@ export default {
     if (!cors["Access-Control-Allow-Origin"]) return json({ error: "Origin nicht erlaubt." }, 403, cors);
 
     const url = new URL(req.url);
-    if (url.pathname === "/health") return json({ ok: true, key: !!env.RIOT_API_KEY }, 200, cors);
+    if (url.pathname === "/health") return json({ ok: true, key: !!env.RIOT_API_KEY, version: VERSION }, 200, cors);
     if (!env.RIOT_API_KEY) return json({ error: "RIOT_API_KEY fehlt im Worker." }, 500, cors);
 
     const id = (url.searchParams.get("id") || "").trim();

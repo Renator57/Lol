@@ -2112,7 +2112,7 @@ function riotCompact(d){
     champs: (d.champs || []).slice(0, 10).map(c => ({ c: DD.idName[c.id] || c.id, g: c.games, w: c.wins, k: c.k, d: c.d, a: c.a })),
     kda: d.kda || null,
     recent: (d.recent || []).map(x => ({ w: x.win ? 1 : 0, c: DD.idName[x.champ] || x.champ || "", k: x.k, d: x.d, a: x.a })),
-    part: d.partial ? { got: d.loaded || 0, of: d.requested || 0 } : null
+    part: d.partial && d.requested ? { got: N(d.loaded), of: N(d.requested) } : null
   };
 }
 // Personal Key: höchstens 100 Riot-Aufrufe in 2 Min. Liefert der Proxy nur einen Teil,
@@ -2120,43 +2120,62 @@ function riotCompact(d){
 const RIOT_MAX_ROUNDS = 8;
 const riotWait = {}; // key → Zeitpunkt, bis zu dem gewartet wird
 const sleep = ms => new Promise(res => setTimeout(res, ms));
-async function riotWaitFor(key, sec){
-  riotWait[key] = Date.now() + sec * 1000; renderScout();
+async function riotWaitMany(keys, sec){
+  const until = Date.now() + sec * 1000; keys.forEach(k => riotWait[k] = until); renderScout();
   await sleep(sec * 1000);
-  delete riotWait[key];
+  keys.forEach(k => delete riotWait[k]);
 }
-setInterval(() => Object.keys(riotWait).length && document.querySelectorAll("[data-riot-until]").forEach(el => { el.textContent = Math.max(0, Math.ceil((+el.dataset.riotUntil - Date.now()) / 1000)) + " s"; }), 1000);
-async function riotLoadRole(teamId, r){
-  const t = team(teamId); if (!t) return false;
-  const pid = parseRiotId(roleOf(t, r).player, t.region); if (!pid) return false;
+let riotOldWarned = false;
+// Ein Abruf für einen Spieler. Ergebnis: ok, retry (Sekunden bis zum nächsten Versuch) und Fortschritt.
+async function riotFetchRole(teamId, r){
+  const t = team(teamId); if (!t) return { ok: false };
+  const pid = parseRiotId(roleOf(t, r).player, t.region); if (!pid) return { ok: false };
   if (!DD.v) await ddReady; // Champion-Namen werden beim Speichern übersetzt
-  const key = teamId + ":" + r; if (riotBusy.has(key) || riotWait[key]) return false;
-  const params = { id: pid.name + "#" + pid.tag, region: t.region || "euw", queue: riotQueue, count: riotCount };
-  for (let round = 1; ; round++){
-    riotBusy.add(key); renderScout();
-    let d = null, err = null;
-    try { d = await riotFetch("", params); } catch(e){ err = e; }
-    riotBusy.delete(key);
-    const last = round >= RIOT_MAX_ROUNDS;
-    if (d){
-      mutTeam(teamId, x => { x.roles[r] = { ...roleOf(x, r), riot: riotCompact(d) }; });
-      if (!d.partial || last) return true;
-      await riotWaitFor(key, +d.retryIn || 30);
-    } else if (err.retry && !last){
-      await riotWaitFor(key, err.retry);
-    } else {
-      mutTeam(teamId, x => { x.roles[r] = { ...roleOf(x, r), riot: { ...(roleOf(x, r).riot || {}), err: err.message, errAt: Date.now() } }; });
-      return false;
-    }
+  const key = teamId + ":" + r;
+  riotBusy.add(key); renderScout();
+  let d = null, err = null;
+  try { d = await riotFetch("", { id: pid.name + "#" + pid.tag, region: t.region || "euw", queue: riotQueue, count: riotCount }); } catch(e){ err = e; }
+  riotBusy.delete(key);
+  if (d){
+    const oldProxy = d.partial && d.requested == null; // erste Proxy-Version meldet keinen Fortschritt
+    if (oldProxy && !riotOldWarned){ riotOldWarned = true; toast("Der Riot-Proxy ist veraltet – bitte die neue worker.js bei Cloudflare bereitstellen."); }
+    mutTeam(teamId, x => { x.roles[r] = { ...roleOf(x, r), riot: riotCompact(d) }; });
+    renderScout();
+    return d.partial && !oldProxy ? { ok: true, retry: +d.retryIn || 30, loaded: N(d.loaded) } : { ok: true };
   }
+  if (err.retry) { renderScout(); return { ok: false, retry: err.retry, loaded: -1 }; }
+  mutTeam(teamId, x => { x.roles[r] = { ...roleOf(x, r), riot: { ...(roleOf(x, r).riot || {}), err: err.message, errAt: Date.now() } }; });
+  renderScout();
+  return { ok: false };
 }
+// Mehrere Spieler: erst alle einmal laden, dann nur die unvollständigen gemeinsam nachladen.
+// So blockiert ein Spieler im Riot-Limit nicht die anderen.
+async function riotLoadRoles(teamId, roles){
+  const keys = roles.map(r => teamId + ":" + r).filter(k => !riotBusy.has(k) && !riotWait[k]);
+  let pending = roles.filter(r => keys.includes(teamId + ":" + r));
+  const done = new Set(), best = {}, stuck = {};
+  for (let round = 1; pending.length && round <= RIOT_MAX_ROUNDS; round++){
+    const next = []; let wait = 0;
+    for (const r of pending){
+      const res = await riotFetchRole(teamId, r);
+      if (res.ok && !res.retry) { done.add(r); continue; }
+      if (!res.retry) continue; // echter Fehler steht beim Spieler
+      if (res.ok) done.add(r);  // Teilergebnis ist schon gespeichert
+      stuck[r] = res.loaded > (best[r] ?? -1) ? 0 : (stuck[r] || 0) + 1; best[r] = Math.max(best[r] ?? -1, res.loaded);
+      if (stuck[r] < 3) { next.push(r); wait = Math.max(wait, res.retry); }
+    }
+    pending = next;
+    if (pending.length && round < RIOT_MAX_ROUNDS) await riotWaitMany(pending.map(r => teamId + ":" + r), wait);
+  }
+  return done.size;
+}
+const riotLoadRole = (teamId, r) => riotLoadRoles(teamId, [r]).then(n => n > 0);
 async function riotLoadAll(teamId){
   const t = team(teamId); if (!t) return;
   const roles = ROLES.filter(r => parseRiotId(roleOf(t, r).player, t.region));
   if (!roles.length) return toast("Erst Riot-IDs eintragen.");
-  let ok = 0;
-  for (const r of roles) if (await riotLoadRole(teamId, r)) ok++; // nacheinander, schont das Riot-Limit
-  toast(ok === roles.length ? `Matchdaten für ${ok} Spieler geladen.` : `${ok} von ${roles.length} geladen – Fehler stehen beim Spieler.`);
+  const ok = await riotLoadRoles(teamId, roles);
+  toast((ok === roles.length ? `Matchdaten für ${ok} Spieler geladen.` : `${ok} von ${roles.length} geladen – Fehler stehen beim Spieler.`) + (riotOldWarned ? " Hinweis: Riot-Proxy ist veraltet, bitte neue worker.js bereitstellen." : ""));
 }
 // Gespeicherte Matchdaten bereinigen: Zahlen erzwingen, Champion-IDs in Anzeigenamen umwandeln
 function riotView(rd){
@@ -2245,8 +2264,8 @@ function riotBlock(t, r, sr, ed){
   const wait = riotWait[key];
   const err = rd && rd.err && (!rd.at || rd.errAt > rd.at) ? `<p class="riot-err">${esc(rd.err)}</p>` : "";
   const stale = rd && !fresh && !busy ? `<p class="riot-wait">Diese Daten gehören zu ${esc(rd.id)}.${ed && riotUrl ? " ↻ lädt die neue Riot-ID." : ""}</p>` : "";
-  const part = wait ? `<p class="riot-wait"><span class="riot-spin"></span> Riot-Limit erreicht${rd && rd.part ? ` · ${rd.part.got} von ${rd.part.of} Spielen geladen` : ""} · Rest kommt automatisch in <b data-riot-until="${N(wait)}">${Math.ceil((wait - Date.now()) / 1000)} s</b></p>`
-    : rd && rd.part ? `<p class="riot-wait">Nur ${rd.part.got} von ${rd.part.of} Spielen geladen – ↻ lädt den Rest.</p>` : "";
+  const part = wait ? `<p class="riot-wait"><span class="riot-spin"></span> Riot-Limit erreicht${rd && rd.part && rd.part.of ? ` · ${rd.part.got} von ${rd.part.of} Spielen geladen` : ""} · Rest kommt automatisch in <b data-riot-until="${N(wait)}">${Math.ceil((wait - Date.now()) / 1000)} s</b></p>`
+    : rd && rd.part && rd.part.of ? `<p class="riot-wait">Nur ${rd.part.got} von ${rd.part.of} Spielen geladen – ↻ lädt den Rest.</p>` : "";
   const champs = rd ? rd.champs : [];
   // Champions mit mehreren Spielen groß, Einzelspiele nur als Icons
   let big = champs.filter(c => c.g >= 2);
@@ -3384,7 +3403,7 @@ document.addEventListener("click", async e => {
     case "riot-take": if (viewId){ riotTake(viewId, a.dataset.role); toast("Als Top-Picks eingetragen."); } break;
     case "riot-test": {
       const u = (b.riot || "").trim(); if (!/^https:\/\//.test(u)) return toast("Bitte eine https-Adresse eintragen.");
-      try { const d = await riotFetch("health", {}, u); toast(d.key ? "Proxy erreichbar, API-Key ist gesetzt." : "Proxy erreichbar, aber RIOT_API_KEY fehlt."); } catch(err){ toast(err.message); }
+      try { const d = await riotFetch("health", {}, u); toast(!d.key ? "Proxy erreichbar, aber RIOT_API_KEY fehlt." : (+d.version || 1) < 2 ? "Proxy läuft, ist aber veraltet – neue worker.js bei Cloudflare bereitstellen." : "Proxy erreichbar, API-Key ist gesetzt."); } catch(err){ toast(err.message); }
       break;
     }
     case "riot-save": {
