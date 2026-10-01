@@ -261,6 +261,9 @@ dialog::backdrop{background:rgba(2,6,12,.7);backdrop-filter:blur(3px)}
 .dotnote{width:.45rem;height:.45rem;border-radius:50%;background:var(--gold)}
 .enemy-add{flex:1 1 220px;max-width:360px}
 .rec-badge.bad{background:var(--bad);color:#2a0400;box-shadow:0 2px 8px rgba(255,106,92,.45)}
+.tile.taken .portrait{filter:grayscale(.9) brightness(.5)}
+.tile.taken .nm{color:var(--muted)}
+.rec-badge.taken{background:#3a4660;color:var(--text);box-shadow:none;max-width:95%}
 .tile .portrait .flex{position:absolute;bottom:4px;right:4px;z-index:2;font-size:.55rem;font-weight:800;letter-spacing:.04em;padding:.08rem .28rem;border-radius:4px;background:rgba(5,13,24,.85);color:var(--gold)}
 .opts-row{display:flex;flex-wrap:wrap;gap:.35rem}
 .gear{width:2.3rem;height:2.3rem}
@@ -1313,6 +1316,7 @@ dialog{border-radius:26px;background:linear-gradient(180deg,rgba(21,31,51,.97),r
   background:radial-gradient(420px 160px at 0% 0%,color-mix(in srgb,var(--tc) 16%,transparent),transparent 70%),linear-gradient(180deg,rgba(8,13,24,.75),rgba(8,13,24,.45));
   border:1px solid color-mix(in srgb,var(--tc) 22%,var(--line));box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
 .rr-riot.busy .rh-stats,.rr-riot.busy .rcs{opacity:.55;transition:opacity .2s}
+.rr-riot.stale .rh-stats,.rr-riot.stale .rcs,.rr-riot.stale .rmore{opacity:.45}
 /* Kopfzeile */
 .rh{display:flex;align-items:center;gap:.7rem 1rem;flex-wrap:wrap}
 .rh-stats{display:flex;align-items:center;gap:.6rem 0;flex-wrap:wrap;min-width:0}
@@ -1576,6 +1580,8 @@ const uniq = a => [...new Set(a)];
 const tierRank = t => { const i = TIERS.indexOf(t); return i < 0 ? 9 : i; };
 const tierBadge = (t, cls = "") => TIERS.includes(t) ? `<b class="tier t-${t} ${cls}">${t}</b>` : "";
 const initials = n => String(n).replace(/[^A-Za-zÀ-ÿ ]/g, "").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() || "?";
+const cl = v => String(v ?? "").replace(/[^\w-]/g, ""); // gespeicherte Werte sicher als CSS-Klasse
+const N = v => { const n = +v; return Number.isFinite(n) ? n : 0; };
 
 // ---------- Data Dragon (Champion-Bilder & Namensliste) ----------
 const DD = { v:null, byNorm:{}, names:[], byKey:{}, idName:{} };
@@ -1585,17 +1591,29 @@ const iconUrl = n => { const id = champId(n); return id && DD.v ? `https://ddrag
 const artUrl = n => { const id = champId(n); return id ? `https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${id}_0.jpg` : ""; };
 const img = (url, cls = "") => url ? `<img src="${esc(url)}" alt="" loading="lazy" class="${cls}" onerror="this.remove()">` : "";
 const officialName = n => { const id = champId(n); if (!id) return n.trim(); const hit = DD.names.find(x => DD.byNorm[norm(x)] === id); return hit || n.trim(); };
+// Champion-Liste wird pro Patch im Browser zwischengespeichert: spart bei jedem Aufruf ~150 KB
+let ddDone; const ddReady = Promise.race([new Promise(r => ddDone = r), new Promise(r => setTimeout(r, 6000))]);
+function applyDD(v, list){
+  DD.byNorm = {}; DD.byKey = {}; DD.idName = {};
+  list.forEach(([id, key, name]) => { DD.byNorm[norm(name)] = id; DD.byNorm[norm(id)] = id; DD.byKey[key] = name; DD.idName[id] = name; });
+  DD.names = list.map(x => x[2]).sort((a, b) => a.localeCompare(b, "de"));
+  DD.v = v;
+  $("#champList").innerHTML = DD.names.map(n => `<option value="${esc(n)}">`).join("");
+  ddDone();
+}
 async function loadDD(){
+  const LS_DD = "draftboard-dd";
+  let cache = null; try { cache = JSON.parse(lsGet(LS_DD) || "null"); } catch(e){}
+  if (cache && cache.v && Array.isArray(cache.list) && cache.list.length){ applyDD(cache.v, cache.list); render(); }
   try {
-    const vs = await (await fetch("https://ddragon.leagueoflegends.com/api/versions.json")).json();
-    const v = vs[0];
-    const data = (await (await fetch(`https://ddragon.leagueoflegends.com/cdn/${v}/data/de_DE/champion.json`)).json()).data;
-    Object.values(data).forEach(c => { DD.byNorm[norm(c.name)] = c.id; DD.byNorm[norm(c.id)] = c.id; DD.byKey[c.key] = c.name; DD.idName[c.id] = c.name; });
-    DD.names = Object.values(data).map(c => c.name).sort((a, b) => a.localeCompare(b, "de"));
-    DD.v = v;
-    $("#champList").innerHTML = DD.names.map(n => `<option value="${esc(n)}">`).join("");
-    render(); if (edit) renderModal();
-  } catch(e){ /* ohne Bilder weiter */ }
+    const v = (await (await fetch("https://ddragon.leagueoflegends.com/api/versions.json")).json())[0];
+    if (!cache || cache.v !== v){
+      const data = (await (await fetch(`https://ddragon.leagueoflegends.com/cdn/${v}/data/de_DE/champion.json`)).json()).data;
+      const list = Object.values(data).map(c => [c.id, c.key, c.name]);
+      applyDD(v, list); lsSet(LS_DD, JSON.stringify({ v, list }));
+    }
+  } catch(e){ /* ohne Netz: Cache oder Initialen */ }
+  render(); if (edit) renderModal();
 }
 
 // ---------- State ----------
@@ -1609,10 +1627,11 @@ const LS_DEV = "draftboard-device";
 const myDev = (() => { let d = lsGet(LS_DEV); if (!d){ d = "d" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); lsSet(LS_DEV, d); } return d; })();
 // Eigener Name: nur gültig, wenn dieses Gerät den Spieler belegt hat
 function myName(){
-  const n = lsGet(LS_ME); if (!n) return "";
-  const p = players.find(x => x.name === n); if (!p) return "";
-  const c = claims[p.id];
-  return c && c.dev === myDev ? n : "";
+  const mine = p => { const c = claims[p.id]; return !!(c && c.dev === myDev && !c.released); };
+  const n = lsGet(LS_ME), byName = n && players.find(x => x.name === n);
+  if (byName && mine(byName)) return byName.name;
+  const p = players.find(mine); // z. B. nach Umbenennen: die Zuordnung hängt am Gerät, nicht am Namen
+  return p ? p.name : "";
 }
 let adminHash = null, chatManage = false;
 const LS_ADMIN = "draftboard-admin";
@@ -1622,6 +1641,7 @@ async function shaAdmin(pin){ return sha("admin:" + pin); }
 const claimedByOther = p => { const c = claims[p.id]; return !!(c && c.dev && c.dev !== myDev); };
 function checkClaims(){
   if (!claimsLoaded || !players.length) return;
+  const nm = myName(); if (nm && lsGet(LS_ME) !== nm) lsSet(LS_ME, nm);
   const n = lsGet(LS_ME); if (!n) return;
   const p = players.find(x => x.name === n); if (!p) return;
   const c = claims[p.id];
@@ -1664,7 +1684,7 @@ function saveTeam(id, now){
   const flush = () => { const ids = [...pendingTeams]; pendingTeams.clear(); ids.forEach(i => { const t = teams[i]; if (t) fs.doc("config/scouting").set({ teams: { [i]: t } }, { merge: true }).catch(writeError); }); };
   if (now) flush(); else saveTeam.t = setTimeout(flush, 450);
 }
-function mutTeam(id, fn, now = true){ const t = JSON.parse(JSON.stringify(team(id) || blankTeam())); fn(t); teams = { ...teams, [id]: t }; saveTeam(id, now); render(); }
+function mutTeam(id, fn, now = true){ if (!id || !teams[id]) return; const t = JSON.parse(JSON.stringify(team(id) || blankTeam())); fn(t); teams = { ...teams, [id]: t }; saveTeam(id, now); render(); }
 function setActive(id){ activeId = id; fs.doc("config/scouting").set({ activeId: id || "" }, { merge: true }).catch(writeError); render(); }
 const FV = () => firebase.firestore.FieldValue;
 const QUICK = {
@@ -1789,6 +1809,13 @@ function render(){
   render.mains = new Set(mains.map(p => p.id));
   render.flex = flexMap(mains); render.avoid = counterInfo().avoid;
   const lp = lineupPlayers();
+  // Wer hat welchen Champion schon? Ein Champion geht nur einmal pro Draft.
+  const taken = {};
+  lp.forEach(p => { if (picks[p.id]) taken[picks[p.id]] = { by: p.id, label: p.name }; });
+  Object.values(draft.enemyBy || {}).forEach(c => { if (c && !taken[c]) taken[c] = { by: "", label: "Gegner" }; });
+  render.locked = fearlessLocked();
+  render.locked.forEach(c => { if (!taken[c]) taken[c] = { by: "", label: "Fearless" }; });
+  render.taken = taken;
   if (!lp.find(p => p.id === active)) active = (lp.find(p => !picks[p.id]) || lp[0] || {}).id || null;
 
   // Nur die sichtbare Seite neu zeichnen – spart bei vielen Live-Updates viel Arbeit
@@ -1823,7 +1850,7 @@ function renderDraft(picks, types, rec){
     return `<div class="slot ${c ? "" : "empty-slot"} ${p && p.id === active && mode === "pick" ? "active" : ""}">
       ${p ? `<button class="slot-hit" data-slot="${esc(p.id)}" aria-label="Für ${esc(p.name)} (${r}) picken${c ? ", aktuell " + esc(c) : ""}"></button>` : ""}
       ${c ? img(artUrl(c), "art") : `<span class="empty">+</span>`}
-      ${c ? `<span class="dmg ${types[c]||"UT"}">${types[c] === "UT" ? "UTIL" : (types[c]||"")}</span>` : ""}
+      ${c ? `<span class="dmg ${cl(types[c] || "UT")}">${types[c] === "UT" ? "UTIL" : esc(types[c] || "")}</span>` : ""}
       <span class="info"><span class="role">${r}</span>
         <span class="cname">${c ? tierBadge(t, "inline") + esc(c) : `<span class="pname">${p ? "Pick offen" : "Kein Spieler"}</span>`}</span>
         ${canEdit() ? `<select class="slot-select" data-role="${r}" aria-label="Spieler für ${r} wählen">${opts}</select>` : `<span class="pname">${p ? esc(p.name) : "–"}</span>`}
@@ -1943,10 +1970,11 @@ function tile(c, p, picks, types, rec, banMode){
   const bad = !banMode && !picks[p.id] && (render.avoid || {})[c];
   const isPick = banMode ? Object.values(picks).includes(c) : picks[p.id] === c;
   const banned = draft.bans.includes(c);
-  const r = !banMode && rec[c] && !picks[p.id];
-  const cls = ["tile", types[c] || "UT", isPick ? "picked" : "", banned ? "banned" : "", r ? "rec" : ""].join(" ");
-  return `<button class="${cls}" data-champ="${esc(c)}" data-player="${esc(p.id)}" aria-pressed="${banMode ? banned : isPick}" ${canEdit() ? "" : "disabled"} title="${esc(c)}${r ? " – " + esc(rec[c]) : ""}">
-    ${bad ? `<span class="rec-badge bad">Counter</span>` : r ? `<span class="rec-badge">${esc(rec[c].replace(/^Duo mit .*/, "Duo"))}</span>` : ""}
+  const tk = !banMode && (render.taken || {})[c], taken = tk && tk.by !== p.id ? tk.label : "";
+  const r = !banMode && !taken && rec[c] && !picks[p.id];
+  const cls = ["tile", cl(types[c] || "UT"), isPick ? "picked" : "", banned ? "banned" : "", taken ? "taken" : "", r ? "rec" : ""].join(" ");
+  return `<button class="${cls}" data-champ="${esc(c)}" data-player="${esc(p.id)}" aria-pressed="${banMode ? banned : isPick}" ${canEdit() ? "" : "disabled"} title="${esc(c)}${taken ? " – " + (taken === "Gegner" ? "beim Gegner" : taken === "Fearless" ? "durch Fearless gesperrt" : "spielt schon " + esc(taken)) : r ? " – " + esc(rec[c]) : ""}">
+    ${taken ? `<span class="rec-badge taken">${esc(taken)}</span>` : bad ? `<span class="rec-badge bad">Counter</span>` : r ? `<span class="rec-badge">${esc(rec[c].replace(/^Duo mit .*/, "Duo"))}</span>` : ""}
     <span class="portrait">${initials(c)}${img(iconUrl(c))}${tierBadge(t)}${flex ? `<span class="flex">FLEX</span>` : ""}</span>
     <span class="nm">${esc(c)}</span>${banMode ? `<span class="owner">${esc(p.name)}</span>` : ""}
   </button>`;
@@ -1976,7 +2004,7 @@ function renderPools(){
 
 const STYLES = { teamfight:["Teamfight","#9d86ff"], pick:["Pick","#ff8b7f"], scaling:["Scaling","#4cd9c4"], poke:["Poke","#7fb2ff"], dive:["Dive","#f0a85a"], split:["Splitpush","#c7e36b"], early:["Early","#ffcf5c"], protect:["Protect","#f28ad8"] };
 const guessStyle = n => { const x = norm(n || ""); return x.includes("team") ? "teamfight" : x.includes("pick") ? "pick" : x.includes("scal") || x.includes("late") ? "scaling" : x.includes("poke") ? "poke" : x.includes("dive") ? "dive" : x.includes("split") ? "split" : x.includes("early") ? "early" : x.includes("protect") ? "protect" : ""; };
-const comboStyle = cb => cb.style || guessStyle(cb.name);
+const comboStyle = cb => STYLES[cb.style] ? cb.style : guessStyle(cb.name);
 let comboFilter = "all", histFilter = "all", histView = "games";
 // ---- Team: Verfügbarkeit, Termine, Ziele ----
 let avail = {}, events = [], goals = [], weekOffset = 0, showPastEv = false;
@@ -2050,10 +2078,11 @@ async function riotWaitFor(key, sec){
   await sleep(sec * 1000);
   delete riotWait[key];
 }
-setInterval(() => document.querySelectorAll("[data-riot-until]").forEach(el => { el.textContent = Math.max(0, Math.ceil((+el.dataset.riotUntil - Date.now()) / 1000)) + " s"; }), 1000);
+setInterval(() => Object.keys(riotWait).length && document.querySelectorAll("[data-riot-until]").forEach(el => { el.textContent = Math.max(0, Math.ceil((+el.dataset.riotUntil - Date.now()) / 1000)) + " s"; }), 1000);
 async function riotLoadRole(teamId, r){
   const t = team(teamId); if (!t) return false;
   const pid = parseRiotId(roleOf(t, r).player, t.region); if (!pid) return false;
+  if (!DD.v) await ddReady; // Champion-Namen werden beim Speichern übersetzt
   const key = teamId + ":" + r; if (riotBusy.has(key) || riotWait[key]) return false;
   const params = { id: pid.name + "#" + pid.tag, region: t.region || "euw", queue: riotQueue, count: riotCount };
   for (let round = 1; ; round++){
@@ -2082,52 +2111,96 @@ async function riotLoadAll(teamId){
   for (const r of roles) if (await riotLoadRole(teamId, r)) ok++; // nacheinander, schont das Riot-Limit
   toast(ok === roles.length ? `Matchdaten für ${ok} Spieler geladen.` : `${ok} von ${roles.length} geladen – Fehler stehen beim Spieler.`);
 }
+// Gespeicherte Matchdaten bereinigen: Zahlen erzwingen, Champion-IDs in Anzeigenamen umwandeln
+function riotView(rd){
+  if (!rd || typeof rd !== "object") return null;
+  const champs = (Array.isArray(rd.champs) ? rd.champs : []).filter(c => c && c.c).map(c => ({ c: officialName(String(c.c)), g: Math.max(1, N(c.g)), w: N(c.w), k: N(c.k), d: N(c.d), a: N(c.a) }));
+  const kd = rd.kda && typeof rd.kda === "object" ? { k: N(rd.kda.k), d: N(rd.kda.d), a: N(rd.kda.a) } : champs.length ? champs.reduce((s, c) => ({ k: s.k + c.k, d: s.d + c.d, a: s.a + c.a }), { k: 0, d: 0, a: 0 }) : null;
+  const rk = rd.rank && typeof rd.rank === "object" ? { q: String(rd.rank.q || ""), tier: String(rd.rank.tier || ""), div: String(rd.rank.div || ""), lp: N(rd.rank.lp), w: N(rd.rank.w), l: N(rd.rank.l) } : null;
+  const pos = {}; if (rd.pos && typeof rd.pos === "object") Object.entries(rd.pos).forEach(([k, v]) => { if (RIOT_POS[k]) pos[k] = N(v); });
+  return { at: N(rd.at), q: String(rd.q || ""), id: String(rd.id || ""), games: rd.games == null ? null : N(rd.games), wins: N(rd.wins), pos, rank: rk, champs, kda: kd,
+    recent: (Array.isArray(rd.recent) ? rd.recent : []).map(x => x && typeof x === "object" ? { w: !!x.w, c: x.c ? officialName(String(x.c)) : "", k: x.k == null ? null : N(x.k), d: N(x.d), a: N(x.a) } : { w: !!x, c: "", k: null }),
+    part: rd.part && typeof rd.part === "object" ? { got: N(rd.part.got), of: N(rd.part.of) } : null, err: rd.err ? String(rd.err) : "", errAt: N(rd.errAt) };
+}
+// Gehören die Daten noch zur eingetragenen Riot-ID?
+function riotFresh(sr, t, rd){
+  const pid = parseRiotId(sr.player, t.region);
+  return !rd || !rd.id || !pid || norm(rd.id) === norm(pid.name + "#" + pid.tag);
+}
+// Champions aus den Matchdaten, die als Top-Pick taugen (mehrfach gespielt, sonst die ersten drei)
+function riotPickable(sr){
+  const rd = riotView(sr.riot); if (!rd) return [];
+  const have = new Set(sr.champs.map(x => x.c));
+  const cand = rd.champs.filter(c => !have.has(c.c)), strong = cand.filter(c => c.g >= 2);
+  return (strong.length ? strong : cand.slice(0, 3)).slice(0, 5);
+}
 function riotTake(teamId, r){
   mutTeam(teamId, t => {
-    const sr = roleOf(t, r), rd = sr.riot; if (!rd || !rd.champs) return;
-    const have = new Set(sr.champs.map(x => x.c));
-    const add = rd.champs.filter(c => !have.has(c.c)).slice(0, Math.max(0, 5 - sr.champs.length) || 3).map(c => ({ c: c.c }));
-    t.roles[r] = { ...sr, champs: [...sr.champs, ...add] };
+    const sr = roleOf(t, r), add = riotPickable(sr).map(c => ({ c: c.c }));
+    if (add.length) t.roles[r] = { ...sr, champs: [...sr.champs, ...add] };
   });
+}
+// Bann-Vorschläge: Mains der Gegner (Anteil an den Spielen × geglättete Winrate)
+function riotBanIdeas(t){
+  const out = [];
+  ROLES.forEach(r => {
+    const sr = roleOf(t, r), rd = riotView(sr.riot);
+    if (!rd || !rd.games || !riotFresh(sr, t, rd)) return;
+    rd.champs.forEach(c => {
+      if (c.g < 2 && c.g / rd.games < .3) return;
+      out.push({ c: c.c, r, g: c.g, w: c.w, score: (c.g / rd.games) * ((c.w + 2) / (c.g + 4)) });
+    });
+  });
+  const seen = new Set();
+  return out.sort((a, b) => b.score - a.score).filter(x => !t.banPlan.includes(x.c) && !seen.has(x.c) && seen.add(x.c)).slice(0, 5);
+}
+// Matchdaten-Zeile eines Gegners zu einem Champion (für Draft und Pick-Dialog)
+function riotChampLine(sr, c){
+  const rd = riotView(sr.riot); if (!rd) return "";
+  const x = rd.champs.find(y => y.c === c); if (!x) return "";
+  return `${x.g} Sp · ${pct(x.w, x.g)}%`;
 }
 const kda = c => c.d ? ((c.k + c.a) / c.d).toFixed(1) : "Perfekt";
 const pct = (w, g) => g ? Math.round(w / g * 100) : 0;
 const TIER_COLOR = { IRON:"#8a7f7a", BRONZE:"#c08a62", SILVER:"#aab6c6", GOLD:"#e2b552", PLATINUM:"#3fc1ac", EMERALD:"#33d17a", DIAMOND:"#7b95ff", MASTER:"#c67cf2", GRANDMASTER:"#ff6464", CHALLENGER:"#f6d775" };
 function riotBlock(t, r, sr, ed){
-  const rd = sr.riot, busy = riotBusy.has(viewId + ":" + r), waiting = !!riotWait[viewId + ":" + r], hasId = !!parseRiotId(sr.player, t.region);
+  const rd = riotView(sr.riot), key = viewId + ":" + r, busy = riotBusy.has(key), waiting = !!riotWait[key], hasId = !!parseRiotId(sr.player, t.region);
   if (!rd && !busy) return "";
+  const fresh = riotFresh(sr, t, rd);
   const have = new Set(sr.champs.map(x => x.c));
-  const g = rd && rd.games || 0, w = rd && rd.wins || 0;
-  const tot = rd && (rd.kda || (rd.champs || []).reduce((s, c) => ({ k: s.k + c.k, d: s.d + c.d, a: s.a + c.a }), { k: 0, d: 0, a: 0 }));
+  const g = rd ? N(rd.games) : 0, w = rd ? rd.wins : 0;
+  const tot = rd && rd.kda;
   const kdaV = tot && tot.d ? (tot.k + tot.a) / tot.d : null;
   const kdaCls = kdaV == null ? "kda-top" : kdaV >= 4 ? "kda-top" : kdaV >= 3 ? "kda-good" : kdaV >= 2 ? "" : "kda-bad";
   const avg = v => (v / (g || 1)).toFixed(1);
-  const mainPos = rd && rd.pos ? Object.entries(rd.pos).sort((a, b) => b[1] - a[1])[0] : null;
-  const offRole = mainPos && RIOT_POS[mainPos[0]] && RIOT_POS[mainPos[0]] !== r && mainPos[1] / (g || 1) >= .5;
+  const mainPos = rd ? Object.entries(rd.pos).sort((a, b) => b[1] - a[1])[0] : null;
+  const offRole = mainPos && RIOT_POS[mainPos[0]] !== r && mainPos[1] / (g || 1) >= .5;
   const rk = rd && rd.rank;
   const qLabel = rd && rd.q ? (RIOT_QUEUES.find(x => x[0] === rd.q) || [, rd.q])[1] : "";
   const apex = rk && ["MASTER","GRANDMASTER","CHALLENGER"].includes(rk.tier);
   const rank = rk ? `<span class="rk" title="${esc(rk.q)}: ${rk.w} Siege / ${rk.l} Niederlagen"><span class="rk-em">${esc((TIER_DE[rk.tier] || rk.tier || "?")[0])}</span>
-      <span class="rk-tx"><b>${esc(TIER_DE[rk.tier] || rk.tier)}${apex ? "" : " " + esc(rk.div || "")}</b><small><em>${rk.lp} LP</em> · ${esc(rk.q)} ${pct(rk.w, rk.w + rk.l)}%</small></span></span>`
+      <span class="rk-tx"><b>${esc(TIER_DE[rk.tier] || rk.tier)}${apex ? "" : " " + esc(rk.div)}</b><small><em>${rk.lp} LP</em> · ${esc(rk.q)} ${pct(rk.w, rk.w + rk.l)}%</small></span></span>`
     : rd && rd.games != null ? `<span class="rk"><span class="rk-em none">–</span><span class="rk-tx"><b>Unranked</b><small>keine Platzierung</small></span></span>` : "";
   const stats = g ? `<span class="rwr"><span class="ring ${pct(w, g) >= 50 ? "" : "l"}" style="--p:${pct(w, g)}"><span>${pct(w, g)}%</span></span><span class="rs"><b>${w}<span style="color:var(--muted);font-weight:600"> – </span>${g - w}</b><small>${g} ${esc(qLabel)} · S – N</small></span></span>
       ${tot ? `<span class="rs rkda" title="Ø Kills / Deaths / Assists pro Spiel"><b class="${kdaCls}">${kdaV == null ? "Perfekt" : kdaV.toFixed(2)}<span> KDA</span></b><small><span class="kk">${avg(tot.k)}</span> / <span class="kd">${avg(tot.d)}</span> / <span class="ka">${avg(tot.a)}</span></small></span>` : ""}
-      ${rd.recent && rd.recent.length ? `<span class="rs"><span class="rform" title="Letzte ${rd.recent.length} Spiele, neuestes links">${rd.recent.map(x => typeof x === "object" ? `<i class="${x.w ? "w" : ""}" title="${x.w ? "Sieg" : "Niederlage"}${x.c ? " · " + esc(x.c) : ""}${x.k != null ? ` · ${x.k}/${x.d}/${x.a}` : ""}"></i>` : `<i class="${x ? "w" : ""}"></i>`).join("")}</span><small>Form</small></span>` : ""}`
+      ${rd.recent.length ? `<span class="rs"><span class="rform" title="Letzte ${rd.recent.length} Spiele, neuestes links">${rd.recent.map(x => `<i class="${x.w ? "w" : ""}" title="${x.w ? "Sieg" : "Niederlage"}${x.c ? " · " + esc(x.c) : ""}${x.k != null ? ` · ${x.k}/${x.d}/${x.a}` : ""}"></i>`).join("")}</span><small>Form</small></span>` : ""}`
     : rd && rd.games === 0 ? `<span class="rbusy">Keine ${esc(qLabel)}-Spiele gefunden</span>` : "";
+  const pickable = ed && fresh && !busy ? riotPickable(sr) : [];
   const head = `<div class="rh">
       <div class="rh-stats">
         ${busy ? `<span class="rbusy"><span class="riot-spin"></span> lade Matchdaten…</span>` : `${rank}${stats}`}
       </div>
       <div class="rh-act">
         ${ed && hasId && riotUrl && !busy && !waiting ? `<button class="btn sm ghost" data-action="riot-role" data-role="${r}" title="Neu laden" aria-label="Neu laden">↻</button>` : ""}
-        ${ed && rd && rd.champs && rd.champs.some(c => !have.has(c.c)) && !busy ? `<button class="btn sm gold" data-action="riot-take" data-role="${r}" title="Meistgespielte Champions als Top-Picks eintragen">+ Top-Picks</button>` : ""}
+        ${pickable.length ? `<button class="btn sm gold" data-action="riot-take" data-role="${r}" title="${esc(pickable.map(c => c.c).join(", "))} als Top-Picks eintragen">+ Top-Picks</button>` : ""}
       </div>
     </div>`;
-  const wait = riotWait[viewId + ":" + r];
+  const wait = riotWait[key];
   const err = rd && rd.err && (!rd.at || rd.errAt > rd.at) ? `<p class="riot-err">${esc(rd.err)}</p>` : "";
-  const part = wait ? `<p class="riot-wait"><span class="riot-spin"></span> Riot-Limit erreicht${rd && rd.part ? ` · ${rd.part.got} von ${rd.part.of} Spielen geladen` : ""} · Rest kommt automatisch in <b data-riot-until="${wait}">${Math.ceil((wait - Date.now()) / 1000)} s</b></p>`
+  const stale = rd && !fresh && !busy ? `<p class="riot-wait">Diese Daten gehören zu ${esc(rd.id)}.${ed && riotUrl ? " ↻ lädt die neue Riot-ID." : ""}</p>` : "";
+  const part = wait ? `<p class="riot-wait"><span class="riot-spin"></span> Riot-Limit erreicht${rd && rd.part ? ` · ${rd.part.got} von ${rd.part.of} Spielen geladen` : ""} · Rest kommt automatisch in <b data-riot-until="${N(wait)}">${Math.ceil((wait - Date.now()) / 1000)} s</b></p>`
     : rd && rd.part ? `<p class="riot-wait">Nur ${rd.part.got} von ${rd.part.of} Spielen geladen – ↻ lädt den Rest.</p>` : "";
-  const champs = (rd && rd.champs) || [];
+  const champs = rd ? rd.champs : [];
   // Champions mit mehreren Spielen groß, Einzelspiele nur als Icons
   let big = champs.filter(c => c.g >= 2);
   if (big.length < 3) big = champs.slice(0, Math.min(champs.length, 4));
@@ -2143,7 +2216,7 @@ function riotBlock(t, r, sr, ed){
     </div>`;
   const list = big.length ? `<div class="rsec"><span>Meistgespielt</span><i></i>${offRole ? `<span class="rwarn" title="Meistgespielte Position in den geladenen Spielen">⚠ spielt meist ${RIOT_POS[mainPos[0]]}</span>` : ""}${rd.at ? `<span class="rh-time" title="Geladen ${esc(new Date(rd.at).toLocaleString("de-DE"))}">${relTime(rd.at)}</span>` : ""}</div><div class="rcs">${big.map(card).join("")}</div>
     ${rest.length ? `<div class="rmore"><span>Außerdem je ${rest.every(c => c.g === 1) ? "1 Spiel" : "wenige Spiele"}:</span>${rest.map(c => `<span class="mini" title="${esc(c.c)}: ${c.g} Sp · ${pct(c.w, c.g)}% · ${kda(c)} KDA">${initials(c.c)}${img(iconUrl(c.c))}</span>`).join("")}</div>` : ""}` : "";
-  return `<div class="rr-riot ${busy ? "busy" : ""}" style="--tc:${rk ? TIER_COLOR[rk.tier] || "#8b97ab" : "#8b97ab"}">${head}${err}${part}${list}</div>`;
+  return `<div class="rr-riot ${busy ? "busy" : ""} ${rd && !fresh ? "stale" : ""}" style="--tc:${rk ? TIER_COLOR[rk.tier] || "#8b97ab" : "#8b97ab"}">${head}${err}${stale}${part}${list}</div>`;
 }
 let polls = {}, tasks = [], showDoneTasks = false, meta = {};
 // Eine Stimme abgeben – gilt für Chat-Umfragen und Termine, landet auch in der Verfügbarkeit
@@ -2238,6 +2311,21 @@ function draftSteps(){
   });
 }
 const kindOf = h => h.kind || "liga";
+// Bo3: Liga-Spiele einer Serie liegen höchstens ein paar Stunden auseinander.
+const SERIES_WINDOW = 12 * 3600e3;
+function seriesGames(teamId, current){
+  const liga = history.filter(h => teamId && h.oppId === teamId && kindOf(h) === "liga").sort((a, b) => (b.at || 0) - (a.at || 0));
+  if (!liga.length) return [];
+  const ref = current ? Date.now() : liga[0].at; // current: nur die gerade laufende Serie
+  return liga.filter(h => Math.abs(ref - (h.at || 0)) < SERIES_WINDOW);
+}
+// Fearless Draft: Champions aus früheren Spielen der laufenden Serie sind für beide Teams gesperrt.
+function fearlessLocked(){
+  const t = at(); if (!t || !t.fearless || draft.mode === "ranked") return new Set();
+  const out = new Set();
+  seriesGames(activeId, true).forEach(h => { (h.team || []).forEach(x => x.champ && out.add(x.champ)); (h.enemy || []).forEach(c => c && out.add(c)); });
+  return out;
+}
 const KINDS = [["liga","Liga"],["scrim","Scrim"],["ranked","Ranked"]];
 const kindLabel = h => (KINDS.find(k => k[0] === kindOf(h)) || KINDS[0])[1];
 function comboStats(cb){
@@ -2322,7 +2410,7 @@ function renderTeam(){
       <button class="btn sm ghost" data-action="share-week">${discordUrl ? "Woche an Discord" : "Für Discord kopieren"}</button>
     </div>
     <div class="av-scroll"><table class="av-table">
-      <thead><tr><th></th>${info.days.map((d, i) => `<th class="${ymd(d) === today ? "today" : ""}"><span>${DAYS[i]}</span><small>${d.getDate()}.${d.getMonth() + 1}.</small>${(evByDay[ymd(d)] || []).length ? `<i class="ev-dot ${evByDay[ymd(d)][0].type}" title="${esc(evByDay[ymd(d)].map(evTitle).join(", "))}"></i>` : ""}</th>`).join("")}</tr></thead>
+      <thead><tr><th></th>${info.days.map((d, i) => `<th class="${ymd(d) === today ? "today" : ""}"><span>${DAYS[i]}</span><small>${d.getDate()}.${d.getMonth() + 1}.</small>${(evByDay[ymd(d)] || []).length ? `<i class="ev-dot ${cl(evByDay[ymd(d)][0].type)}" title="${esc(evByDay[ymd(d)].map(evTitle).join(", "))}"></i>` : ""}</th>`).join("")}</tr></thead>
       <tbody>${teamOrder().map(p => `<tr class="${lp.includes(p) ? "" : "sub"} ${p.name === me ? "me" : ""}"><th scope="row"><span class="av-name">${esc(p.name)}</span><small>${lp.includes(p) ? esc(p.role || "") : "Ersatz"}</small></th>${info.days.map((_, i) => `<td>${cell(p, i)}</td>`).join("")}</tr>`).join("")}</tbody>
       <tfoot><tr><th scope="row"><span class="av-name">Team</span></th>${info.days.map((_, i) => { const st = dayStatus(info.key, i);
         return `<td><span class="av-sum ${st.ok ? "ok" : st.subOk ? "sub" : st.yes ? "part" : ""}" title="${st.yes} von ${st.total} Stammspielern${st.subs ? ", " + st.subs + " Ersatz" : ""}">${st.ok ? "Alle" : st.subOk ? "+Ers." : st.yes + "/" + st.total}</span></td>`; }).join("")}</tr></tfoot>
@@ -2336,7 +2424,7 @@ function renderTeam(){
     const btn = (v, l) => `<button class="evv evv-${v} ${mine === v ? "on" : ""}" data-action="ev-vote" data-id="${esc(e.id)}" data-v="${v}" ${ed ? "" : "disabled"} title="${esc(names(v).join(", ") || "noch niemand")}">${l} <b>${names(v).length}</b></button>`;
     return `<div class="ev-votes">${btn("yes", "Dabei")}${btn("maybe", "Vielleicht")}${btn("no", "Nicht dabei")}</div>`; };
   const evCard = e => { const { info: wi, day } = weekKeyOf(e.date); const st = dayStatus(wi.key, day);
-    return `<div class="ev-card ${e.type}">
+    return `<div class="ev-card ${cl(e.type)}">
       <div class="ev-date"><b>${new Date(e.date + "T12:00:00").getDate()}</b><span>${new Date(e.date + "T12:00:00").toLocaleDateString("de-DE", { month:"short" })}</span></div>
       <div class="ev-main"><span class="ev-type">${EV_TYPE[e.type] || "Termin"}${e.time ? " · " + esc(e.time) + " Uhr" : ""}</span><b>${esc(evTitle(e))}</b>${e.note ? `<small>${esc(e.note)}</small>` : ""}</div>
       <span class="av-sum ${st.ok ? "ok" : st.subOk ? "sub" : st.yes ? "part" : ""}" title="Verfügbar an dem Tag">${st.ok ? "Alle da" : st.subOk ? "mit Ersatz" : st.yes + "/" + st.total}</span>
@@ -2528,11 +2616,11 @@ function renderHistory(){
     const good = notes.filter(n => n.k === "good").length, bad = notes.filter(n => n.k === "bad").length;
     const open = openHist.has(h.id);
     const c = compose[h.id] || (compose[h.id] = { kind: "good", t: "", x: "" });
-    return `<article class="hist ${h.result || ""}">
+    return `<article class="hist ${cl(h.result)}">
     <div class="hist-top">
       ${canEdit() ? `<span class="res-seg" role="group" aria-label="Ergebnis">${[["win","Sieg"],["loss","Niederlage"],["","Offen"]].map(([v, lb]) => `<button class="res ${v} ${(h.result || "") === v ? "on" : ""}" data-action="hist-res" data-id="${esc(h.id)}" data-v="${v}" aria-pressed="${(h.result || "") === v}">${lb}</button>`).join("")}</span>`
-        : `<span class="res on ${h.result || ""}">${h.result === "win" ? "Sieg" : h.result === "loss" ? "Niederlage" : "Offen"}</span>`}
-      <span class="h-badges"><span class="hb ${kindOf(h)}">${kindLabel(h)}${kindOf(h) === "liga" && h.game ? " · Spiel " + h.game : ""}</span>${h.side ? `<span class="side-dot ${h.side}">${h.side === "blue" ? "Blau" : "Rot"}</span>` : ""}</span>
+        : `<span class="res on ${cl(h.result)}">${h.result === "win" ? "Sieg" : h.result === "loss" ? "Niederlage" : "Offen"}</span>`}
+      <span class="h-badges"><span class="hb ${cl(kindOf(h))}">${kindLabel(h)}${kindOf(h) === "liga" && h.game ? " · Spiel " + h.game : ""}</span>${h.side ? `<span class="side-dot ${cl(h.side)}">${h.side === "blue" ? "Blau" : "Rot"}</span>` : ""}</span>
       <span class="hint" style="margin:0">${h.oppName ? `<b class="vs">vs ${esc(h.oppName)}</b> · ` : ""}${fmtDate(h.at)}${h.dur ? ` · ${esc(h.dur)} Min. Spielzeit` : ""}</span>
       ${canEdit() ? `<span class="spacer"></span><button class="btn sm ghost" data-action="share-game" data-id="${esc(h.id)}">${discordUrl ? "An Discord" : "Discord"}</button><button class="btn sm" data-action="hist-load" data-id="${esc(h.id)}">Wieder laden</button><button class="btn sm danger" data-action="hist-del" data-id="${esc(h.id)}">Löschen</button>` : ""}</div>
     <div class="hist-teams"><div><span class="flabel">Wir</span><div class="opts-row">${(h.team || []).map(x => `<span class="mini" title="${esc(x.player)}: ${esc(x.champ)}">${initials(x.champ)}${img(iconUrl(x.champ))}</span>`).join("")}</div></div>
@@ -2628,12 +2716,12 @@ function renderScout(){
         <input id="tm-note" data-tf="note" value="${esc(t.note)}" maxlength="240" placeholder="Wie spielt das Team? z. B. alles über Bot, Jungler invadet früh" ${dis} aria-label="Notiz zum Team"></label>
     </div>
     ${(() => {
-      const liga = games.filter(h => kindOf(h) === "liga");
+      const liga = seriesGames(viewId);
       const g1 = liga.find(h => (h.game || 1) === 1), g2 = liga.find(h => h.game === 2), g3 = liga.find(h => h.game === 3);
       const sc = [g1, g2, g3].filter(Boolean), sw = sc.filter(h => h.result === "win").length, sl2 = sc.filter(h => h.result === "loss").length;
       const decided = sw >= 2 ? "win" : sl2 >= 2 ? "loss" : "";
       const g3skip = !g3 && g1 && g2 && g1.result && g1.result === g2.result;
-      const gameBox = (h, n) => h ? `<div class="md-game ${h.result || ""}"><span class="md-n">Spiel ${n}</span><span class="res on ${h.result || ""}">${h.result === "win" ? "Sieg" : h.result === "loss" ? "Niederlage" : "Offen"}</span>${h.side ? `<span class="side-dot ${h.side}">${h.side === "blue" ? "Blau" : "Rot"}</span>` : ""}<div class="opts-row">${(h.team || []).map(x => `<span class="mini" title="${esc(x.player)}: ${esc(x.champ)}">${initials(x.champ)}${img(iconUrl(x.champ))}</span>`).join("")}</div></div>`
+      const gameBox = (h, n) => h ? `<div class="md-game ${cl(h.result)}"><span class="md-n">Spiel ${n}</span><span class="res on ${cl(h.result)}">${h.result === "win" ? "Sieg" : h.result === "loss" ? "Niederlage" : "Offen"}</span>${h.side ? `<span class="side-dot ${cl(h.side)}">${h.side === "blue" ? "Blau" : "Rot"}</span>` : ""}<div class="opts-row">${(h.team || []).map(x => `<span class="mini" title="${esc(x.player)}: ${esc(x.champ)}">${initials(x.champ)}${img(iconUrl(x.champ))}</span>`).join("")}</div></div>`
         : `<div class="md-game empty"><span class="md-n">Spiel ${n}</span><span class="hint" style="margin:0">Noch nicht gespielt</span></div>`;
       const plans = t.plans || [];
       return `<div class="md-grid">
@@ -2641,7 +2729,7 @@ function renderScout(){
           <div class="md-games">${gameBox(g1, 1)}${gameBox(g2, 2)}${g3skip ? `<div class="md-game empty"><span class="md-n">Spiel 3</span><span class="hint" style="margin:0">Nicht nötig</span></div>` : gameBox(g3, 3)}</div>
           <p class="small-hint" style="margin:.6rem 0 0">Beim Speichern eines Drafts „Liga“ und Spiel 1, 2 oder 3 wählen, dann erscheint es hier.</p></section>
         <section class="panel md-panel"><div class="md-head"><h3>Draft-Pläne</h3><span class="hint" style="margin:0">Plan A, B und C für das Bo3</span></div>
-          ${plans.length ? `<div class="plan-list-cards">${plans.map(pl => `<div class="plan-card"><div class="pc-top"><b>${esc(pl.name)}</b>${pl.side ? `<span class="side-dot ${pl.side}">${pl.side === "blue" ? "Blau" : "Rot"}</span>` : ""}<span class="spacer"></span>
+          ${plans.length ? `<div class="plan-list-cards">${plans.map(pl => `<div class="plan-card"><div class="pc-top"><b>${esc(pl.name)}</b>${pl.side ? `<span class="side-dot ${cl(pl.side)}">${pl.side === "blue" ? "Blau" : "Rot"}</span>` : ""}<span class="spacer"></span>
               <button class="btn sm ghost" data-action="share-plan" data-id="${esc(pl.id)}" title="${discordUrl ? "An Discord senden" : "Für Discord kopieren"}">${discordUrl ? "An Discord" : "Discord"}</button>${ed ? `<button class="btn sm gold" data-action="plan-load" data-id="${esc(pl.id)}" data-team="${esc(viewId)}">Laden</button><button class="x" data-action="plan-del" data-id="${esc(pl.id)}" aria-label="Plan löschen">×</button>` : ""}</div>
               <div class="opts-row">${ROLES.map(r => pl.picks && pl.picks[r] ? `<span class="mini" title="${r}: ${esc(pl.picks[r])}">${initials(pl.picks[r])}${img(iconUrl(pl.picks[r]))}</span>` : "").join("")}${(pl.bans || []).length ? `<span class="pc-bans">Banns: ${pl.bans.map(esc).join(", ")}</span>` : ""}</div>
               ${pl.note ? `<p class="small-hint" style="margin:.3rem 0 0">${esc(pl.note)}</p>` : ""}</div>`).join("")}</div>`
@@ -2692,7 +2780,7 @@ function renderScout(){
           ${ed && allScouted.length ? `<button class="btn" data-action="plan-expect">Top-Picks als Gegnerteam</button>` : ""}
         </div>
         <div class="legend-icons"><span>${I.fire} Gefahr</span><span>${I.ban} Bann</span><span>${I.tgt} erwartet</span></div>
-        ${games.length ? `<div class="bp-games"><span class="flabel">Spiele gegen ${esc(t.tag || t.name || "das Team")}</span>${games.slice(0, 5).map(h => `<div class="bp-game"><span class="res on ${h.result || ""}">${h.result === "win" ? "Sieg" : h.result === "loss" ? "Niederlage" : "Offen"}</span><span>${fmtDate(h.at)}</span></div>`).join("")}</div>` : ""}
+        ${games.length ? `<div class="bp-games"><span class="flabel">Spiele gegen ${esc(t.tag || t.name || "das Team")}</span>${games.slice(0, 5).map(h => `<div class="bp-game"><span class="res on ${cl(h.result)}">${h.result === "win" ? "Sieg" : h.result === "loss" ? "Niederlage" : "Offen"}</span><span>${fmtDate(h.at)}</span></div>`).join("")}</div>` : ""}
       </aside>
     </div>`;
   if (fid){ const el = document.getElementById(fid); if (el){ el.value = fval; el.focus(); try { el.setSelectionRange(fs1, fs2); } catch(e){} } }
@@ -2766,6 +2854,19 @@ function addNote(hid){
   render(); document.getElementById("cx-" + hid)?.focus();
   fs.doc("config/notes").set({ byId: { [hid]: FV().arrayUnion(note) } }, { merge: true }).catch(writeError);
 }
+// Name eines Spielers überall nachziehen, wo er als Text gespeichert ist
+function renamePlayer(from, to){
+  if (!from || !to || from === to) return;
+  if (history.some(h => (h.team || []).some(x => x.player === from))){
+    history = history.map(h => (h.team || []).some(x => x.player === from) ? { ...h, team: h.team.map(x => x.player === from ? { ...x, player: to } : x) } : h);
+    queueSet("config/history", { items: history });
+  }
+  if (chat.some(m => m.by === from)){ chat = chat.map(m => m.by === from ? { ...m, by: to } : m); fs.doc("config/chat").set({ items: chat }).catch(writeError); }
+  let touched = false; const nb = {};
+  Object.entries(notesById).forEach(([hid, arr]) => { nb[hid] = (arr || []).map(n => { if (n.by !== from) return n; touched = true; return { ...n, by: to }; }); });
+  if (touched){ notesById = nb; fs.doc("config/notes").set({ byId: nb }).catch(writeError); }
+  if (lsGet(LS_ME) === from) lsSet(LS_ME, to);
+}
 function download(name, text){
   const url = URL.createObjectURL(new Blob([text], { type:"application/json" }));
   const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
@@ -2797,9 +2898,9 @@ function openEditor(kind, id){
   } else if (kind === "plan"){
     const ot = at(); edit = { kind, isNew: true, buf: { name: "Plan " + "ABCDEFG"[(ot && ot.plans ? ot.plans.length : 0) % 7], note: "", withBans: true } };
   } else if (kind === "h"){
-    const today = new Date().toDateString();
-    const sameDay = history.filter(h => h.oppId && h.oppId === activeId && kindOf(h) === "liga" && new Date(h.at).toDateString() === today).length;
-    edit = { kind, isNew: true, buf: { result: "", note: "", dur: "", clear: true, type: activeId ? "liga" : "scrim", game: Math.min(3, sameDay + 1), side: draft.side || "", scrimName: "" } };
+    const cur = seriesGames(activeId, true), nextGame = cur.length ? Math.min(3, Math.max(...cur.map(h => h.game || 1)) + 1) : 1;
+    const type = draft.mode === "ranked" ? "ranked" : activeId ? "liga" : (["scrim", "ranked"].includes(lsGet("draftboard-htype")) ? lsGet("draftboard-htype") : "scrim");
+    edit = { kind, isNew: true, buf: { result: "", note: "", dur: "", clear: true, type, game: nextGame, side: draft.side || "", scrimName: "" } };
   } else if (kind === "s"){
     edit = { kind, isNew: false, buf: { pw: "", importData: null, importName: "", hook: discordUrl, auto: discordAuto, remind: remindOn, lead: remindLead, riot: riotUrl } };
   } else {
@@ -3054,7 +3155,7 @@ function setDraft(next){
   if (next.enemyBy) next.enemy = ROLES.map(r => next.enemyBy[r]).filter(Boolean);
   else if (next.enemy) next.enemyBy = byOrder(next.enemy);
   draft = { ...draft, ...next }; render();
-  queueSet("draft/current", { picks: draft.picks, bans: draft.bans, enemy: draft.enemy || [], enemyBy: draft.enemyBy || {}, lineup: draft.lineup || {}, side: draft.side || "" });
+  queueSet("draft/current", { picks: draft.picks, bans: draft.bans, enemy: draft.enemy || [], enemyBy: draft.enemyBy || {}, lineup: draft.lineup || {}, side: draft.side || "", mode: draft.mode || "" });
 }
 // Spieler in eine Rolle setzen; steht er schon woanders, tauschen die beiden.
 function swapInto(ov, role, pid){
@@ -3082,6 +3183,8 @@ document.addEventListener("click", async e => {
       return setDraft({ picks, bans });
     }
     if (bans.includes(champ)) return toast(`${champ} ist gebannt.`);
+    const tk = (render.taken || {})[champ];
+    if (tk && tk.by !== active) return toast(tk.label === "Gegner" ? `${champ} ist schon beim Gegner.` : tk.label === "Fearless" ? `${champ} ist durch Fearless gesperrt.` : `${champ} spielt schon ${tk.label}.`);
     if (picks[active] === champ) delete picks[active];
     else {
       picks[active] = champ;
@@ -3103,7 +3206,10 @@ document.addEventListener("click", async e => {
     case "sc-move": { const r = a.dataset.role, i = +a.dataset.i, j = i + (+a.dataset.dir); mutTeam(viewId, t => { const sr = roleOf(t, r); if (j < 0 || j >= sr.champs.length) return; const arr = [...sr.champs]; [arr[i], arr[j]] = [arr[j], arr[i]]; t.roles[r] = { ...sr, champs: arr }; }); break; }
     case "sc-ban": { const c = a.dataset.c; mutTeam(viewId, t => { t.banPlan = t.banPlan.includes(c) ? t.banPlan.filter(x => x !== c) : [...t.banPlan, c]; }); break; }
     case "plan-move": { const i = +a.dataset.i, j = i + (+a.dataset.dir); mutTeam(viewId, t => { if (j < 0 || j >= t.banPlan.length) return; [t.banPlan[i], t.banPlan[j]] = [t.banPlan[j], t.banPlan[i]]; }); break; }
-    case "sc-expect": { if (viewId !== activeId) setActive(viewId); const r = a.dataset.role, c = a.dataset.c, eb = { ...(draft.enemyBy || {}) }; if (eb[r] === c) delete eb[r]; else { ROLES.forEach(x => { if (eb[x] === c) delete eb[x]; }); eb[r] = c; } setDraft({ enemyBy: eb }); break; }
+    case "sc-expect": { const c0 = a.dataset.c;
+      if (draft.bans.includes(c0)) return toast(`${c0} ist im Draft gebannt.`);
+      if (Object.values(livePicks()).includes(c0)) return toast(`${c0} habt ihr schon gepickt.`);
+      if (viewId !== activeId) setActive(viewId); const r = a.dataset.role, c = a.dataset.c, eb = { ...(draft.enemyBy || {}) }; if (eb[r] === c) delete eb[r]; else { ROLES.forEach(x => { if (eb[x] === c) delete eb[x]; }); eb[r] = c; } setDraft({ enemyBy: eb }); break; }
     case "plan-apply": { const t = vt(); if (!t) break; if (viewId !== activeId) setActive(viewId); const add = t.banPlan.filter(c => !draft.bans.includes(c)); const picks = { ...draft.picks }; Object.keys(picks).forEach(k => { if (add.includes(picks[k])) delete picks[k]; }); setDraft({ bans: [...draft.bans, ...add], picks }); toast(add.length ? `${add.length} Banns übernommen.` : "Schon alle im Draft."); break; }
     case "plan-expect": { const t = vt(); if (!t) break; if (viewId !== activeId) setActive(viewId); const eb = {}; const used = new Set(Object.values(livePicks()).concat(draft.bans)); ROLES.forEach(r => { const top = roleOf(t, r).champs.find(x => !used.has(x.c) && !Object.values(eb).includes(x.c)); if (top) eb[r] = top.c; }); setDraft({ enemyBy: eb }); tab = "draft"; render(); window.scrollTo({ top: 0 }); toast("Gegnerteam aus den Top-Picks eingetragen."); break; }
     case "team-view": viewId = a.dataset.id; if (a.dataset.go) { tab = a.dataset.go; window.scrollTo({ top: 0 }); } render(); break;
@@ -3307,6 +3413,7 @@ document.addEventListener("click", async e => {
         kind: b.type, side: b.side || "", game: b.type === "liga" ? b.game : 0 };
       history = [entry, ...history].slice(0, 200);
       queueSet("config/history", { items: history });
+      if (b.type !== "liga") lsSet("draftboard-htype", b.type);
       const clear = b.clear; closeEditor();
       openHist.add(entry.id); tab = "history";
       if (clear) setDraft({ picks:{}, bans:[], enemy:[], lineup:{} }); else render();
@@ -3317,7 +3424,7 @@ document.addEventListener("click", async e => {
     case "hist-load": {
       const h = history.find(x => x.id === a.dataset.id); if (!h) return;
       const picks = {}, lineup = {}; (h.team || []).forEach(x => { const p = players.find(pp => pp.name === x.player); if (p){ picks[p.id] = x.champ; lineup[ROLES.includes(x.role) ? x.role : p.role] = p.id; } });
-      tab = "draft"; setDraft({ picks, bans: [...(h.bans || [])], ...(h.enemyBy ? { enemyBy: { ...h.enemyBy } } : { enemy: [...(h.enemy || [])] }), lineup }); toast("Draft geladen."); break;
+      tab = "draft"; setDraft({ picks, bans: [...(h.bans || [])], ...(h.enemyBy ? { enemyBy: { ...h.enemyBy } } : { enemy: [...(h.enemy || [])] }), lineup, side: h.side || "", mode: kindOf(h) === "ranked" ? "ranked" : "" }); toast("Draft geladen."); break;
     }
     case "hist-del": {
       if (!armed(a, "Nochmal tippen")) return;
@@ -3397,6 +3504,7 @@ document.addEventListener("click", async e => {
     case "save-player": {
       modal.querySelectorAll("[data-add]").forEach(inp => addChampTo(b.groups[+inp.dataset.add].champs, inp.value));
       if (!b.name.trim()) return toast("Bitte einen Namen eintragen.");
+      if (players.some(x => x.id !== b.id && x.name.trim().toLowerCase() === b.name.trim().toLowerCase())) return toast("Den Namen gibt es schon – bitte einen anderen wählen.");
       const existing = players.find(x => x.id === b.id);
       const id = b.id || (b.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "spieler") + "-" + Math.random().toString(36).slice(2, 6);
       const order = existing ? (existing.order ?? 0) : Math.max(0, ...players.map(x => x.order ?? 0)) + 1;
@@ -3407,6 +3515,7 @@ document.addEventListener("click", async e => {
       a.disabled = true;
       try {
         await db.doc("players/" + id).set(body);
+        if (existing && existing.name !== body.name) renamePlayer(existing.name, body.name);
         if (body.main) for (const o of players.filter(x => x.id !== id && x.role === body.role && x.main)) await db.doc("players/" + o.id).update({ main: false });
         closeEditor(); toast("Gespeichert.");
       }
@@ -3452,7 +3561,8 @@ document.addEventListener("click", async e => {
         const pl = players.find(p => p.id === s.player);
         if (pl && !lineupPlayers().some(p => p.id === pl.id) && ROLES.includes(pl.role)){ lineup = swapInto(lineup, pl.role, pl.id); draft.lineup = lineup; }
         const tr = players.find(p => p.id === s.player)?.tiers || {};
-        const free = (s.options||[]).filter(o => !draft.bans.includes(o)).sort((x, y) => tierRank(tr[x]) - tierRank(tr[y]))[0];
+        const blocked = o => draft.bans.includes(o) || Object.values(draft.enemyBy || {}).includes(o) || (render.locked || new Set()).has(o) || lineupPlayers().some(p => p.id !== s.player && picks[p.id] === o);
+        const free = (s.options||[]).filter(o => !blocked(o)).sort((x, y) => tierRank(tr[x]) - tierRank(tr[y]))[0];
         if (free) picks[s.player] = free;
       });
       tab = "draft"; setDraft({ picks, bans: draft.bans, lineup }); toast(`${cb.name} übernommen.`); break;
@@ -3591,7 +3701,7 @@ loadDD();
   db.collection("combos").onSnapshot(s => { combos = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)); scheduleRender(); }, onErr);
   db.doc("config/pairs").onSnapshot(s => { pairs = new Set(s.exists ? (s.data().list || []) : []); scheduleRender(); }, onErr);
   db.doc("draft/current").onSnapshot(s => { const d = s.exists ? s.data() : {}; const eb = d.enemyBy && Object.keys(d.enemyBy).length ? { ...d.enemyBy } : byOrder(d.enemy);
-    draft = { side: d.side || "", picks: { ...(d.picks || {}) }, bans: [...(d.bans || [])], enemyBy: eb, enemy: ROLES.map(r => eb[r]).filter(Boolean), lineup: { ...(d.lineup || {}) } }; render(); }, onErr);
+    draft = { side: d.side || "", mode: d.mode === "ranked" ? "ranked" : "", picks: { ...(d.picks || {}) }, bans: [...(d.bans || [])], enemyBy: eb, enemy: ROLES.map(r => eb[r]).filter(Boolean), lineup: { ...(d.lineup || {}) } }; render(); }, onErr);
   db.doc("config/counters").onSnapshot(s => { counters = s.exists ? { ...(s.data().map || {}) } : {}; scheduleRender(); }, onErr);
   db.doc("config/scouting").onSnapshot(s => {
     const d = s.exists ? s.data() : {};
