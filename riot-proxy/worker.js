@@ -24,6 +24,8 @@ const QUEUES = {
   all:        "",
 };
 const MAX_COUNT = 30;
+// Cloudflare-eigener Standard-Cache (caches.default fehlt in den Browser-Typen)
+const edgeCache = () => /** @type {Cache} */ (/** @type {any} */ (caches).default);
 const CACHE_RESULT = 600;      // fertige Antwort: 10 Min.
 const CACHE_ACCOUNT = 86400;   // Riot-ID → PUUID: 1 Tag
 const CACHE_MATCH = 2592000;   // Match-Details ändern sich nie: 30 Tage
@@ -53,7 +55,7 @@ export default {
 
     // fertige Antwort aus dem Cache?
     const cacheKey = new Request(`https://cache.local/v1/${region}/${queue}/${count}/${encodeURIComponent(name.toLowerCase() + "#" + tag.toLowerCase())}`);
-    const hit = await caches.default.match(cacheKey);
+    const hit = await edgeCache().match(cacheKey);
     if (hit) return withCors(hit, cors);
 
     const riot = makeRiot(env, ctx);
@@ -68,7 +70,7 @@ export default {
       const matches = await pool(ids, 5, mid => riot(`https://${reg.regional}.api.riotgames.com/lol/match/v5/matches/${mid}`, CACHE_MATCH).catch(e => (e.status === 429 ? Promise.reject(e) : null)));
       const result = summarize(acc, puuid, matches.filter(Boolean), leagues, { region, queue, requested: ids.length });
       const res = json(result, 200, { "Cache-Control": `public, max-age=${CACHE_RESULT}` });
-      ctx.waitUntil(caches.default.put(cacheKey, res.clone()));
+      ctx.waitUntil(edgeCache().put(cacheKey, res.clone()));
       return withCors(res, cors);
     } catch (e) {
       const status = e.status || 502;
@@ -84,20 +86,29 @@ export default {
 function makeRiot(env, ctx) {
   return async function riot(u, ttl) {
     const key = new Request(u);
-    if (ttl) { const c = await caches.default.match(key); if (c) return c.json(); }
+    if (ttl) { const c = await edgeCache().match(key); if (c) return c.json(); }
     for (let attempt = 0; ; attempt++) {
       const r = await fetch(u, { headers: { "X-Riot-Token": env.RIOT_API_KEY } });
       if (r.ok) {
         const body = await r.text();
-        if (ttl) ctx.waitUntil(caches.default.put(key, new Response(body, { headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${ttl}` } })));
+        if (ttl) ctx.waitUntil(edgeCache().put(key, new Response(body, { headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${ttl}` } })));
         return JSON.parse(body);
       }
       const retryAfter = parseInt(r.headers.get("Retry-After") || "0", 10);
       if (r.status === 429 && attempt === 0 && retryAfter > 0 && retryAfter <= 5) { await sleep(retryAfter * 1000); continue; }
       if (r.status >= 500 && attempt === 0) { await sleep(500); continue; }
-      const err = new Error("riot " + r.status); err.status = r.status; err.retryAfter = retryAfter; throw err;
+      throw new RiotError(r.status, retryAfter);
     }
   };
+}
+
+class RiotError extends Error {
+  /** @param {number} status @param {number} retryAfter */
+  constructor(status, retryAfter) {
+    super("riot " + status);
+    this.status = status;
+    this.retryAfter = retryAfter;
+  }
 }
 
 function summarize(acc, puuid, matches, leagues, meta) {
