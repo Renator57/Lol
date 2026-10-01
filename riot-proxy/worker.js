@@ -6,7 +6,12 @@
 //
 // Secrets / Variablen (siehe README.md):
 //   RIOT_API_KEY     – Pflicht, per `wrangler secret put RIOT_API_KEY`
-//   ALLOWED_ORIGINS  – optional, kommagetrennt, z. B. "https://name.github.io" (Standard: alle)
+//   ALLOWED_ORIGINS  – empfohlen, kommagetrennt, z. B. "https://name.github.io" (Standard: alle)
+//
+// Ausgelegt auf einen Personal API Key (20 Aufrufe/s, 100 Aufrufe/2 Min.):
+// Match-Details werden 30 Tage gecacht, neue Spiele nur geladen, solange das
+// Budget reicht. Der Rest kommt als "partial" + "retryIn" zurück und das Board
+// lädt ihn automatisch nach.
 
 const REGIONS = {
   euw:  { platform: "euw1", regional: "europe" },
@@ -27,7 +32,9 @@ const MAX_COUNT = 30;
 // Cloudflare-eigener Standard-Cache (caches.default fehlt in den Browser-Typen)
 const edgeCache = () => /** @type {Cache} */ (/** @type {any} */ (caches).default);
 const CACHE_RESULT = 600;      // fertige Antwort: 10 Min.
-const CACHE_ACCOUNT = 86400;   // Riot-ID → PUUID: 1 Tag
+const CACHE_ACCOUNT = 2592000; // Riot-ID → PUUID: 30 Tage (PUUID ändert sich nie)
+const CACHE_IDS = 300;         // Liste der letzten Spiele: 5 Min.
+const CACHE_LEAGUE = 1800;     // Rang: 30 Min.
 const CACHE_MATCH = 2592000;   // Match-Details ändern sich nie: 30 Tage
 
 export default {
@@ -54,48 +61,103 @@ export default {
     if (!name || name.length > 32 || !tag || tag.length > 8) return json({ error: "Ungültige Riot-ID (Name#TAG)." }, 400, cors);
 
     // fertige Antwort aus dem Cache?
-    const cacheKey = new Request(`https://cache.local/v1/${region}/${queue}/${count}/${encodeURIComponent(name.toLowerCase() + "#" + tag.toLowerCase())}`);
+    const cacheKey = new Request(`https://cache.local/v2/${region}/${queue}/${count}/${encodeURIComponent(name.toLowerCase() + "#" + tag.toLowerCase())}`);
     const hit = await edgeCache().match(cacheKey);
     if (hit) return withCors(hit, cors);
 
     const riot = makeRiot(env, ctx);
+    const api = host => `https://${host}.api.riotgames.com`;
     try {
-      const acc = await riot(`https://${reg.regional}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(name)}/${encodeURIComponent(tag)}`, CACHE_ACCOUNT);
+      const acc = await riot(`${api(reg.regional)}/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(name)}/${encodeURIComponent(tag)}`, CACHE_ACCOUNT);
       const puuid = acc.puuid;
       const q = QUEUES[queue];
       const [ids, leagues] = await Promise.all([
-        riot(`https://${reg.regional}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=${count}${q ? "&" + q : ""}`, 0),
-        riot(`https://${reg.platform}.api.riotgames.com/lol/league/v4/entries/by-puuid/${puuid}`, 0).catch(() => []),
+        riot(`${api(reg.regional)}/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=${count}${q ? "&" + q : ""}`, CACHE_IDS),
+        riot(`${api(reg.platform)}/lol/league/v4/entries/by-puuid/${puuid}`, CACHE_LEAGUE).catch(() => []),
       ]);
-      const matches = await pool(ids, 5, mid => riot(`https://${reg.regional}.api.riotgames.com/lol/match/v5/matches/${mid}`, CACHE_MATCH).catch(e => (e.status === 429 ? Promise.reject(e) : null)));
-      const result = summarize(acc, puuid, matches.filter(Boolean), leagues, { region, queue, requested: ids.length });
-      const res = json(result, 200, { "Cache-Control": `public, max-age=${CACHE_RESULT}` });
-      ctx.waitUntil(edgeCache().put(cacheKey, res.clone()));
+      // Erst alles aus dem Cache holen (kostet kein Riot-Limit) …
+      const urls = ids.map(mid => `${api(reg.regional)}/lol/match/v5/matches/${mid}`);
+      const matches = await Promise.all(urls.map(u => cached(u)));
+      // … dann nur so viele neue Spiele laden, wie ins 2-Minuten-Budget passen
+      const missing = urls.map((u, i) => (matches[i] ? -1 : i)).filter(i => i >= 0);
+      const allowed = Math.min(missing.length, budgetLeft(reg.regional));
+      await pool(missing.slice(0, allowed), 4, async i => {
+        if (budgetLeft(reg.regional) <= 0) return; // Budget unterwegs aufgebraucht
+        matches[i] = await riot(urls[i], CACHE_MATCH).catch(() => null);
+      });
+      const loaded = matches.filter(Boolean);
+      const partial = loaded.length < ids.length;
+      const result = summarize(acc, puuid, loaded, leagues, { region, queue, requested: ids.length });
+      result.partial = partial;
+      result.loaded = loaded.length;
+      result.requested = ids.length;
+      if (partial) result.retryIn = retryEstimate(reg.regional);
+      const res = json(result, 200, partial ? { "Cache-Control": "no-store" } : { "Cache-Control": `public, max-age=${CACHE_RESULT}` });
+      if (!partial) ctx.waitUntil(edgeCache().put(cacheKey, res.clone()));
       return withCors(res, cors);
     } catch (e) {
       const status = e.status || 502;
       const msg = status === 404 ? "Riot-ID nicht gefunden."
-        : status === 429 ? "Riot-Limit erreicht – kurz warten und nochmal versuchen."
+        : status === 429 ? "Riot-Limit erreicht."
         : status === 401 || status === 403 ? "API-Key ungültig oder abgelaufen."
         : "Riot-API nicht erreichbar.";
-      return json({ error: msg, status }, status === 404 ? 404 : status === 429 ? 429 : 502, { ...cors, ...(e.retryAfter ? { "Retry-After": String(e.retryAfter) } : {}) });
+      const retryAfter = status === 429 ? (e.retryAfter || retryEstimate(reg.regional)) : 0;
+      return json({ error: msg, status, ...(retryAfter ? { retryAfter } : {}) }, status === 404 ? 404 : status === 429 ? 429 : 502, { ...cors, ...(retryAfter ? { "Retry-After": String(retryAfter) } : {}) });
     }
   },
 };
 
+// ---------- Rate-Limit (Personal Key: 20/1 s und 100/2 Min., je Routing-Host) ----------
+// Riot meldet den Verbrauch in jedem Antwort-Header (X-App-Rate-Limit-Count: "3:1,47:120").
+// Der Stand gilt pro Worker-Instanz; als Puffer bleiben immer ein paar Aufrufe frei.
+const RESERVE = 4;          // Aufrufe, die im 2-Minuten-Fenster frei bleiben
+const MIN_GAP_MS = 70;      // ≈ 14 Aufrufe/Sekunde, sicher unter 20/s
+const hosts = {};           // host → { lastStart, used, max, window, seenAt }
+const hostOf = u => new URL(u).hostname.split(".")[0];
+function hostState(h) { return hosts[h] || (hosts[h] = { lastStart: 0, used: 0, max: 100, window: 120, seenAt: 0 }); }
+function readLimits(h, r) {
+  const lim = parsePairs(r.headers.get("X-App-Rate-Limit")), cnt = parsePairs(r.headers.get("X-App-Rate-Limit-Count"));
+  const win = Math.max(0, ...Object.keys(lim).map(Number));
+  if (!win) return;
+  const s = hostState(h);
+  s.window = win; s.max = lim[win]; s.used = cnt[win] || 0; s.seenAt = Date.now();
+}
+const parsePairs = v => Object.fromEntries(String(v || "").split(",").filter(Boolean).map(p => { const [n, w] = p.split(":").map(Number); return [w, n]; }));
+function budgetLeft(h) {
+  const s = hostState(h);
+  if (!s.seenAt || Date.now() - s.seenAt > s.window * 1000) return Infinity; // Fenster sicher abgelaufen
+  return Math.max(0, s.max - s.used - RESERVE);
+}
+// Riot verrät nicht, wann das Fenster neu startet: nach einem Viertel-Fenster erneut probieren
+const retryEstimate = h => Math.ceil(hostState(h).window / 4);
+async function throttle(h) {
+  const s = hostState(h);
+  const wait = s.lastStart + MIN_GAP_MS - Date.now();
+  s.lastStart = Math.max(Date.now(), s.lastStart + MIN_GAP_MS);
+  if (wait > 0) await sleep(wait);
+}
+
+async function cached(u) {
+  const c = await edgeCache().match(new Request(u));
+  return c ? c.json() : null;
+}
+
 function makeRiot(env, ctx) {
   return async function riot(u, ttl) {
-    const key = new Request(u);
-    if (ttl) { const c = await edgeCache().match(key); if (c) return c.json(); }
+    if (ttl) { const c = await cached(u); if (c) return c; }
+    const h = hostOf(u);
     for (let attempt = 0; ; attempt++) {
+      await throttle(h);
       const r = await fetch(u, { headers: { "X-Riot-Token": env.RIOT_API_KEY } });
+      readLimits(h, r);
       if (r.ok) {
         const body = await r.text();
-        if (ttl) ctx.waitUntil(edgeCache().put(key, new Response(body, { headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${ttl}` } })));
+        if (ttl) ctx.waitUntil(edgeCache().put(new Request(u), new Response(body, { headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${ttl}` } })));
         return JSON.parse(body);
       }
       const retryAfter = parseInt(r.headers.get("Retry-After") || "0", 10);
-      if (r.status === 429 && attempt === 0 && retryAfter > 0 && retryAfter <= 5) { await sleep(retryAfter * 1000); continue; }
+      if (r.status === 429) { const s = hostState(h); s.used = s.max; s.seenAt = Date.now(); }
+      if (r.status === 429 && attempt === 0 && retryAfter > 0 && retryAfter <= 2) { await sleep(retryAfter * 1000); continue; }
       if (r.status >= 500 && attempt === 0) { await sleep(500); continue; }
       throw new RiotError(r.status, retryAfter);
     }
@@ -138,7 +200,6 @@ function summarize(acc, puuid, matches, leagues, meta) {
     champs: Object.values(champs).sort((a, b) => b.games - a.games || b.wins - a.wins),
     rank: (Array.isArray(leagues) ? leagues : []).map(l => ({ queue: l.queueType, tier: l.tier, rank: l.rank, lp: l.leaguePoints, wins: l.wins, losses: l.losses })),
     recent,
-    partial: matches.length < meta.requested,
   };
 }
 

@@ -8,12 +8,40 @@ Die Riot-API darf nicht direkt aus dem Browser aufgerufen werden (CORS), und der
 darf nicht in der öffentlichen `index.html` stehen. Deshalb läuft dazwischen dieser kleine
 Cloudflare Worker. Er ist kostenlos (100.000 Aufrufe/Tag) und hält den Key geheim.
 
-## 1. Riot-API-Key holen
+## 1. Riot-API-Key holen (Personal API Key)
+
+Der Proxy ist auf einen **Personal API Key** ausgelegt: kostenlos, läuft nicht ab, gedacht für
+„a small private community“, also genau euer Team.
 
 1. Auf <https://developer.riotgames.com> mit dem Riot-Account einloggen.
-2. Im Dashboard steht ein **Development API Key**. Der läuft nach **24 Stunden** ab und reicht zum Ausprobieren.
-3. Für dauerhaft: **„Register Product“ → „Personal API Key“** beantragen (kurze Beschreibung,
-   z. B. „Scouting-Tool für unser Prime-League-Team, nur interne Nutzung“). Der Key läuft nicht ab.
+2. **Register Product → Personal API Key**.
+3. Riot verlangt eine **ausführliche Beschreibung**. Diese hier könnt ihr übernehmen
+   (Teamname und Link anpassen):
+
+   > **Product name:** Draft Board – [Teamname]
+   >
+   > **Description:** A private scouting and draft-planning board used only by the five players and
+   > staff of our amateur team "[Teamname]" in the German Prime League. It is not public: the page is
+   > password-protected and the API proxy only accepts requests from our own board.
+   >
+   > Before each league match we enter the Riot IDs of the opposing team. The tool then looks up each
+   > player's PUUID (ACCOUNT-V1), their recent ranked match IDs and match details (MATCH-V5) and their
+   > current rank (LEAGUE-V4). From this it shows, per player, the most played champions with games,
+   > win rate and KDA, recent form and their main position, so we can plan bans and picks.
+   >
+   > Usage is very low: a few lookups per week, about 5 players × 15 matches per lookup. All requests
+   > go through a small Cloudflare Worker that keeps the API key secret, caches match data (match
+   > details for 30 days, account lookups for 30 days) and stays below the personal rate limits by
+   > reading the X-App-Rate-Limit headers. No data is sold, shared or shown publicly.
+   >
+   > **Product URL:** [Link zum Board]
+
+4. Bis der Key freigegeben ist, könnt ihr mit dem **Development API Key** aus dem Dashboard testen
+   (läuft nach 24 Stunden ab).
+
+> **Wichtig, laut Riot-Regeln:** Ein Personal Key darf nicht für eine öffentliche Seite benutzt werden.
+> Deshalb unbedingt `ALLOWED_ORIGINS` setzen (Schritt 2) und im Board ein **Team-Passwort** festlegen
+> (Einstellungen → Team-Passwort).
 
 ## 2. Worker deployen
 
@@ -24,8 +52,8 @@ Cloudflare Worker. Er ist kostenlos (100.000 Aufrufe/Tag) und hält den Key gehe
 3. **Code bearbeiten**, den Inhalt von [`worker.js`](worker.js) komplett einfügen, **Bereitstellen**.
 4. **Einstellungen → Variablen und Geheimnisse → Hinzufügen**:
    - Typ **Geheimnis**, Name `RIOT_API_KEY`, Wert = euer Riot-Key.
-   - Optional Typ **Text**, Name `ALLOWED_ORIGINS`, Wert = Adresse eures Boards
-     (z. B. `https://deinname.github.io`). Dann darf nur euer Board den Proxy benutzen.
+   - Typ **Text**, Name `ALLOWED_ORIGINS`, Wert = Adresse eures Boards ohne Pfad
+     (z. B. `https://deinname.github.io`). Dann darf nur euer Board den Proxy benutzen. Beim Personal Key Pflicht.
 5. Die Worker-Adresse kopieren, z. B. `https://draftboard-riot.deinname.workers.dev`.
 
 ### Variante B: mit der Kommandozeile
@@ -63,12 +91,23 @@ Die URL gilt danach für das ganze Team.
 
 Die geladenen Daten werden beim Gegner-Team gespeichert. Alle im Team sehen sie, ohne neu zu laden.
 
-## Limits
+## Limits (Personal Key)
 
-- Pro Spieler braucht der Proxy etwa *Anzahl Spiele + 3* Riot-Aufrufe. Ein Development-Key erlaubt
-  100 Aufrufe in 2 Minuten. Mit 15 Spielen passt also ein ganzes Team. Bei 30 Spielen kann
-  „Riot-Limit erreicht“ kommen. Dann kurz warten und die fehlenden Spieler mit **Neu laden** nachholen.
-- Match-Details werden 30 Tage im Worker zwischengespeichert, fertige Auswertungen 10 Minuten.
-  Erneutes Laden kostet deshalb kaum Aufrufe.
-- „API-Key ungültig oder abgelaufen“ bedeutet beim Development-Key meistens, dass die 24 Stunden um sind.
-  Dann den neuen Key als `RIOT_API_KEY` eintragen.
+Riot erlaubt einem Personal Key **20 Aufrufe pro Sekunde** und **100 Aufrufe in 2 Minuten**.
+Darauf ist alles abgestimmt:
+
+- **Pro Spieler** braucht der Proxy beim ersten Laden etwa *Anzahl Spiele + 2* Aufrufe.
+  Mit **15 Spielen (empfohlen)** passt ein ganzes Team mit 5 Spielern in ein 2-Minuten-Fenster.
+- **Gedrosselt:** Der Proxy schickt höchstens etwa 14 Aufrufe pro Sekunde.
+- **Budget:** Riot meldet bei jeder Antwort, wie viel vom Limit schon verbraucht ist. Der Proxy
+  liest das mit und hört rechtzeitig auf, bevor Riot blockt.
+- **Automatisch weiter:** Reicht das Budget nicht (z. B. bei 20 oder 30 Spielen), zeigt das Board
+  „Riot-Limit erreicht · 6 von 20 Spielen geladen · Rest kommt automatisch in 30 s“ und lädt den Rest
+  von selbst nach. Einfach offen lassen.
+- **Cache:** Match-Details und Riot-IDs bleiben 30 Tage im Worker, der Rang 30 Minuten, die
+  Spieleliste 5 Minuten, eine fertige Auswertung 10 Minuten. Erneutes Laden kostet deshalb fast nichts:
+  nur neue Spiele werden geholt.
+- **Je Region getrennt:** Riot zählt die Limits pro Server-Gruppe. Matches und Riot-IDs laufen über
+  `europe`, der Rang über `euw1`.
+- „API-Key ungültig oder abgelaufen“ heißt meistens, dass noch der 24-Stunden-Development-Key
+  eingetragen ist. Dann den Personal Key als `RIOT_API_KEY` eintragen.
