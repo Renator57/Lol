@@ -1303,53 +1303,97 @@ dialog{border-radius:26px;background:linear-gradient(180deg,rgba(21,31,51,.97),r
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 /* Riot-Matchdaten */
 .tool-riot{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;padding:.3rem .35rem .3rem .45rem;border-radius:14px;border:1px solid rgba(215,180,106,.28);background:rgba(215,180,106,.06)}
-.riot-logo{font-family:var(--fd);font-weight:800;font-size:.72rem;letter-spacing:.06em;color:#ff7a6b;background:rgba(255,106,92,.14);padding:.18rem .45rem;border-radius:6px}
+.riot-logo{font-family:var(--fd);font-weight:800;font-size:.68rem;letter-spacing:.08em;color:#ff7a6b;background:rgba(255,106,92,.12);border:1px solid rgba(255,106,92,.25);padding:.16rem .45rem;border-radius:6px}
 .tool-riot select{border:1px solid var(--line-2);background:rgba(6,10,18,.5);border-radius:8px;padding:.25rem .4rem;font-size:.85rem}
-.rr-riot{grid-column:1/-1;min-width:0;display:flex;flex-direction:column;gap:.7rem;padding:.8rem;margin-top:.1rem;border-radius:16px;background:linear-gradient(180deg,rgba(6,10,18,.55),rgba(6,10,18,.3));border:1px solid var(--line)}
-.rr-riot.busy{opacity:.75}
-/* Kopfzeile: Kennzahlen links, Aktionen rechts */
-.rh{display:flex;align-items:center;gap:.6rem 1rem;flex-wrap:wrap}
-.rh-stats>.riot-logo{align-self:center}
-.rh-stats{display:flex;align-items:center;gap:.5rem .9rem;flex-wrap:wrap;min-width:0}
-.rh-act{display:flex;align-items:center;gap:.4rem;margin-left:auto;flex-wrap:nowrap}
-.rh-time{font-size:.75rem;color:var(--muted);white-space:nowrap}
-.rk{display:inline-flex;align-items:center;gap:.45rem;padding:.25rem .65rem .25rem .3rem;border-radius:999px;background:color-mix(in srgb,var(--tc,#8b97ab) 14%,transparent);border:1px solid color-mix(in srgb,var(--tc,#8b97ab) 45%,transparent);white-space:nowrap}
-.rk i{width:1.35rem;height:1.35rem;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:.62rem;font-weight:800;color:#0b1120;background:var(--tc,#8b97ab);box-shadow:0 0 12px -2px var(--tc,#8b97ab)}
-.rk b{font-size:.84rem;color:var(--text)}
-.rk small{font-size:.75rem;color:var(--muted);font-weight:700}
-.rs{display:flex;flex-direction:column;line-height:1.1}
-.rs b{font-family:var(--fd);font-size:1.15rem;font-weight:800}
-.rs small{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+.rr-riot{--tc:#8b97ab;grid-column:1/-1;min-width:0;position:relative;display:flex;flex-direction:column;gap:.85rem;padding:.9rem;margin-top:.1rem;border-radius:18px;overflow:hidden;
+  background:radial-gradient(420px 160px at 0% 0%,color-mix(in srgb,var(--tc) 16%,transparent),transparent 70%),linear-gradient(180deg,rgba(8,13,24,.75),rgba(8,13,24,.45));
+  border:1px solid color-mix(in srgb,var(--tc) 22%,var(--line));box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
+.rr-riot.busy .rh-stats,.rr-riot.busy .rcs{opacity:.55;transition:opacity .2s}
+/* Kopfzeile */
+.rh{display:flex;align-items:center;gap:.7rem 1rem;flex-wrap:wrap}
+.rh-stats{display:flex;align-items:center;gap:.6rem 0;flex-wrap:wrap;min-width:0}
+.rh-stats>*+*{padding-left:.9rem;margin-left:.9rem;border-left:1px solid var(--line)}
+.rh-act{display:flex;align-items:center;gap:.4rem;margin-left:auto}
+.rh-time{font-size:.74rem;color:var(--muted);white-space:nowrap}
+.rh-act .btn.ghost{width:2rem;height:2rem;padding:0;justify-content:center;border-radius:10px;font-size:1rem}
+/* Rang-Emblem */
+.rk{display:flex;align-items:center;gap:.6rem;white-space:nowrap}
+.rk-em{width:2.5rem;height:2.5rem;flex:none;display:grid;place-items:center;clip-path:polygon(50% 0,93% 25%,93% 75%,50% 100%,7% 75%,7% 25%);
+  background:linear-gradient(160deg,color-mix(in srgb,var(--tc) 100%,#fff 25%),color-mix(in srgb,var(--tc) 70%,#000));font-family:var(--fd);font-weight:800;font-size:.9rem;color:#0b1120}
+.rk-em.none{background:linear-gradient(160deg,#3a4a64,#1c2638);color:var(--muted)}
+.rk-tx{display:flex;flex-direction:column;line-height:1.15}
+.rk-tx b{font-family:var(--fd);font-size:.98rem;color:var(--text)}
+.rk-tx small{font-size:.74rem;color:var(--muted);font-weight:700}
+.rk-tx small em{font-style:normal;color:color-mix(in srgb,var(--tc) 80%,#fff)}
+/* Kennzahlen */
+.rs{display:flex;flex-direction:column;line-height:1.1;gap:.15rem}
+.rs b{font-family:var(--fd);font-size:1.2rem;font-weight:800;font-variant-numeric:tabular-nums}
+.rs small{font-size:.66rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;font-weight:800}
+.rwr{display:flex;align-items:center;gap:.6rem}
+.ring{--p:50;--c:var(--good);width:2.6rem;height:2.6rem;flex:none;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--c) calc(var(--p)*1%),rgba(255,106,92,.28) 0)}
+.ring::before{content:"";grid-area:1/1;width:calc(100% - 8px);height:calc(100% - 8px);border-radius:50%;background:#0c1424}
+.ring span{grid-area:1/1;position:relative;font-size:.7rem;font-weight:800;font-variant-numeric:tabular-nums}
+.ring.l{--c:var(--bad)}
 .rs .w,.rc .w{color:var(--good)} .rs .l,.rc .l{color:var(--bad)}
-.rform{display:flex;gap:3px;align-items:flex-end;height:1.35rem}
-.rform i{width:6px;height:60%;border-radius:2px;background:var(--bad);opacity:.85}
-.rform i.w{height:100%;background:var(--good)}
-.rwarn{font-size:.75rem;font-weight:800;color:var(--warn);background:rgba(240,181,74,.1);border:1px solid rgba(240,181,74,.35);padding:.2rem .55rem;border-radius:999px;white-space:nowrap}
+.rform{display:flex;gap:3px;align-items:center;height:1.4rem}
+.rform i{width:5px;height:55%;border-radius:3px;background:rgba(255,106,92,.75)}
+.rform i.w{height:100%;background:linear-gradient(180deg,#5be39a,var(--good))}
+.rform i:first-child{outline:1px solid rgba(255,255,255,.35);outline-offset:1px}
+.rwarn{font-size:.72rem;font-weight:800;color:var(--warn);background:rgba(240,181,74,.1);border:1px solid rgba(240,181,74,.35);padding:.18rem .55rem;border-radius:999px;white-space:nowrap}
 .rbusy{font-size:.85rem;color:var(--muted)}
 /* Champion-Karten */
-.rcs{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:.5rem}
-.rc{position:relative;display:grid;grid-template-columns:40px minmax(0,1fr);gap:.2rem .6rem;align-items:center;padding:.5rem .6rem;border-radius:12px;border:1px solid var(--line);background:rgba(19,30,50,.55);transition:border-color .15s,background .15s}
-.rc:hover{border-color:var(--line-2);background:rgba(25,38,62,.7)}
-.rc .mini{width:40px;height:40px;border-radius:10px;grid-row:1/3}
+.rsec{display:flex;align-items:center;gap:.6rem;font-size:.66rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.rsec i{flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+.rsec .rwarn,.rsec .rh-time{text-transform:none;letter-spacing:0}
+.rsec>span:first-child::before{content:"RIOT";margin-right:.5rem;color:#ff7a6b;letter-spacing:.08em}
+.rcs{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:.55rem}
+.rc{position:relative;isolation:isolate;overflow:hidden;display:grid;grid-template-columns:42px minmax(0,1fr);gap:.25rem .65rem;align-items:center;padding:.6rem .65rem;border-radius:14px;
+  border:1px solid rgba(255,255,255,.07);background:linear-gradient(180deg,rgba(26,38,62,.75),rgba(14,22,38,.75));box-shadow:0 10px 22px -16px rgba(0,0,0,.9);transition:transform .18s,border-color .18s,box-shadow .18s}
+.rc:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.16);box-shadow:0 16px 28px -16px rgba(0,0,0,.95)}
+.rc-bg{position:absolute;inset:0 0 0 35%;width:65%;height:100%;object-fit:cover;object-position:center 22%;z-index:-1;opacity:.38;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 70%);mask-image:linear-gradient(90deg,transparent,#000 70%)}
+.rc-ic{position:relative;grid-row:1/3;display:block}
+.rc .mini{width:42px;height:42px;border-radius:11px;box-shadow:0 0 0 1px rgba(255,255,255,.08),0 6px 14px -8px #000}
 .rc-top{display:flex;align-items:baseline;gap:.4rem;min-width:0}
-.rc-top b{font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
-.rc-top span{margin-left:auto;font-size:.74rem;font-weight:700;color:var(--muted);white-space:nowrap}
-.rc-bar{display:flex;height:5px;border-radius:3px;overflow:hidden;background:rgba(255,106,92,.55)}
-.rc-bar i{background:var(--good)}
-.rc-sub{grid-column:2;display:flex;gap:.6rem;font-size:.74rem;color:var(--muted);white-space:nowrap}
+.rc-top b{font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text);text-shadow:0 1px 6px rgba(0,0,0,.8)}
+.rc-top>span:last-child{margin-left:auto;font-size:.72rem;font-weight:800;color:var(--muted);white-space:nowrap;text-shadow:0 1px 6px rgba(0,0,0,.8)}
+.rc-bar{display:flex;height:4px;border-radius:3px;overflow:hidden;background:rgba(255,106,92,.45)}
+.rc-bar i{background:linear-gradient(90deg,#2fbf6f,#5be39a);border-radius:3px}
+.rc-sub{grid-column:2;display:flex;gap:.6rem;font-size:.74rem;color:#b5bfd0;white-space:nowrap;text-shadow:0 1px 6px rgba(0,0,0,.8)}
 .rc-sub b{font-weight:800}
-.rc.main{border-color:rgba(215,180,106,.55);background:linear-gradient(135deg,rgba(215,180,106,.14),rgba(19,30,50,.55) 60%)}
-.rc-tag{position:absolute;top:-.45rem;right:.5rem;font-size:.6rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:.05rem .4rem;border-radius:5px;background:var(--gold);color:#1a1206}
-.rc-in{position:absolute;top:.2rem;left:.2rem;width:1rem;height:1rem;border-radius:50%;display:grid;place-items:center;font-size:.6rem;font-weight:900;background:var(--gold);color:#1a1206;box-shadow:0 0 0 2px var(--bg)}
-.rmore{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;font-size:.75rem;color:var(--muted)}
-.rmore .mini{width:26px;height:26px;border-radius:7px;font-size:.55rem}
-.riot-wait{margin:0;font-size:.82rem;color:var(--warn)}
+.rc.main{grid-column:span 2;grid-template-columns:56px minmax(0,1fr);padding:.75rem .85rem;border-color:rgba(215,180,106,.5);
+  background:linear-gradient(120deg,rgba(215,180,106,.18),rgba(14,22,38,.85) 55%);box-shadow:0 0 0 1px rgba(215,180,106,.12),0 16px 30px -18px rgba(215,180,106,.45)}
+.rc.main .mini{width:56px;height:56px;border-radius:14px;box-shadow:0 0 0 2px rgba(215,180,106,.55),0 8px 18px -8px #000}
+.rc.main .rc-top b{font-size:1.05rem;font-family:var(--fd)}
+.rc.main .rc-bg{opacity:.5;inset:0 0 0 30%;width:70%}
+.rc.main .rc-bar{height:5px}
+.rc-tag{font-size:.6rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:.08rem .4rem;border-radius:5px;background:var(--gold);color:#1a1206;align-self:center}
+.rc-in{position:absolute;right:-4px;bottom:-4px;width:1.05rem;height:1.05rem;border-radius:50%;display:grid;place-items:center;font-size:.6rem;font-weight:900;color:#1a1206;background:var(--gold);box-shadow:0 0 0 2px #0e1626}
+.rmore{display:flex;align-items:center;gap:.35rem;flex-wrap:wrap;font-size:.74rem;color:var(--muted)}
+.rmore .mini{width:28px;height:28px;border-radius:8px;font-size:.55rem;opacity:.85;transition:opacity .15s,transform .15s}
+.rmore .mini:hover{opacity:1;transform:translateY(-1px)}
+.riot-wait{margin:0;display:flex;align-items:center;gap:.45rem;font-size:.8rem;color:var(--warn);padding:.45rem .65rem;border-radius:10px;background:rgba(240,181,74,.08);border:1px solid rgba(240,181,74,.25)}
 .riot-wait b{font-variant-numeric:tabular-nums}
-.riot-err{margin:0;font-size:.82rem;color:var(--bad)}
+.riot-err{margin:0;font-size:.8rem;color:var(--bad);padding:.45rem .65rem;border-radius:10px;background:rgba(255,106,92,.08);border:1px solid rgba(255,106,92,.3)}
 @keyframes riotspin{to{transform:rotate(360deg)}}
-.riot-spin{display:inline-block;width:.8rem;height:.8rem;border:2px solid var(--line-2);border-top-color:var(--gold);border-radius:50%;animation:riotspin .8s linear infinite;vertical-align:-2px}
-@media (max-width:600px){.rr-riot{padding:.6rem;gap:.6rem}.rh-stats{gap:.5rem .8rem}.rs b{font-size:1.02rem}.rcs{grid-template-columns:1fr 1fr;gap:.4rem}.rc{grid-template-columns:30px minmax(0,1fr);gap:.15rem .45rem;padding:.45rem .5rem}.rc .mini{width:30px;height:30px;border-radius:8px}.rc-top b{font-size:.82rem}.rc-sub{gap:.45rem;font-size:.7rem}.rh-act{margin-left:0;width:100%}.rh-act .rh-time{margin-right:auto}}
-@media (max-width:360px){.rcs{grid-template-columns:1fr}}
+.riot-spin{display:inline-block;flex:none;width:.8rem;height:.8rem;border:2px solid var(--line-2);border-top-color:var(--gold);border-radius:50%;animation:riotspin .8s linear infinite;vertical-align:-2px}
+@media (max-width:600px){
+  .rr-riot{padding:.7rem;gap:.7rem}
+  .rh-stats{gap:.7rem 0}
+  .rh-stats>*+*{padding-left:.75rem;margin-left:.75rem}
+  .rh-stats>.rk{flex-basis:100%;border-left:0;padding-left:0;margin-left:0}
+  .rh-stats>.rk+*{border-left:0;padding-left:0;margin-left:0}
+  .rs b{font-size:1.05rem}
+  .rcs{grid-template-columns:1fr 1fr;gap:.45rem}
+  .rc{grid-template-columns:32px minmax(0,1fr);gap:.2rem .5rem;padding:.5rem}
+  .rc .mini{width:32px;height:32px;border-radius:9px}
+  .rc.main{grid-template-columns:44px minmax(0,1fr)}
+  .rc.main .mini{width:44px;height:44px}
+  .rc-top b{font-size:.82rem}
+  .rc-sub{gap:.45rem;font-size:.7rem}
+  .rh-act{margin-left:auto}
+  .rsec .rh-time{display:none}
+}
 </style>
 </head>
 <body>
@@ -2048,19 +2092,18 @@ function riotBlock(t, r, sr, ed){
   const rk = rd && rd.rank;
   const qLabel = rd && rd.q ? (RIOT_QUEUES.find(x => x[0] === rd.q) || [, rd.q])[1] : "";
   const apex = rk && ["MASTER","GRANDMASTER","CHALLENGER"].includes(rk.tier);
-  const rank = rk ? `<span class="rk" style="--tc:${TIER_COLOR[rk.tier] || "#8b97ab"}" title="${esc(rk.q)}: ${rk.w} Siege / ${rk.l} Niederlagen (${pct(rk.w, rk.w + rk.l)}%)"><i>${esc((TIER_DE[rk.tier] || rk.tier || "?")[0])}</i><b>${esc(TIER_DE[rk.tier] || rk.tier)}${apex ? "" : " " + esc(rk.div || "")}</b><small>${rk.lp} LP</small></span>`
-    : rd && rd.games != null ? `<span class="rk"><i>–</i><b>Unranked</b></span>` : "";
-  const stats = g ? `<span class="rs"><b class="${pct(w, g) >= 50 ? "w" : "l"}">${pct(w, g)}%</b><small>${w}S ${g - w}N</small></span>
+  const rank = rk ? `<span class="rk" title="${esc(rk.q)}: ${rk.w} Siege / ${rk.l} Niederlagen"><span class="rk-em">${esc((TIER_DE[rk.tier] || rk.tier || "?")[0])}</span>
+      <span class="rk-tx"><b>${esc(TIER_DE[rk.tier] || rk.tier)}${apex ? "" : " " + esc(rk.div || "")}</b><small><em>${rk.lp} LP</em> · ${esc(rk.q)} ${pct(rk.w, rk.w + rk.l)}%</small></span></span>`
+    : rd && rd.games != null ? `<span class="rk"><span class="rk-em none">–</span><span class="rk-tx"><b>Unranked</b><small>keine Platzierung</small></span></span>` : "";
+  const stats = g ? `<span class="rwr"><span class="ring ${pct(w, g) >= 50 ? "" : "l"}" style="--p:${pct(w, g)}"><span>${pct(w, g)}%</span></span><span class="rs"><b>${w}<span style="color:var(--muted);font-weight:600"> – </span>${g - w}</b><small>Siege – Niederl.</small></span></span>
       <span class="rs"><b>${g}</b><small>${esc(qLabel)}</small></span>
       ${rd.recent && rd.recent.length ? `<span class="rs"><span class="rform" title="Letzte ${rd.recent.length} Spiele, neuestes links">${rd.recent.map(x => `<i class="${x ? "w" : ""}"></i>`).join("")}</span><small>Form</small></span>` : ""}`
     : rd && rd.games === 0 ? `<span class="rbusy">Keine ${esc(qLabel)}-Spiele gefunden</span>` : "";
   const head = `<div class="rh">
-      <div class="rh-stats"><span class="riot-logo">RIOT</span>
+      <div class="rh-stats">
         ${busy ? `<span class="rbusy"><span class="riot-spin"></span> lade Matchdaten…</span>` : `${rank}${stats}`}
-        ${offRole && !busy ? `<span class="rwarn" title="Meistgespielte Position in den geladenen Spielen">⚠ spielt meist ${RIOT_POS[mainPos[0]]}</span>` : ""}
       </div>
       <div class="rh-act">
-        ${rd && rd.at ? `<span class="rh-time" title="Geladen ${esc(new Date(rd.at).toLocaleString("de-DE"))}">${relTime(rd.at)}</span>` : ""}
         ${ed && hasId && riotUrl && !busy && !waiting ? `<button class="btn sm ghost" data-action="riot-role" data-role="${r}" title="Neu laden" aria-label="Neu laden">↻</button>` : ""}
         ${ed && rd && rd.champs && rd.champs.some(c => !have.has(c.c)) && !busy ? `<button class="btn sm gold" data-action="riot-take" data-role="${r}" title="Meistgespielte Champions als Top-Picks eintragen">+ Top-Picks</button>` : ""}
       </div>
@@ -2077,16 +2120,15 @@ function riotBlock(t, r, sr, ed){
   const rest = champs.filter(c => !big.includes(c));
   const mainC = big[0] && g && big[0].g / g >= .3 ? big[0] : null;
   const card = c => `<div class="rc ${c === mainC ? "main" : ""}" title="${esc(c.c)}: ${c.g} Spiele · ${c.w} Siege · Ø ${(c.k / c.g).toFixed(1)} / ${(c.d / c.g).toFixed(1)} / ${(c.a / c.g).toFixed(1)}">
-      ${c === mainC ? `<span class="rc-tag">Main</span>` : ""}
-      <span class="mini">${initials(c.c)}${img(iconUrl(c.c))}</span>
-      ${have.has(c.c) ? `<span class="rc-in" title="Schon in den Top-Picks">✓</span>` : ""}
-      <div class="rc-top"><b>${esc(c.c)}</b><span>${c.g} Sp</span></div>
+      ${img(artUrl(c.c), "rc-bg")}
+      <span class="rc-ic"><span class="mini">${initials(c.c)}${img(iconUrl(c.c))}</span>${have.has(c.c) ? `<span class="rc-in" title="Schon in den Top-Picks">✓</span>` : ""}</span>
+      <div class="rc-top"><b>${esc(c.c)}</b>${c === mainC ? `<span class="rc-tag">Main</span>` : ""}<span>${c.g} Sp</span></div>
       <div class="rc-bar" aria-hidden="true"><i style="width:${pct(c.w, c.g)}%"></i></div>
       <div class="rc-sub"><b class="${pct(c.w, c.g) >= 50 ? "w" : "l"}">${pct(c.w, c.g)}%</b><span>${kda(c)} KDA</span></div>
     </div>`;
-  const list = big.length ? `<div class="rcs">${big.map(card).join("")}</div>
+  const list = big.length ? `<div class="rsec"><span>Meistgespielt</span><i></i>${offRole ? `<span class="rwarn" title="Meistgespielte Position in den geladenen Spielen">⚠ spielt meist ${RIOT_POS[mainPos[0]]}</span>` : ""}${rd.at ? `<span class="rh-time" title="Geladen ${esc(new Date(rd.at).toLocaleString("de-DE"))}">${relTime(rd.at)}</span>` : ""}</div><div class="rcs">${big.map(card).join("")}</div>
     ${rest.length ? `<div class="rmore"><span>Außerdem je ${rest.every(c => c.g === 1) ? "1 Spiel" : "wenige Spiele"}:</span>${rest.map(c => `<span class="mini" title="${esc(c.c)}: ${c.g} Sp · ${pct(c.w, c.g)}% · ${kda(c)} KDA">${initials(c.c)}${img(iconUrl(c.c))}</span>`).join("")}</div>` : ""}` : "";
-  return `<div class="rr-riot ${busy ? "busy" : ""}">${head}${err}${part}${list}</div>`;
+  return `<div class="rr-riot ${busy ? "busy" : ""}" style="--tc:${rk ? TIER_COLOR[rk.tier] || "#8b97ab" : "#8b97ab"}">${head}${err}${part}${list}</div>`;
 }
 let polls = {}, tasks = [], showDoneTasks = false, meta = {};
 // Eine Stimme abgeben – gilt für Chat-Umfragen und Termine, landet auch in der Verfügbarkeit
