@@ -1301,6 +1301,31 @@ dialog{border-radius:26px;background:linear-gradient(180deg,rgba(21,31,51,.97),r
 .evv-no.on{background:rgba(255,106,92,.16);border-color:rgba(255,106,92,.5);color:#ffb3aa}
 @media (max-width:560px){.ev-votes{padding-left:0}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+/* Riot-Matchdaten */
+.tool-riot{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;padding:.3rem .35rem .3rem .45rem;border-radius:14px;border:1px solid rgba(215,180,106,.28);background:rgba(215,180,106,.06)}
+.riot-logo{font-family:var(--fd);font-weight:800;font-size:.8rem;letter-spacing:.04em;color:#ff7a6b;background:rgba(255,106,92,.14);padding:.15rem .45rem;border-radius:6px}
+.tool-riot select{border:1px solid var(--line-2);background:rgba(6,10,18,.5);border-radius:8px;padding:.25rem .4rem;font-size:.85rem}
+.rr-riot{grid-column:1/-1;min-width:0;display:flex;flex-direction:column;gap:.5rem;padding-top:.6rem;border-top:1px dashed var(--line)}
+.rr-riot-head{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;font-size:.82rem;color:var(--muted)}
+.rr-riot-head b{color:var(--text)}
+.rk-pill{font-weight:800;font-size:.76rem;padding:.12rem .5rem;border-radius:999px;border:1px solid var(--line-2);background:rgba(6,10,18,.5);color:var(--gold-hi)}
+.rk-pill.warn{color:var(--warn);border-color:rgba(240,181,74,.4)}
+.rk-pill.bad{color:var(--bad);border-color:rgba(255,106,92,.4)}
+.rr-riot-head .spacer{flex:1}
+.riot-champs{display:flex;gap:.45rem;overflow-x:auto;padding-bottom:.2rem;scrollbar-width:thin}
+.riot-champ{flex:none;display:flex;align-items:center;gap:.45rem;padding:.3rem .55rem .3rem .3rem;border-radius:12px;border:1px solid var(--line);background:rgba(6,10,18,.45);font-size:.8rem;line-height:1.25}
+.riot-champ.in{border-color:rgba(215,180,106,.45)}
+.riot-champ .mini{width:32px;height:32px}
+.riot-champ b{display:block;font-size:.84rem;color:var(--text)}
+.riot-champ small{color:var(--muted);white-space:nowrap}
+.riot-champ small .w{color:var(--good)} .riot-champ small .l{color:var(--bad)}
+.riot-recent{display:flex;gap:3px}
+.riot-recent i{width:7px;height:16px;border-radius:2px;background:var(--bad);opacity:.8}
+.riot-recent i.w{background:var(--good)}
+.rr-riot-head .w{color:var(--good)} .rr-riot-head .l{color:var(--bad)}
+.riot-err{margin:0;font-size:.82rem;color:var(--bad)}
+@keyframes riotspin{to{transform:rotate(360deg)}}
+.riot-spin{display:inline-block;width:.8rem;height:.8rem;border:2px solid var(--line-2);border-top-color:var(--gold);border-radius:50%;animation:riotspin .8s linear infinite;vertical-align:-2px}
 </style>
 </head>
 <body>
@@ -1910,6 +1935,89 @@ const EV_TYPE = { liga: "Liga", scrim: "Scrim", training: "Training" };
 // ---- Discord-Text ----
 // ---- Discord-Webhook ----
 let discordUrl = "", discordAuto = false, remindOn = false, remindLead = 60;
+// ---------- Riot-API (über eigenen Proxy, siehe riot-proxy/) ----------
+let riotUrl = "", riotQueue = "ranked", riotCount = 15;
+const riotBusy = new Set();
+const RIOT_QUEUES = [["ranked","Ranked"],["solo","Solo/Duo"],["flex","Flex"],["tournament","Turnier"],["all","Alle"]];
+const RIOT_POS = { TOP:"Top", JUNGLE:"Jungle", MIDDLE:"Mid", BOTTOM:"Bot", UTILITY:"Support" };
+const TIER_DE = { IRON:"Eisen", BRONZE:"Bronze", SILVER:"Silber", GOLD:"Gold", PLATINUM:"Platin", EMERALD:"Smaragd", DIAMOND:"Diamant", MASTER:"Meister", GRANDMASTER:"Großmeister", CHALLENGER:"Challenger" };
+async function riotFetch(path, params, base = riotUrl){
+  let u; try { u = new URL(base.replace(/\/+$/, "") + "/" + path); } catch(e){ throw new Error("Ungültige Proxy-URL."); }
+  Object.entries(params || {}).forEach(([k, v]) => u.searchParams.set(k, v));
+  let r; try { r = await fetch(u); } catch(e){ throw new Error("Proxy nicht erreichbar."); }
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || "Fehler " + r.status);
+  return d;
+}
+// Kompakte Form, die im Team-Dokument gespeichert wird
+function riotCompact(d){
+  const solo = (d.rank || []).find(x => x.queue === "RANKED_SOLO_5x5") || (d.rank || [])[0];
+  return {
+    at: d.fetchedAt || Date.now(), q: d.queue, id: d.riotId, games: d.games, wins: d.wins,
+    pos: d.positions || {},
+    rank: solo ? { q: solo.queue === "RANKED_FLEX_SR" ? "Flex" : "Solo", tier: solo.tier, div: solo.rank, lp: solo.lp, w: solo.wins, l: solo.losses } : null,
+    champs: (d.champs || []).slice(0, 10).map(c => ({ c: DD.idName[c.id] || c.id, g: c.games, w: c.wins, k: c.k, d: c.d, a: c.a })),
+    recent: (d.recent || []).map(x => x.win ? 1 : 0)
+  };
+}
+async function riotLoadRole(teamId, r){
+  const t = team(teamId); if (!t) return false;
+  const pid = parseRiotId(roleOf(t, r).player, t.region); if (!pid) return false;
+  const key = teamId + ":" + r; if (riotBusy.has(key)) return false;
+  riotBusy.add(key); renderScout();
+  try {
+    const d = await riotFetch("", { id: pid.name + "#" + pid.tag, region: t.region || "euw", queue: riotQueue, count: riotCount });
+    mutTeam(teamId, x => { x.roles[r] = { ...roleOf(x, r), riot: riotCompact(d) }; });
+    return true;
+  } catch(e){
+    mutTeam(teamId, x => { x.roles[r] = { ...roleOf(x, r), riot: { ...(roleOf(x, r).riot || {}), err: e.message, errAt: Date.now() } }; });
+    return false;
+  } finally { riotBusy.delete(key); renderScout(); }
+}
+async function riotLoadAll(teamId){
+  const t = team(teamId); if (!t) return;
+  const roles = ROLES.filter(r => parseRiotId(roleOf(t, r).player, t.region));
+  if (!roles.length) return toast("Erst Riot-IDs eintragen.");
+  let ok = 0;
+  for (const r of roles) if (await riotLoadRole(teamId, r)) ok++; // nacheinander, schont das Riot-Limit
+  toast(ok === roles.length ? `Matchdaten für ${ok} Spieler geladen.` : `${ok} von ${roles.length} geladen – Fehler stehen beim Spieler.`);
+}
+function riotTake(teamId, r){
+  mutTeam(teamId, t => {
+    const sr = roleOf(t, r), rd = sr.riot; if (!rd || !rd.champs) return;
+    const have = new Set(sr.champs.map(x => x.c));
+    const add = rd.champs.filter(c => !have.has(c.c)).slice(0, Math.max(0, 5 - sr.champs.length) || 3).map(c => ({ c: c.c }));
+    t.roles[r] = { ...sr, champs: [...sr.champs, ...add] };
+  });
+}
+const kda = c => c.d ? ((c.k + c.a) / c.d).toFixed(1) : "Perfekt";
+const pct = (w, g) => g ? Math.round(w / g * 100) : 0;
+function riotBlock(t, r, sr, ed){
+  const rd = sr.riot, busy = riotBusy.has(viewId + ":" + r), hasId = !!parseRiotId(sr.player, t.region);
+  if (!rd && !busy) return "";
+  const have = new Set(sr.champs.map(x => x.c));
+  const mainPos = rd && rd.pos ? Object.entries(rd.pos).sort((a, b) => b[1] - a[1])[0] : null;
+  const offRole = mainPos && RIOT_POS[mainPos[0]] && RIOT_POS[mainPos[0]] !== r && mainPos[1] / (rd.games || 1) >= .5;
+  const rk = rd && rd.rank;
+  const qLabel = rd && rd.q ? (RIOT_QUEUES.find(x => x[0] === rd.q) || [, rd.q])[1] : "";
+  const head = `<div class="rr-riot-head">
+      <span class="riot-logo">RIOT</span>
+      ${busy ? `<span><span class="riot-spin"></span> lade Matchdaten…</span>` : ""}
+      ${rk ? `<span class="rk-pill" title="${esc(rk.q)}: ${rk.w}S / ${rk.l}N">${esc(TIER_DE[rk.tier] || rk.tier)}${["MASTER","GRANDMASTER","CHALLENGER"].includes(rk.tier) ? "" : " " + esc(rk.div || "")} · ${rk.lp} LP</span>` : rd && rd.games != null && !busy ? `<span class="rk-pill">Unranked</span>` : ""}
+      ${rd && rd.games ? `<span><b>${rd.games}</b> ${esc(qLabel)}-Spiele · <b class="${pct(rd.wins, rd.games) >= 50 ? "w" : "l"}">${pct(rd.wins, rd.games)}%</b> Siege</span>` : rd && rd.games === 0 && !busy ? `<span>Keine ${esc(qLabel)}-Spiele gefunden</span>` : ""}
+      ${rd && rd.recent && rd.recent.length ? `<span class="riot-recent" title="Letzte Spiele, neuestes links">${rd.recent.map(w => `<i class="${w ? "w" : ""}"></i>`).join("")}</span>` : ""}
+      ${offRole ? `<span class="rk-pill warn" title="Meistgespielte Position in den geladenen Spielen">spielt meist ${RIOT_POS[mainPos[0]]}</span>` : ""}
+      <span class="spacer"></span>
+      ${rd && rd.at ? `<span title="${esc(new Date(rd.at).toLocaleString("de-DE"))}">${relTime(rd.at)}</span>` : ""}
+      ${ed && hasId && riotUrl && !busy ? `<button class="btn sm ghost" data-action="riot-role" data-role="${r}">Neu laden</button>` : ""}
+      ${ed && rd && rd.champs && rd.champs.some(c => !have.has(c.c)) ? `<button class="btn sm" data-action="riot-take" data-role="${r}" title="Meistgespielte Champions als Top-Picks eintragen">Als Top-Picks</button>` : ""}
+    </div>`;
+  const err = rd && rd.err && (!rd.at || rd.errAt > rd.at) ? `<p class="riot-err">${esc(rd.err)}</p>` : "";
+  const list = rd && rd.champs && rd.champs.length ? `<div class="riot-champs">${rd.champs.map(c => `<div class="riot-champ ${have.has(c.c) ? "in" : ""}" title="${esc(c.c)}: ${c.g} Spiele, ${c.w} Siege, KDA ${(c.k / c.g).toFixed(1)}/${(c.d / c.g).toFixed(1)}/${(c.a / c.g).toFixed(1)}">
+      <span class="mini">${initials(c.c)}${img(iconUrl(c.c))}</span>
+      <span><b>${esc(c.c)}</b><small>${c.g} Sp · <span class="${pct(c.w, c.g) >= 50 ? "w" : "l"}">${pct(c.w, c.g)}%</span> · ${kda(c)} KDA</small></span></div>`).join("")}</div>` : "";
+  return `<div class="rr-riot">${head}${err}${list}</div>`;
+}
 let polls = {}, tasks = [], showDoneTasks = false, meta = {};
 // Eine Stimme abgeben – gilt für Chat-Umfragen und Termine, landet auch in der Verfügbarkeit
 function castVote(pollId, v, date){
@@ -2374,6 +2482,15 @@ function renderScout(){
           ${ed ? `<button class="btn sm ghost" data-action="paste-ids">IDs einfügen</button>` : ""}
           <button class="btn sm ghost" data-action="share-team" title="${discordUrl ? "An Discord senden" : "Für Discord kopieren"}">${discordUrl ? "An Discord" : "Discord"}</button>
         </div>
+        <div class="tool-riot">
+          <span class="riot-logo">RIOT</span>
+          ${!riotUrl ? `<span class="hint" style="margin:0">Matchdaten: Riot-Proxy in den Einstellungen eintragen.</span>${ed ? `<button class="btn sm ghost" data-action="riot-settings">Einrichten</button>` : ""}`
+            : !riotIds(t).length ? `<span class="hint" style="margin:0">Riot-IDs eintragen, dann lassen sich echte Matchdaten laden.</span>`
+            : ed ? `<select id="riot-q" aria-label="Welche Spiele?">${RIOT_QUEUES.map(([v, l]) => `<option value="${v}" ${riotQueue === v ? "selected" : ""}>${l}</option>`).join("")}</select>
+              <select id="riot-n" aria-label="Anzahl Spiele">${[10,15,20,30].map(n => `<option value="${n}" ${riotCount === n ? "selected" : ""}>${n} Spiele</option>`).join("")}</select>
+              <button class="btn sm gold" data-action="riot-all" ${[...riotBusy].some(k => k.startsWith(viewId + ":")) ? "disabled" : ""}>Matchdaten laden</button>`
+            : `<span class="hint" style="margin:0">Matchdaten werden vom Team geladen.</span>`}
+        </div>
         <label class="tool-field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>
           <input id="tm-link" data-tf="link" value="${esc(t.link)}" placeholder="Link zur Prime-League-Teamseite" ${dis} aria-label="Link">
           ${/^https?:\/\//.test(t.link) ? `<a class="btn sm" href="${esc(t.link)}" target="_blank" rel="noopener">Öffnen ↗</a>` : ""}</label>
@@ -2428,6 +2545,7 @@ function renderScout(){
               </div>`; }).join("")}
             ${ed ? `<button class="pick-add" data-action="sc-add" data-role="${r}" aria-label="Champions für ${r} hinzufügen"><span>+</span>${sr.champs.length ? "" : "Top-Picks"}</button>` : (!sr.champs.length ? `<p class="hint" style="margin:auto 0">Keine Top-Picks.</p>` : "")}
           </div>
+          ${riotBlock(t, r, sr, ed)}
         </section>`; }).join("")}</div>
       <aside class="ban-panel">
         <div class="bp-head"><h3>Bann-Plan</h3>${t.tag || t.name ? `<span>gegen ${esc(t.tag || t.name)}</span>` : ""}</div>
@@ -2552,7 +2670,7 @@ function openEditor(kind, id){
     const sameDay = history.filter(h => h.oppId && h.oppId === activeId && kindOf(h) === "liga" && new Date(h.at).toDateString() === today).length;
     edit = { kind, isNew: true, buf: { result: "", note: "", dur: "", clear: true, type: activeId ? "liga" : "scrim", game: sameDay ? 2 : 1, side: draft.side || "", scrimName: "" } };
   } else if (kind === "s"){
-    edit = { kind, isNew: false, buf: { pw: "", importData: null, importName: "", hook: discordUrl, auto: discordAuto, remind: remindOn, lead: remindLead } };
+    edit = { kind, isNew: false, buf: { pw: "", importData: null, importName: "", hook: discordUrl, auto: discordAuto, remind: remindOn, lead: remindLead, riot: riotUrl } };
   } else {
     const c = combos.find(x => x.id === id);
     const rows = ROLES.map(r => ({ role: r, player: (byRole(r) || mainFor(r) || {}).id || "", options: [] }));
@@ -2741,6 +2859,9 @@ function renderModal(focusSel){
         <label class="switch-row" style="margin:.6rem 0 0"><input type="checkbox" data-action="remind-on" ${b.remind ? "checked" : ""}><span class="switch" aria-hidden="true"></span><span><b>Erinnerungen vor Terminen</b><small>Postet vor jedem Termin, wer dabei ist. Klappt nur, wenn zu der Zeit jemand das Board offen hat.</small></span></label>
         ${b.remind ? `<div class="field" style="margin:.5rem 0 0"><label for="rm-lead">Wann erinnern?</label><select class="inp" id="rm-lead" data-bind="lead">${[[30,"30 Minuten vorher"],[60,"1 Stunde vorher"],[120,"2 Stunden vorher"],[240,"4 Stunden vorher"],[1440,"1 Tag vorher"]].map(([v, l]) => `<option value="${v}" ${+b.lead === v ? "selected" : ""}>${l}</option>`).join("")}</select></div>` : ""}
         ${discordUrl ? `<button class="btn sm danger" style="margin-top:.6rem" data-action="hook-remove">Webhook entfernen</button>` : ""}
+        <h3 class="sh">Riot-API (Matchdaten)</h3>
+        <p class="small-hint" style="margin:0 0 .6rem">Lädt unter „Gegner-Picks“ die echten letzten Spiele der Gegner: meistgespielte Champions, Winrate, KDA und Rang. Der Riot-Key liegt dafür in einem eigenen kleinen Proxy (Cloudflare Worker, Anleitung im Ordner <code>riot-proxy/</code>), nie hier im Board.</p>
+        <div class="addrow" style="flex-wrap:wrap"><input class="inp" style="min-width:14rem" data-bind="riot" value="${esc(b.riot || "")}" placeholder="https://draftboard-riot.….workers.dev" autocomplete="off"><button class="btn sm" data-action="riot-test">Testen</button><button class="btn sm gold" data-action="riot-save">Speichern</button></div>
         <h3 class="sh">Team-Passwort</h3>
         <p class="small-hint" style="margin:0 0 .6rem">${access ? "Ein Passwort ist gesetzt. Jeder muss es einmal pro Gerät eingeben." : "Noch kein Passwort. Jeder mit dem Link kann alles sehen und ändern."} Es hält Zufallsbesucher fern, ist aber kein echter Schutz wie ein Login.</p>
         <div class="addrow"><input class="inp" type="password" data-bind="pw" value="${esc(b.pw)}" placeholder="${access ? "Neues Passwort" : "Passwort festlegen"}" autocomplete="new-password"><button class="btn sm gold" data-action="set-pw">${access ? "Ändern" : "Festlegen"}</button></div>
@@ -2948,6 +3069,20 @@ document.addEventListener("click", async e => {
     case "hook-save": {
       const u = (b.hook || "").trim(); if (u && !WEBHOOK_RE.test(u)) return toast("Das ist keine gültige Discord-Webhook-URL.");
       try { await db.doc("config/discord").set({ url: u, auto: !!b.auto, remind: !!b.remind, lead: +b.lead || 60 }, { merge: true }); discordUrl = u; discordAuto = !!b.auto; remindOn = !!b.remind; remindLead = +b.lead || 60; toast(u ? "Webhook gespeichert." : "Webhook entfernt."); renderModal(); render(); } catch(err){ writeError(err); }
+      break;
+    }
+    case "riot-settings": openEditor("s"); break;
+    case "riot-all": if (viewId) riotLoadAll(viewId); break;
+    case "riot-role": if (viewId) riotLoadRole(viewId, a.dataset.role).then(ok => ok && toast("Matchdaten geladen.")); break;
+    case "riot-take": if (viewId){ riotTake(viewId, a.dataset.role); toast("Als Top-Picks eingetragen."); } break;
+    case "riot-test": {
+      const u = (b.riot || "").trim(); if (!/^https:\/\//.test(u)) return toast("Bitte eine https-Adresse eintragen.");
+      try { const d = await riotFetch("health", {}, u); toast(d.key ? "Proxy erreichbar, API-Key ist gesetzt." : "Proxy erreichbar, aber RIOT_API_KEY fehlt."); } catch(err){ toast(err.message); }
+      break;
+    }
+    case "riot-save": {
+      const u = (b.riot || "").trim(); if (u && !/^https:\/\//.test(u)) return toast("Bitte eine https-Adresse eintragen.");
+      try { await db.doc("config/riot").set({ url: u }, { merge: true }); riotUrl = u; toast(u ? "Riot-Proxy gespeichert." : "Riot-Proxy entfernt."); renderModal(); render(); } catch(err){ writeError(err); }
       break;
     }
     case "hook-auto": b.auto = a.checked; if (discordUrl) { discordAuto = b.auto; db.doc("config/discord").set({ auto: b.auto }, { merge: true }).catch(writeError); } break;
@@ -3228,6 +3363,8 @@ modal.addEventListener("keydown", e => {
 
 document.addEventListener("change", e => {
   if (e.target.id === "rm-lead" && edit){ edit.buf.lead = +e.target.value; remindLead = edit.buf.lead; if (discordUrl) db.doc("config/discord").set({ lead: remindLead }, { merge: true }).catch(writeError); return; }
+  if (e.target.id === "riot-q"){ riotQueue = e.target.value; db.doc("config/riot").set({ queue: riotQueue }, { merge: true }).catch(writeError); return; }
+  if (e.target.id === "riot-n"){ riotCount = +e.target.value || 15; db.doc("config/riot").set({ count: riotCount }, { merge: true }).catch(writeError); return; }
   if (e.target.id === "tm-reg" && viewId){ mutTeam(viewId, t => { t.region = e.target.value; }); return; }
   if (e.target.id === "oppSelect"){ setActive(e.target.value || null); if (e.target.value) viewId = e.target.value; return; }
   const sel = e.target.closest(".slot-select"); if (!sel || !canEdit()) return;
@@ -3350,6 +3487,7 @@ loadDD();
   db.doc("config/meta").onSnapshot(s => { meta = { ...(s.exists ? s.data() : {}), loaded: true }; scheduleRender(); }, onErr);
   db.doc("config/chat").onSnapshot(s => { chat = s.exists ? [...(s.data().items || [])].sort((a, b) => a.at - b.at) : []; chatLoaded = true; renderChat(); }, onErr);
   db.doc("config/discord").onSnapshot(s => { const d = s.exists ? s.data() : {}; discordUrl = d.url || ""; discordAuto = !!d.auto; remindOn = !!d.remind; remindLead = +d.lead || 60; clearTimeout(checkReminders.t); checkReminders.t = setTimeout(checkReminders, 2500); scheduleRender(); }, onErr);
+  db.doc("config/riot").onSnapshot(s => { const d = s.exists ? s.data() : {}; riotUrl = d.url || ""; riotQueue = RIOT_QUEUES.some(x => x[0] === d.queue) ? d.queue : "ranked"; riotCount = [10,15,20,30].includes(+d.count) ? +d.count : 15; scheduleRender(); }, onErr);
   db.doc("config/availability").onSnapshot(s => { avail = s.exists ? { ...(s.data().weeks || {}) } : {}; scheduleRender(); }, onErr);
   db.doc("config/events").onSnapshot(s => { events = s.exists ? [...(s.data().items || [])] : []; scheduleRender(); clearTimeout(checkReminders.t); checkReminders.t = setTimeout(checkReminders, 2500); }, onErr);
   db.doc("config/goals").onSnapshot(s => { goals = s.exists ? [...(s.data().items || [])] : []; scheduleRender(); }, onErr);

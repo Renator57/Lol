@@ -1,0 +1,8 @@
+name = "draftboard-riot"
+main = "worker.js"
+compatibility_date = "2026-09-01"
+
+[vars]
+# Nur diese Seiten dürfen den Proxy nutzen. "*" = alle.
+# Beispiel: ALLOWED_ORIGINS = "https://deinname.github.io,https://league-41c88.web.app"
+ALLOWED_ORIGINS = "*"
