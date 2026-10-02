@@ -1440,6 +1440,28 @@ dialog{border-radius:26px;background:linear-gradient(180deg,rgba(21,31,51,.97),r
 /* App */
 .install-btn{gap:.3rem;padding:.32rem .65rem}
 @media (max-width:720px){.install-btn span{display:none}}
+/* Scouting-Bericht */
+.sr-panel{margin-bottom:1rem}
+.sr-head{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.8rem}
+.sr-head h3{margin-right:.3rem}
+.sr-txt{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.2}
+.sr-pill{flex:none;font-size:.76rem;font-weight:800;padding:.2rem .6rem;border-radius:999px;border:1px solid var(--line-2);background:rgba(6,10,18,.5);white-space:nowrap}
+.sr-pill.avg{color:var(--gold-hi);border-color:rgba(215,180,106,.45)}
+.sr-pill.w{color:var(--good)} .sr-pill.l{color:var(--bad)}
+.sr-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:.7rem}
+.sr-card{padding:.7rem .8rem;border-radius:14px;border:1px solid var(--line);background:rgba(6,10,18,.4);display:flex;flex-direction:column;gap:.45rem;min-width:0}
+.sr-card .flabel{margin:0 0 .1rem}
+.sr-row{display:flex;align-items:center;gap:.5rem;font-size:.85rem;min-width:0}
+.sr-row .mini{width:28px;height:28px;border-radius:8px}
+.sr-role{min-width:4.2rem;font-size:.78rem;color:#ffb3aa}
+.sr-ch{display:inline-flex;flex-direction:column;align-items:center;gap:1px}
+.sr-ch small{font-size:.66rem;color:var(--muted);font-weight:700}
+.sr-sub{display:block;font-size:.72rem;color:var(--muted)}
+.sr-row b.w{color:var(--good)} .sr-row b.l{color:var(--bad)}
+.sr-num{width:1.2rem;color:var(--gold)}
+.sr-ok{font-size:.7rem;font-style:normal;color:var(--good);font-weight:800;margin-left:auto}
+.sr-row .ib{margin-left:auto}
+.sr-notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:.4rem;margin-top:.7rem}
 </style>
 </head>
 <body>
@@ -2122,6 +2144,7 @@ function riotCompact(d){
     champs: (d.champs || []).slice(0, 10).map(c => ({ c: DD.idName[c.id] || c.id, g: c.games, w: c.wins, k: c.k, d: c.d, a: c.a })),
     kda: d.kda || null,
     recent: (d.recent || []).map(x => ({ w: x.win ? 1 : 0, c: DD.idName[x.champ] || x.champ || "", k: x.k, d: x.d, a: x.a })),
+    m: (Array.isArray(d.matches) ? d.matches : []).slice(0, 30).map(x => ({ i: String(x[0]), c: DD.idName[x[1]] || x[1] || "", w: x[2] ? 1 : 0 })),
     part: d.partial && d.requested ? { got: N(d.loaded), of: N(d.requested) } : null
   };
 }
@@ -2196,6 +2219,7 @@ function riotView(rd){
   const pos = {}; if (rd.pos && typeof rd.pos === "object") Object.entries(rd.pos).forEach(([k, v]) => { if (RIOT_POS[k]) pos[k] = N(v); });
   return { at: N(rd.at), q: String(rd.q || ""), id: String(rd.id || ""), games: rd.games == null ? null : N(rd.games), wins: N(rd.wins), pos, rank: rk, champs, kda: kd,
     recent: (Array.isArray(rd.recent) ? rd.recent : []).map(x => x && typeof x === "object" ? { w: !!x.w, c: x.c ? officialName(String(x.c)) : "", k: x.k == null ? null : N(x.k), d: N(x.d), a: N(x.a) } : { w: !!x, c: "", k: null }),
+    m: (Array.isArray(rd.m) ? rd.m : []).filter(x => x && x.i).map(x => ({ i: String(x.i), c: officialName(String(x.c || "?")), w: !!x.w })),
     part: rd.part && typeof rd.part === "object" ? { got: N(rd.part.got), of: N(rd.part.of) } : null, err: rd.err ? String(rd.err) : "", errAt: N(rd.errAt) };
 }
 // Gehören die Daten noch zur eingetragenen Riot-ID?
@@ -2217,18 +2241,91 @@ function riotTake(teamId, r){
   });
 }
 // Bann-Vorschläge: Mains der Gegner (Anteil an den Spielen × geglättete Winrate)
-function riotBanIdeas(t){
+function riotBanIdeas(t, withPlanned){
   const out = [];
   ROLES.forEach(r => {
     const sr = roleOf(t, r), rd = riotView(sr.riot);
     if (!rd || !rd.games || !riotFresh(sr, t, rd)) return;
     rd.champs.forEach(c => {
       if (c.g < 2 && c.g / rd.games < .3) return;
+      if ((c.w + 2) / (c.g + 4) < .45) return; // verliert damit meist – Bann lohnt nicht
       out.push({ c: c.c, r, g: c.g, w: c.w, score: (c.g / rd.games) * ((c.w + 2) / (c.g + 4)) });
     });
   });
   const seen = new Set();
-  return out.sort((a, b) => b.score - a.score).filter(x => !t.banPlan.includes(x.c) && !seen.has(x.c) && seen.add(x.c)).slice(0, 5);
+  return out.sort((a, b) => b.score - a.score).filter(x => (withPlanned || !t.banPlan.includes(x.c)) && !seen.has(x.c) && seen.add(x.c)).slice(0, 5);
+}
+// ---------- Scouting-Bericht aus den Matchdaten ----------
+const TIER_ORDER = ["IRON","BRONZE","SILVER","GOLD","PLATINUM","EMERALD","DIAMOND","MASTER","GRANDMASTER","CHALLENGER"];
+const APEX = ["MASTER","GRANDMASTER","CHALLENGER"];
+const DIVS = ["IV","III","II","I"];
+const rankValue = rk => { const i = TIER_ORDER.indexOf(rk.tier); return i < 0 ? null : i * 4 + (APEX.includes(rk.tier) ? 0 : Math.max(0, DIVS.indexOf(rk.div))) + Math.min(N(rk.lp), 99) / 100; };
+const rankLabel = v => { const i = Math.min(TIER_ORDER.length - 1, Math.floor(v / 4)), tier = TIER_ORDER[i]; return { tier, txt: (TIER_DE[tier] || tier) + (APEX.includes(tier) ? "" : " " + DIVS[Math.min(3, Math.floor(v % 4))]) }; };
+function scoutReport(t){
+  const P = ROLES.map(r => { const sr = roleOf(t, r), rd = riotView(sr.riot); return { r, sr, rd: rd && rd.games && riotFresh(sr, t, rd) ? rd : null }; }).filter(x => x.rd);
+  if (!P.length) return null;
+  const ranks = P.map(x => x.rd.rank && rankValue(x.rd.rank)).filter(v => v != null);
+  const avg = ranks.length ? rankLabel(ranks.reduce((a, b) => a + b, 0) / ranks.length) : null;
+  const games = P.reduce((s, x) => s + x.rd.games, 0), wins = P.reduce((s, x) => s + x.rd.wins, 0);
+  // Pool je Rolle
+  const pools = P.map(x => ({ r: x.r, player: x.sr.player, champs: (x.rd.champs.filter(c => c.g >= 2).length ? x.rd.champs.filter(c => c.g >= 2) : x.rd.champs).slice(0, 3), games: x.rd.games }));
+  // Duos: gemeinsame Spiele zweier Gegner (gleiche Match-ID)
+  const duos = [];
+  for (let i = 0; i < P.length; i++) for (let j = i + 1; j < P.length; j++){
+    const a = P[i], b = P[j]; if (!a.rd.m.length || !b.rd.m.length) continue;
+    const mb = new Map(b.rd.m.map(x => [x.i, x]));
+    const common = a.rd.m.filter(x => mb.has(x.i)); if (common.length < 2) continue;
+    const pairs = {}; common.forEach(x => { const k = x.c + " + " + mb.get(x.i).c; pairs[k] = (pairs[k] || 0) + 1; });
+    const top = Object.entries(pairs).sort((p, q) => q[1] - p[1])[0];
+    duos.push({ a: a.r, b: b.r, n: common.length, w: common.filter(x => x.w).length, top: top[1] >= 2 ? top : null });
+  }
+  duos.sort((p, q) => q.n - p.n);
+  // Flex: derselbe Champion bei mehreren Gegnern
+  const byChamp = {};
+  P.forEach(x => x.rd.champs.forEach(c => (byChamp[c.c] = byChamp[c.c] || []).push({ r: x.r, g: c.g })));
+  const flex = Object.entries(byChamp).filter(([, v]) => v.length >= 2 && v.some(y => y.g >= 2)).map(([c, v]) => ({ c, roles: v.sort((p, q) => q.g - p.g) })).sort((p, q) => q.roles.reduce((s, y) => s + y.g, 0) - p.roles.reduce((s, y) => s + y.g, 0)).slice(0, 5);
+  // Auffälligkeiten
+  const notes = [];
+  P.forEach(x => {
+    const main = x.rd.champs[0];
+    if (main && main.g / x.rd.games >= .5 && main.g >= 4) notes.push(pct(main.w, main.g) >= 50
+      ? { k: "bad", t: `${x.r}: One-Trick ${main.c} (${main.g} von ${x.rd.games} Spielen, ${pct(main.w, main.g)} % Siege) – Bann lohnt sich` }
+      : { k: "warn", t: `${x.r}: spielt fast nur ${main.c}, gewinnt damit aber nur ${pct(main.w, main.g)} %` });
+    const mp = Object.entries(x.rd.pos).sort((p, q) => q[1] - p[1])[0];
+    if (mp && RIOT_POS[mp[0]] !== x.r && mp[1] / x.rd.games >= .5) notes.push({ k: "warn", t: `${x.r}: spielt meist ${RIOT_POS[mp[0]]} – evtl. andere Rolle im Spiel` });
+    const last = x.rd.recent.slice(0, 5);
+    if (last.length >= 5){ const lw = last.filter(y => y.w).length; if (lw >= 4) notes.push({ k: "bad", t: `${x.r}: in Form (${lw} der letzten 5 gewonnen)` }); else if (lw <= 1) notes.push({ k: "good", t: `${x.r}: schwache Form (${lw} der letzten 5 gewonnen)` }); }
+    if (x.rd.kda && x.rd.kda.d && (x.rd.kda.k + x.rd.kda.a) / x.rd.kda.d < 2) notes.push({ k: "good", t: `${x.r}: stirbt oft (KDA ${((x.rd.kda.k + x.rd.kda.a) / x.rd.kda.d).toFixed(1)}) – früh Druck machen` });
+  });
+  return { P, avg, games, wins, pools, duos: duos.slice(0, 4), flex, notes, bans: riotBanIdeas(t, true).slice(0, 3), missing: ROLES.filter(r => !P.some(x => x.r === r)) };
+}
+function reportHtml(t, ed){
+  const R = scoutReport(t); if (!R) return "";
+  const pill = (txt, cls = "") => `<span class="sr-pill ${cls}">${txt}</span>`;
+  return `<section class="panel sr-panel">
+    <div class="sr-head"><h3>Scouting-Bericht</h3>
+      ${R.avg ? pill(`Ø ${esc(R.avg.txt)}`, "avg") : ""}${pill(`${pct(R.wins, R.games)} % Winrate`, pct(R.wins, R.games) >= 50 ? "w" : "l")}${pill(`${R.games} Spiele von ${R.P.length} Spielern`)}
+      <span class="spacer"></span><button class="btn sm ghost" data-action="share-report">${discordUrl ? "An Discord" : "Für Discord kopieren"}</button></div>
+    ${R.missing.length ? `<p class="small-hint" style="margin:0 0 .6rem">Ohne Matchdaten: ${R.missing.join(", ")}</p>` : ""}
+    <div class="sr-grid">
+      <div class="sr-card"><span class="flabel">Pool je Rolle</span>${R.pools.map(p => `<div class="sr-row"><b class="sr-role">${p.r}</b><span class="opts-row">${p.champs.map(c => `<span class="sr-ch" title="${esc(c.c)}: ${c.g} Spiele, ${pct(c.w, c.g)} % Siege"><span class="mini">${initials(c.c)}${img(iconUrl(c.c))}</span><small>${c.g}</small></span>`).join("")}</span></div>`).join("")}</div>
+      <div class="sr-card"><span class="flabel">Spielen zusammen</span>${R.duos.length ? R.duos.map(d => `<div class="sr-row"><b class="sr-role">${d.a} + ${d.b}</b><span>${d.n} Spiele · <b class="${pct(d.w, d.n) >= 50 ? "w" : "l"}">${pct(d.w, d.n)} %</b>${d.top ? `<small class="sr-sub">${esc(d.top[0])} ${d.top[1]}×</small>` : ""}</span></div>`).join("") : `<p class="small-hint" style="margin:.2rem 0">Keine gemeinsamen Spiele in den geladenen Daten. Tipp: Filter „Alle“ oder „Turnier“ und mehr Spiele laden.</p>`}</div>
+      <div class="sr-card"><span class="flabel">Flex-Picks</span>${R.flex.length ? R.flex.map(f => `<div class="sr-row"><span class="mini">${initials(f.c)}${img(iconUrl(f.c))}</span><span class="sr-txt"><b>${esc(f.c)}</b><small class="sr-sub">${f.roles.map(y => `${y.r} ${y.g}×`).join(" · ")}</small></span></div>`).join("") : `<p class="small-hint" style="margin:.2rem 0">Kein Champion bei mehreren Gegnern.</p>`}</div>
+      <div class="sr-card"><span class="flabel">Bann-Empfehlung</span>${R.bans.length ? R.bans.map((x, i) => `<div class="sr-row"><b class="sr-num">${i + 1}</b><span class="mini">${initials(x.c)}${img(iconUrl(x.c))}</span><span class="sr-txt"><b>${esc(x.c)}</b><small class="sr-sub">${x.r} · ${x.g} Sp · ${pct(x.w, x.g)} %</small></span>${t.banPlan.includes(x.c) ? `<em class="sr-ok">im Plan</em>` : ed ? `<button class="ib" data-action="sc-ban" data-c="${esc(x.c)}" title="In den Bann-Plan">+</button>` : ""}</div>`).join("") : `<p class="small-hint" style="margin:.2rem 0">Zu wenige Daten.</p>`}</div>
+    </div>
+    ${R.notes.length ? `<div class="sr-notes">${R.notes.map(n => `<div class="check ${n.k}"><i></i><span>${esc(n.t)}</span></div>`).join("")}</div>` : ""}
+  </section>`;
+}
+function shareReport(t){
+  const R = scoutReport(t); if (!R) return shareTeam(t);
+  const lines = [`**Scouting: ${t.name || t.tag || "Gegner"}**${t.date ? " · " + fmtDay(t.date) : ""}`];
+  lines.push(`${R.avg ? "Ø " + R.avg.txt + " · " : ""}${pct(R.wins, R.games)} % Winrate in ${R.games} Spielen`);
+  R.pools.forEach(p => lines.push(`${p.r}${p.player ? " – " + p.player : ""}: ${p.champs.map(c => `${c.c} ${c.g}× (${pct(c.w, c.g)} %)`).join(", ")}`));
+  if (R.duos.length) lines.push("", "**Spielen zusammen:** " + R.duos.map(d => `${d.a}+${d.b} ${d.n}×${d.top ? " (" + d.top[0] + ")" : ""}`).join(" · "));
+  if (R.flex.length) lines.push("**Flex:** " + R.flex.map(f => `${f.c} (${f.roles.map(y => y.r).join("/")})`).join(", "));
+  if (R.bans.length) lines.push("**Bann-Empfehlung:** " + R.bans.map((x, i) => `${i + 1}. ${x.c}`).join("  "));
+  R.notes.forEach(n => lines.push(`${n.k === "bad" ? "⚠️" : n.k === "good" ? "✅" : "•"} ${n.t}`));
+  return lines.join("\n");
 }
 // Matchdaten-Zeile eines Gegners zu einem Champion (für Draft und Pick-Dialog)
 function riotChampLine(sr, c, t){
@@ -2821,6 +2918,7 @@ function renderScout(){
             : `<p class="hint" style="margin:.2rem 0">Noch keine Pläne. Stellt im Draft eure Aufstellung zusammen und tippt dort auf „+ Als Plan speichern“.</p>`}
         </section></div>`;
     })()}
+    ${reportHtml(t, ed)}
     <div class="scout-grid">
       <div class="roster">${ROLES.map(r => { const sr = roleOf(t, r), hasId = !!sr.player.trim();
         return `<section class="roster-row">
@@ -3369,6 +3467,7 @@ document.addEventListener("click", async e => {
     case "share-week": shareOut(shareWeek(weekInfo(weekOffset))); break;
     case "share-draft": shareOut(shareDraft()); break;
     case "share-team": shareOut(shareTeam(vt())); break;
+    case "share-report": shareOut(shareReport(vt())); break;
     case "share-plan": { const t = vt(), pl = t && (t.plans || []).find(x => x.id === a.dataset.id); if (pl) shareOut(sharePlan(t, pl)); break; }
     case "share-game": { const h = history.find(x => x.id === a.dataset.id); if (h) shareOut(shareGame(h), h.result === "win" ? 0x3FD17F : h.result === "loss" ? 0xFF6A5C : 0xD7B46A); break; }
     case "share-ev": { const e = allEvents().find(x => x.id === a.dataset.id); if (!e) break; const { info: wi, day } = weekKeyOf(e.date); const st = dayStatus(wi.key, day);

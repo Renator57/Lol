@@ -28,7 +28,7 @@ const QUEUES = {
   tournament: "type=tournament", // Turnier-Codes (z. B. Prime League)
   all:        "",
 };
-const VERSION = 2;           // vom Board geprüft (Einstellungen → Testen)
+const VERSION = 3;           // vom Board geprüft (Einstellungen → Testen)
 const MAX_COUNT = 30;
 // Cloudflare-eigener Standard-Cache (caches.default fehlt in den Browser-Typen)
 const edgeCache = () => /** @type {Cache} */ (/** @type {any} */ (caches).default);
@@ -178,7 +178,7 @@ class RiotError extends Error {
 function summarize(acc, puuid, matches, leagues, meta) {
   const champs = {}, positions = {};
   let games = 0, wins = 0, k = 0, d = 0, a = 0;
-  const recent = [];
+  const recent = [], list = [];
   for (const m of matches) {
     const info = m.info || {};
     if (info.gameDuration && info.gameDuration < 300) continue; // Remakes ignorieren
@@ -192,6 +192,8 @@ function summarize(acc, puuid, matches, leagues, meta) {
     c.games++; if (p.win) c.wins++;
     c.k += p.kills; c.d += p.deaths; c.a += p.assists;
     if (pos) c.pos[pos] = (c.pos[pos] || 0) + 1;
+    // kompakte Spieleliste: erkennt im Board gemeinsame Spiele (Duos) der Gegner
+    if (m.metadata && m.metadata.matchId) list.push([m.metadata.matchId, p.championName, p.win ? 1 : 0, pos]);
     if (recent.length < 10) recent.push({ champ: p.championName, win: !!p.win, k: p.kills, d: p.deaths, a: p.assists, pos, queue: info.queueId, at: info.gameStartTimestamp || info.gameCreation, dur: info.gameDuration });
   }
   return {
@@ -204,6 +206,7 @@ function summarize(acc, puuid, matches, leagues, meta) {
     champs: Object.values(champs).sort((a, b) => b.games - a.games || b.wins - a.wins),
     rank: (Array.isArray(leagues) ? leagues : []).map(l => ({ queue: l.queueType, tier: l.tier, rank: l.rank, lp: l.leaguePoints, wins: l.wins, losses: l.losses })),
     recent,
+    matches: list,
   };
 }
 
