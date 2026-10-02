@@ -5,7 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#050d18">
 <title>Draft Board</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚔️</text></svg>">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Draft Board">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://ddragon.leagueoflegends.com">
@@ -1431,6 +1437,9 @@ dialog{border-radius:26px;background:linear-gradient(180deg,rgba(21,31,51,.97),r
 .e-riot{display:block;font-size:.72rem;font-weight:700;color:#ffd0c9;text-shadow:0 1px 6px rgba(0,0,0,.8)}
 .tile .owner.riot{color:#ffb3aa;font-weight:700}
 .mini-btn small{display:block;font-size:.66rem;color:var(--muted);font-weight:700}
+/* App */
+.install-btn{gap:.3rem;padding:.32rem .65rem}
+@media (max-width:720px){.install-btn span{display:none}}
 </style>
 </head>
 <body>
@@ -1448,6 +1457,7 @@ dialog{border-radius:26px;background:linear-gradient(180deg,rgba(21,31,51,.97),r
     </nav>
     <span class="patch-pill" id="patchPill" hidden></span>
     <span class="status" id="status"><i></i><span>Verbinde…</span></span>
+    <button class="btn sm gold install-btn" id="installBtn" hidden title="Draft Board als App installieren"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span>App</span></button>
     <button class="icon-btn gear" id="settingsBtn" aria-label="Einstellungen" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
   </div>
 </header>
@@ -3186,6 +3196,8 @@ function renderModal(focusSel){
         <p class="small-hint" style="margin:0 0 .6rem">${access ? "Ein Passwort ist gesetzt. Jeder muss es einmal pro Gerät eingeben." : "Noch kein Passwort. Jeder mit dem Link kann alles sehen und ändern."} Es hält Zufallsbesucher fern, ist aber kein echter Schutz wie ein Login.</p>
         <div class="addrow"><input class="inp" type="password" data-bind="pw" value="${esc(b.pw)}" placeholder="${access ? "Neues Passwort" : "Passwort festlegen"}" autocomplete="new-password"><button class="btn sm gold" data-action="set-pw">${access ? "Ändern" : "Festlegen"}</button></div>
         ${access ? `<button class="btn sm danger" style="margin-top:.5rem" data-action="remove-pw">Passwort entfernen</button>` : ""}
+        <h3 class="sh">App</h3>
+        ${appInfoHtml()}
         <h3 class="sh">Backup</h3>
         <p class="small-hint" style="margin:0 0 .6rem">Sichert Spieler, Tiers, Combos, Bot-Paarungen, Counter-Notizen und Verlauf als Datei.</p>
         <div class="addrow" style="flex-wrap:wrap"><button class="btn sm" data-action="export">Backup herunterladen</button><label class="btn sm" style="cursor:pointer">Backup-Datei wählen<input type="file" accept=".json,application/json" id="importFile" hidden></label></div>
@@ -3620,6 +3632,7 @@ document.addEventListener("click", async e => {
       break;
     }
     case "avatar-del": b.avatar = ""; renderModal(); break;
+    case "app-install": installApp(); break;
     case "c-style": b.style = b.style === a.dataset.v ? "" : a.dataset.v; renderModal(); break;
     case "ce-toggle": { const row = b.rows[+a.dataset.i], c = a.dataset.c; row.options = row.options.includes(c) ? row.options.filter(x => x !== c) : [...row.options, c]; renderModal(); break; }
     case "ce-del": { const row = b.rows[+a.dataset.i]; row.options = row.options.filter(x => x !== a.dataset.c); renderModal(); break; }
@@ -3770,10 +3783,36 @@ function newTeam(){
 $("#addTeam").addEventListener("click", newTeam);
 $("#settingsBtn").addEventListener("click", () => openEditor("s"));
 
+// ---------- App (PWA) ----------
+// Die Webseite bleibt wie sie ist; auf https lässt sie sich zusätzlich als App installieren.
+let installPrompt = null;
+const isStandalone = () => window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+function appInfoHtml(){
+  if (isStandalone()) return `<p class="small-hint" style="margin:0 0 .6rem"><b style="color:var(--good)">✓ Läuft als App.</b> Updates kommen automatisch, sobald die Seite neu hochgeladen wurde.</p>`;
+  if (installPrompt) return `<p class="small-hint" style="margin:0 0 .6rem">Installiert das Board als eigene App – mit Icon auf dem Startbildschirm, ohne Browser-Leiste und mit schnellem Start.</p><button class="btn sm gold" data-action="app-install">Als App installieren</button>`;
+  if (location.protocol === "file:") return `<p class="small-hint" style="margin:0 0 .6rem">Als App installieren geht nur, wenn das Board über eine https-Adresse geöffnet wird (z. B. GitHub Pages oder Firebase Hosting), nicht als Datei.</p>`;
+  if (isIOS()) return `<p class="small-hint" style="margin:0 0 .6rem">iPhone/iPad: In Safari unten auf <b>Teilen</b> (Quadrat mit Pfeil) tippen, dann <b>„Zum Home-Bildschirm“</b>.</p>`;
+  return `<p class="small-hint" style="margin:0 0 .6rem">Im Browser-Menü (⋮) auf <b>„App installieren“</b> bzw. <b>„Zum Startbildschirm hinzufügen“</b> tippen. Am PC in Chrome/Edge rechts in der Adressleiste auf das Installieren-Symbol.</p>`;
+}
+function refreshInstallUi(){ $("#installBtn").hidden = !installPrompt || isStandalone(); if (edit && edit.kind === "s") renderModal(); requestAnimationFrame(fitNav); }
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installPrompt = e; refreshInstallUi(); });
+window.addEventListener("appinstalled", () => { installPrompt = null; refreshInstallUi(); toast("Draft Board ist jetzt als App installiert."); });
+async function installApp(){
+  if (!installPrompt){ openEditor("s"); return; }
+  installPrompt.prompt();
+  const { outcome } = await installPrompt.userChoice.catch(() => ({}));
+  if (outcome === "accepted") installPrompt = null;
+  refreshInstallUi();
+}
+$("#installBtn").addEventListener("click", installApp);
+if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+if (isStandalone()) document.body.classList.add("standalone");
+
 // ---------- Connect ----------
 render.showOrder = lsGet("draftboard-order") === "1";
 document.body.classList.add("intro"); setTimeout(() => document.body.classList.remove("intro"), 1600);
-{ const t0 = lsGet("draftboard-tab"); if (["draft","scout","pools","combos","counters","history","team"].includes(t0)) tab = t0; }
+{ const t0 = new URLSearchParams(location.search).get("tab") || lsGet("draftboard-tab"); if (["draft","scout","pools","combos","counters","history","team"].includes(t0)) tab = t0; } // ?tab= kommt von den App-Verknüpfungen
 // Kopfleiste: passt nicht alles hinein, erst kurze Namen, dann nur Symbole
 function fitNav(){
   const bar = document.querySelector(".topbar .wrap"), tabs = $(".tabs"); if (!bar || !tabs) return;
