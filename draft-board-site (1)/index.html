@@ -1514,6 +1514,31 @@ dialog{border-radius:26px;background:linear-gradient(180deg,rgba(21,31,51,.97),r
 .lb-chip b{display:block;font-size:.82rem}
 .lb-chip small{display:block;font-size:.68rem;color:var(--muted)}
 .lb-chip:hover:not(:disabled){border-style:solid}
+/* Einstellungen */
+dialog:has(.set-body){width:min(880px,calc(100vw - 1.5rem))}
+.set-body{display:grid;grid-template-columns:210px minmax(0,1fr);gap:1.1rem;align-items:start}
+.set-nav{display:flex;flex-direction:column;gap:.35rem;position:sticky;top:0}
+.set-nav button{display:flex;align-items:center;gap:.65rem;text-align:left;border:1px solid transparent;background:none;border-radius:14px;padding:.55rem .65rem;color:var(--text);transition:background .15s,border-color .15s}
+.set-nav button:hover{background:rgba(255,255,255,.04)}
+.set-nav button[aria-pressed="true"]{background:rgba(215,180,106,.1);border-color:rgba(215,180,106,.38)}
+.set-nav b{display:block;font-size:.9rem}
+.set-nav small{display:block;font-size:.72rem;font-weight:700;color:var(--muted)}
+.set-nav small.ok{color:var(--good)}
+.set-main{display:flex;flex-direction:column;gap:.8rem;min-width:0}
+.set-card{border:1px solid var(--line);border-radius:18px;background:linear-gradient(180deg,rgba(23,34,56,.6),rgba(8,13,24,.5));padding:.95rem 1.05rem}
+.set-card-h{display:flex;align-items:center;gap:.65rem;margin-bottom:.55rem}
+.set-card-h h3{font-size:1.02rem;color:var(--gold-hi);margin:0;flex:1}
+.set-card .small-hint{margin:0 0 .65rem}
+.set-ic{width:2.1rem;height:2.1rem;flex:none;border-radius:11px;display:grid;place-items:center;background:rgba(215,180,106,.12);color:var(--gold);border:1px solid rgba(215,180,106,.25)}
+.set-nav .set-ic{width:1.9rem;height:1.9rem;border-radius:10px}
+.set-nav button[aria-pressed="true"] .set-ic{background:var(--gold);color:#1a1206;border-color:var(--gold)}
+.st-badge{font-size:.72rem;font-weight:800;padding:.18rem .6rem;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);white-space:nowrap}
+.st-badge.ok{color:var(--good);border-color:rgba(63,209,127,.4);background:rgba(63,209,127,.08)}
+.st-badge.warn{color:var(--warn);border-color:rgba(240,181,74,.4);background:rgba(240,181,74,.08)}
+.set-steps{margin:.7rem 0 0 1.15rem;padding:0;font-size:.85rem;color:var(--muted);display:grid;gap:.3rem}
+.set-steps b{color:var(--text)}
+.set-card .claim-list{display:grid;gap:.35rem}
+@media (max-width:680px){.set-body{grid-template-columns:1fr}.set-nav{display:grid;grid-template-columns:1fr 1fr;position:static}.set-nav button{padding:.45rem .5rem;gap:.5rem}.set-nav b{font-size:.82rem}.set-nav small{font-size:.66rem}}
 </style>
 </head>
 <body>
@@ -3628,46 +3653,61 @@ function renderModal(focusSel){
       </div>
       <div class="m-foot"><button class="btn gold" data-action="save-history">Speichern</button><button class="btn" data-action="close">Abbrechen</button></div>`;
   } else if (edit.kind === "s"){
-    const imp = b.importData;
+    const imp = b.importData, st = b.stab || "team";
+    const sv = d => `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+    const IC = { team: sv('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.5a3.3 3.3 0 0 1 0 6.5M18.5 14.6c1.8.8 2.8 2.6 3 5.4"/>'),
+      lock: sv('<rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>'), crown: sv('<path d="m3 8 4.5 4L12 5l4.5 7L21 8l-2 11H5z"/>'),
+      chat: sv('<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>'), discord: sv('<path d="M8 8.5c2.6-1 5.4-1 8 0M7.5 16.5c2.9 1.2 6.1 1.2 9 0M8.7 5.5 7.5 4C5.6 4.6 4.1 5.6 3 7c-1.2 3.6-1.3 7.3 0 10.7 1.3 1.1 2.8 1.9 4.5 2.3l1.2-2M15.3 5.5 16.5 4c1.9.6 3.4 1.6 4.5 3 1.2 3.6 1.3 7.3 0 10.7-1.3 1.1-2.8 1.9-4.5 2.3l-1.2-2"/><circle cx="9.5" cy="12.5" r="1.2"/><circle cx="14.5" cy="12.5" r="1.2"/>'),
+      bell: sv('<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>'), riot: sv('<path d="M4 6.5 14.5 3 20 5v13l-5.5 3L9 19.5l-1-5.5-4-1z"/><path d="m8 14 6.5 1.5"/>'),
+      app: sv('<rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/>'), box: sv('<path d="M3.5 7.5 12 3l8.5 4.5v9L12 21l-8.5-4.5z"/><path d="M3.5 7.5 12 12l8.5-4.5M12 12v9"/>') };
+    const badge = (ok, on, off, warn) => `<span class="st-badge ${ok ? "ok" : warn ? "warn" : ""}">${ok ? "✓ " + on : off}</span>`;
+    const card = (icon, title, bdg, body) => `<section class="set-card"><div class="set-card-h"><span class="set-ic">${icon}</span><h3>${title}</h3>${bdg || ""}</div>${body}</section>`;
+    const tabs = [["team", "Team & Zugang", IC.team, access ? "Passwort an" : "ohne Passwort", !!access], ["discord", "Discord", IC.discord, discordUrl ? "verbunden" : "nicht verbunden", !!discordUrl],
+      ["riot", "Riot-API", IC.riot, riotUrl ? "verbunden" : "nicht eingerichtet", !!riotUrl], ["app", "App & Backup", IC.app, isStandalone() ? "läuft als App" : "Daten sichern", isStandalone()]];
+    const claimTxt = c => c && c.dev ? (c.dev === myDev ? "dieses Gerät" : "vergeben" + (+c.at > 1e12 ? " seit " + new Date(c.at).toLocaleDateString("de-DE") : "")) : "frei";
+    const sections = {
+      team: card(IC.crown, "Admin", badge(isAdmin(), "Du bist Admin", adminHash ? "PIN gesetzt" : "kein Admin", !adminHash),
+          !adminHash ? `<p class="small-hint">Mit einer Admin-PIN darf nur noch der Admin vergebene Chat-Namen freigeben und fremde Nachrichten löschen.</p>
+            <div class="addrow"><input class="inp" type="password" data-bind="apin" value="${esc(b.apin || "")}" placeholder="Admin-PIN festlegen (mind. 4 Zeichen)" autocomplete="new-password"><button class="btn sm gold" data-action="admin-set">Festlegen</button></div>`
+          : isAdmin() ? `<div class="addrow" style="flex-wrap:wrap"><input class="inp" type="password" data-bind="apin" value="${esc(b.apin || "")}" placeholder="Neue Admin-PIN" autocomplete="new-password"><button class="btn sm" data-action="admin-set">PIN ändern</button><button class="btn sm ghost" data-action="admin-logout">Abmelden</button></div>`
+          : `<p class="small-hint">Admin-PIN eingeben, um dieses Gerät als Admin freizuschalten.</p><div class="addrow"><input class="inp" type="password" data-bind="apin" value="${esc(b.apin || "")}" placeholder="Admin-PIN" autocomplete="current-password"><button class="btn sm gold" data-action="admin-login">Anmelden</button></div>`)
+        + card(IC.lock, "Team-Passwort", badge(!!access, "aktiv", "aus", true),
+          `<p class="small-hint">${access ? "Jeder muss es einmal pro Gerät eingeben." : "Ohne Passwort kann jeder mit dem Link alles sehen und ändern."} Hält Zufallsbesucher fern, ist aber kein echter Login.</p>
+          <div class="addrow"><input class="inp" type="password" data-bind="pw" value="${esc(b.pw)}" placeholder="${access ? "Neues Passwort" : "Passwort festlegen"}" autocomplete="new-password"><button class="btn sm gold" data-action="set-pw">${access ? "Ändern" : "Festlegen"}</button></div>
+          ${access ? `<button class="btn sm danger" style="margin-top:.5rem" data-action="remove-pw">Passwort entfernen</button>` : ""}`)
+        + card(IC.chat, "Chat-Namen", `<span class="st-badge">${teamOrder().filter(p => (claims[p.id] || {}).dev).length}/${teamOrder().length} vergeben</span>`,
+          `<p class="small-hint">Jeder Name gehört zu einem Gerät. Neues Handy oder anderer Browser? Hier freigeben, dann neu wählen.</p>
+          <div class="claim-list">${teamOrder().map(p => { const c = claims[p.id], taken = c && c.dev;
+            return `<div class="claim-row"><span class="ch-av" style="--c:${nameColor(p.name)}">${initials(p.name)}${avatarImg(p)}</span><b>${esc(p.name)}</b>
+              <span class="claim-st ${taken ? "on" : ""}">${claimTxt(c)}</span>
+              ${taken && canManage() ? `<button class="btn sm ghost" data-action="claim-release" data-id="${esc(p.id)}">Freigeben</button>` : ""}</div>`; }).join("")}</div>
+          ${adminHash && !isAdmin() ? `<p class="small-hint" style="margin-top:.5rem">Nur der Admin kann vergebene Namen freigeben.</p>` : ""}`),
+      discord: card(IC.discord, "Webhook", badge(!!discordUrl, "verbunden", "nicht verbunden"),
+          `<p class="small-hint">Die „Discord“-Knöpfe schicken Draft, Scouting, Ergebnisse und Termine als Bild direkt in euren Kanal.</p>
+          <div class="addrow" style="flex-wrap:wrap"><input class="inp" style="min-width:14rem" data-bind="hook" value="${esc(b.hook)}" placeholder="https://discord.com/api/webhooks/…" autocomplete="off"><button class="btn sm" data-action="hook-test">Testen</button><button class="btn sm gold" data-action="hook-save">Speichern</button></div>
+          ${discordUrl ? `<button class="btn sm danger" style="margin-top:.6rem" data-action="hook-remove">Webhook entfernen</button>` : `<ol class="set-steps"><li>In Discord: Kanal-Einstellungen → <b>Integrationen</b> → <b>Webhooks</b></li><li><b>Neuer Webhook</b> → „Webhook-URL kopieren“</li><li>Hier einfügen, <b>Testen</b>, <b>Speichern</b></li></ol>`}`)
+        + card(IC.bell, "Automatisch posten", "",
+          `<label class="switch-row" style="margin:0 0 .6rem"><input type="checkbox" data-action="hook-auto" ${b.auto ? "checked" : ""}><span class="switch" aria-hidden="true"></span><span><b>Ergebnisse automatisch posten</b><small>Beim Speichern eines Spiels mit Sieg oder Niederlage</small></span></label>
+          <label class="switch-row" style="margin:0"><input type="checkbox" data-action="remind-on" ${b.remind ? "checked" : ""}><span class="switch" aria-hidden="true"></span><span><b>Erinnerungen vor Terminen</b><small>Postet vor jedem Termin, wer dabei ist. Klappt nur, wenn zu der Zeit jemand das Board offen hat.</small></span></label>
+          ${b.remind ? `<div class="field" style="margin:.6rem 0 0"><label for="rm-lead">Wann erinnern?</label><select class="inp" id="rm-lead" data-bind="lead">${[[30,"30 Minuten vorher"],[60,"1 Stunde vorher"],[120,"2 Stunden vorher"],[240,"4 Stunden vorher"],[1440,"1 Tag vorher"]].map(([v, l]) => `<option value="${v}" ${+b.lead === v ? "selected" : ""}>${l}</option>`).join("")}</select></div>` : ""}
+          ${discordUrl ? "" : `<p class="small-hint" style="margin:.6rem 0 0">Wirkt erst, wenn ein Webhook verbunden ist.</p>`}`),
+      riot: card(IC.riot, "Riot-Proxy", badge(!!riotUrl, "verbunden", "nicht eingerichtet"),
+          `<p class="small-hint">Lädt unter „Gegner-Picks“ echte Matchdaten: meistgespielte Champions, Winrate, KDA, Rang und den Scouting-Bericht. Der Riot-Key liegt in eurem Cloudflare-Worker (Ordner <code>riot-proxy/</code>), nie im Board.</p>
+          <div class="addrow" style="flex-wrap:wrap"><input class="inp" style="min-width:14rem" data-bind="riot" value="${esc(b.riot || "")}" placeholder="https://draftboard-riot.….workers.dev" autocomplete="off"><button class="btn sm" data-action="riot-test">Testen</button><button class="btn sm gold" data-action="riot-save">Speichern</button></div>`)
+        + card(IC.box, "So funktioniert's", "", `<ol class="set-steps"><li>Personal API Key bei <b>developer.riotgames.com</b></li><li>Worker bei Cloudflare anlegen, <code>worker.js</code> einfügen, Key als Geheimnis <code>RIOT_API_KEY</code></li><li>Worker-Adresse hier eintragen, <b>Testen</b> muss „API-Key ist gesetzt“ melden</li></ol>`),
+      app: card(IC.app, "App", badge(isStandalone(), "läuft als App", installPrompt ? "installierbar" : "im Browser"), appInfoHtml())
+        + card(IC.box, "Backup", "",
+          `<p class="small-hint">Sichert Spieler, Tiers, Combos, Bot-Paarungen, Counter-Notizen, Gegner, Verlauf und Team-Daten als Datei.</p>
+          <div class="addrow" style="flex-wrap:wrap"><button class="btn sm gold" data-action="export">Backup herunterladen</button><label class="btn sm" style="cursor:pointer">Backup-Datei wählen<input type="file" accept=".json,application/json" id="importFile" hidden></label></div>
+          ${imp ? `<div class="egroup" style="margin-top:.7rem"><b>${esc(b.importName)}</b><p class="small-hint">${imp.players.length} Spieler, ${imp.combos.length} Combos, ${Object.keys(imp.counters).length} Counter-Notizen, ${imp.history.length} Drafts im Verlauf.</p>
+            <p class="small-hint">Einträge aus dem Backup ersetzen gleichnamige Einträge. Alles andere bleibt erhalten.</p>
+            <button class="btn sm gold" style="margin-top:.5rem" data-action="import">Backup einspielen</button></div>` : ""}`)
+    };
     modal.innerHTML = `
       <div class="m-head"><h2 id="mTitle">Einstellungen${DD.v ? ` <span class="patch-pill" style="display:inline-block;margin-left:.4rem;vertical-align:middle">Patch ${patchName(DD.v)}</span>` : ""}</h2><button class="x" data-action="close" aria-label="Schließen">×</button></div>
-      <div class="m-body">
-        <h3 class="sh">Admin</h3>
-        ${!adminHash ? `<p class="small-hint" style="margin:0 0 .6rem">Noch kein Admin. Mit einer Admin-PIN darf nur noch der Admin vergebene Chat-Namen freigeben und fremde Nachrichten löschen.</p>
-          <div class="addrow"><input class="inp" type="password" data-bind="apin" value="${esc(b.apin || "")}" placeholder="Admin-PIN festlegen" autocomplete="new-password"><button class="btn sm gold" data-action="admin-set">Festlegen</button></div>`
-        : isAdmin() ? `<p class="small-hint" style="margin:0 0 .6rem"><b style="color:var(--gold)">Du bist Admin</b> auf diesem Gerät.</p>
-          <div class="addrow" style="flex-wrap:wrap"><input class="inp" type="password" data-bind="apin" value="${esc(b.apin || "")}" placeholder="Neue Admin-PIN" autocomplete="new-password"><button class="btn sm" data-action="admin-set">PIN ändern</button><button class="btn sm ghost" data-action="admin-logout">Abmelden</button></div>`
-        : `<p class="small-hint" style="margin:0 0 .6rem">Admin-PIN eingeben, um dieses Gerät als Admin freizuschalten.</p>
-          <div class="addrow"><input class="inp" type="password" data-bind="apin" value="${esc(b.apin || "")}" placeholder="Admin-PIN" autocomplete="current-password"><button class="btn sm gold" data-action="admin-login">Anmelden</button></div>`}
-        <h3 class="sh">Chat-Namen</h3>
-        <p class="small-hint" style="margin:0 0 .6rem">Jeder Spielername ist fest mit einem Gerät verbunden. Wechselt jemand das Handy oder den Browser, hier den Namen freigeben.</p>
-        <div class="claim-list">${teamOrder().map(p => { const c = claims[p.id], mine = c && c.dev === myDev, taken = c && c.dev;
-          return `<div class="claim-row"><span class="ch-av" style="--c:${nameColor(p.name)}">${initials(p.name)}${avatarImg(p)}</span><b>${esc(p.name)}</b>
-            <span class="claim-st ${taken ? "on" : ""}">${mine ? "dieses Gerät" : taken ? "vergeben seit " + new Date(c.at).toLocaleDateString("de-DE") : "frei"}</span>
-            ${taken && canManage() ? `<button class="btn sm ghost" data-action="claim-release" data-id="${esc(p.id)}">Freigeben</button>` : ""}</div>`; }).join("")}</div>
-        ${adminHash && !isAdmin() ? `<p class="small-hint">Nur der Admin kann vergebene Namen freigeben.</p>` : ""}
-        <h3 class="sh">Discord-Webhook</h3>
-        <p class="small-hint" style="margin:0 0 .6rem">Damit schicken die „Discord“-Knöpfe Draft, Scouting, Ergebnisse und Termine direkt in euren Kanal, statt nur zu kopieren. Webhook anlegen: in Discord Kanal-Einstellungen → Integrationen → Webhooks → Neuer Webhook → „Webhook-URL kopieren“.</p>
-        <div class="addrow" style="flex-wrap:wrap"><input class="inp" style="min-width:14rem" data-bind="hook" value="${esc(b.hook)}" placeholder="https://discord.com/api/webhooks/…" autocomplete="off"><button class="btn sm" data-action="hook-test">Testen</button><button class="btn sm gold" data-action="hook-save">Speichern</button></div>
-        <label class="switch-row" style="margin:.6rem 0 0"><input type="checkbox" data-action="hook-auto" ${b.auto ? "checked" : ""}><span class="switch" aria-hidden="true"></span><span><b>Ergebnisse automatisch posten</b><small>Beim Speichern eines Spiels mit Sieg oder Niederlage</small></span></label>
-        <label class="switch-row" style="margin:.6rem 0 0"><input type="checkbox" data-action="remind-on" ${b.remind ? "checked" : ""}><span class="switch" aria-hidden="true"></span><span><b>Erinnerungen vor Terminen</b><small>Postet vor jedem Termin, wer dabei ist. Klappt nur, wenn zu der Zeit jemand das Board offen hat.</small></span></label>
-        ${b.remind ? `<div class="field" style="margin:.5rem 0 0"><label for="rm-lead">Wann erinnern?</label><select class="inp" id="rm-lead" data-bind="lead">${[[30,"30 Minuten vorher"],[60,"1 Stunde vorher"],[120,"2 Stunden vorher"],[240,"4 Stunden vorher"],[1440,"1 Tag vorher"]].map(([v, l]) => `<option value="${v}" ${+b.lead === v ? "selected" : ""}>${l}</option>`).join("")}</select></div>` : ""}
-        ${discordUrl ? `<button class="btn sm danger" style="margin-top:.6rem" data-action="hook-remove">Webhook entfernen</button>` : ""}
-        <h3 class="sh">Riot-API (Matchdaten)</h3>
-        <p class="small-hint" style="margin:0 0 .6rem">Lädt unter „Gegner-Picks“ die echten letzten Spiele der Gegner: meistgespielte Champions, Winrate, KDA und Rang. Der Riot-Key liegt dafür in einem eigenen kleinen Proxy (Cloudflare Worker, Anleitung im Ordner <code>riot-proxy/</code>), nie hier im Board.</p>
-        <div class="addrow" style="flex-wrap:wrap"><input class="inp" style="min-width:14rem" data-bind="riot" value="${esc(b.riot || "")}" placeholder="https://draftboard-riot.….workers.dev" autocomplete="off"><button class="btn sm" data-action="riot-test">Testen</button><button class="btn sm gold" data-action="riot-save">Speichern</button></div>
-        <h3 class="sh">Team-Passwort</h3>
-        <p class="small-hint" style="margin:0 0 .6rem">${access ? "Ein Passwort ist gesetzt. Jeder muss es einmal pro Gerät eingeben." : "Noch kein Passwort. Jeder mit dem Link kann alles sehen und ändern."} Es hält Zufallsbesucher fern, ist aber kein echter Schutz wie ein Login.</p>
-        <div class="addrow"><input class="inp" type="password" data-bind="pw" value="${esc(b.pw)}" placeholder="${access ? "Neues Passwort" : "Passwort festlegen"}" autocomplete="new-password"><button class="btn sm gold" data-action="set-pw">${access ? "Ändern" : "Festlegen"}</button></div>
-        ${access ? `<button class="btn sm danger" style="margin-top:.5rem" data-action="remove-pw">Passwort entfernen</button>` : ""}
-        <h3 class="sh">App</h3>
-        ${appInfoHtml()}
-        <h3 class="sh">Backup</h3>
-        <p class="small-hint" style="margin:0 0 .6rem">Sichert Spieler, Tiers, Combos, Bot-Paarungen, Counter-Notizen und Verlauf als Datei.</p>
-        <div class="addrow" style="flex-wrap:wrap"><button class="btn sm" data-action="export">Backup herunterladen</button><label class="btn sm" style="cursor:pointer">Backup-Datei wählen<input type="file" accept=".json,application/json" id="importFile" hidden></label></div>
-        ${imp ? `<div class="egroup" style="margin-top:.7rem"><b>${esc(b.importName)}</b><p class="small-hint">${imp.players.length} Spieler, ${imp.combos.length} Combos, ${Object.keys(imp.counters).length} Counter-Notizen, ${imp.history.length} Drafts im Verlauf.</p>
-          <p class="small-hint">Einträge aus dem Backup ersetzen gleichnamige Einträge. Alles, was nicht im Backup steht, bleibt erhalten.</p>
-          <button class="btn sm gold" style="margin-top:.5rem" data-action="import">Backup einspielen</button></div>` : ""}
+      <div class="m-body set-body">
+        <nav class="set-nav" aria-label="Bereiche">${tabs.map(([k, l, ic, sub, ok]) => `<button data-action="s-tab" data-v="${k}" aria-pressed="${st === k}"><span class="set-ic">${ic}</span><span><b>${l}</b><small class="${ok ? "ok" : ""}">${sub}</small></span></button>`).join("")}</nav>
+        <div class="set-main">${sections[st] || sections.team}</div>
       </div>
       <div class="m-foot"><button class="btn" data-action="close">Schließen</button></div>`;
   } else {
@@ -3977,7 +4017,8 @@ document.addEventListener("click", async e => {
       try { await db.doc("config/discord").set({ url: u, auto: !!b.auto, remind: !!b.remind, lead: +b.lead || 60 }, { merge: true }); discordUrl = u; discordAuto = !!b.auto; remindOn = !!b.remind; remindLead = +b.lead || 60; toast(u ? "Webhook gespeichert." : "Webhook entfernt."); renderModal(); render(); } catch(err){ writeError(err); }
       break;
     }
-    case "riot-settings": openEditor("s"); break;
+    case "riot-settings": openEditor("s"); edit.buf.stab = "riot"; renderModal(); break;
+    case "s-tab": b.stab = a.dataset.v; renderModal(); modal.querySelector(".m-body")?.scrollTo(0, 0); break;
     case "riot-all": if (viewId) riotLoadAll(viewId); break;
     case "riot-role": if (viewId) riotLoadRole(viewId, a.dataset.role).then(ok => ok && toast("Matchdaten geladen.")); break;
     case "riot-take": if (viewId){ riotTake(viewId, a.dataset.role); toast("Als Top-Picks eingetragen."); } break;
@@ -4040,7 +4081,7 @@ document.addEventListener("click", async e => {
     case "task-showdone": showDoneTasks = !showDoneTasks; render(); break;
     case "patch-ok": meta = { ...meta, patch: patchName(DD.v) }; render(); fs.doc("config/meta").set({ patch: patchName(DD.v), at: Date.now() }, { merge: true }).catch(writeError); toast("Patch als geprüft markiert."); break;
     case "patch-pools": tab = "pools"; render(); window.scrollTo({ top: 0 }); break;
-    case "remind-on": b.remind = a.checked; if (discordUrl){ remindOn = b.remind; db.doc("config/discord").set({ remind: b.remind, lead: b.lead }, { merge: true }).catch(writeError); } break;
+    case "remind-on": b.remind = a.checked; setTimeout(renderModal, 0); if (discordUrl){ remindOn = b.remind; db.doc("config/discord").set({ remind: b.remind, lead: b.lead }, { merge: true }).catch(writeError); } break;
     case "draft-mode": setDraft({ mode: a.dataset.v === "ranked" ? "ranked" : "" }); break;
     case "live-start": {
       if (!draft.side) return toast("Erst eure Seite wählen (Blau oder Rot).");
@@ -4384,7 +4425,7 @@ function refreshInstallUi(){ $("#installBtn").hidden = !installPrompt || isStand
 window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installPrompt = e; refreshInstallUi(); });
 window.addEventListener("appinstalled", () => { installPrompt = null; refreshInstallUi(); toast("Draft Board ist jetzt als App installiert."); });
 async function installApp(){
-  if (!installPrompt){ openEditor("s"); return; }
+  if (!installPrompt){ openEditor("s"); edit.buf.stab = "app"; renderModal(); return; }
   installPrompt.prompt();
   const { outcome } = await installPrompt.userChoice.catch(() => ({}));
   if (outcome === "accepted") installPrompt = null;
