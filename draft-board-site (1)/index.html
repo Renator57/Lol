@@ -1539,6 +1539,34 @@ dialog:has(.set-body){width:min(880px,calc(100vw - 1.5rem))}
 .set-steps b{color:var(--text)}
 .set-card .claim-list{display:grid;gap:.35rem}
 @media (max-width:680px){.set-body{grid-template-columns:1fr}.set-nav{display:grid;grid-template-columns:1fr 1fr;position:static}.set-nav button{padding:.45rem .5rem;gap:.5rem}.set-nav b{font-size:.82rem}.set-nav small{font-size:.66rem}}
+/* VOD-Review */
+.vd-head .spacer,.vd-bar .spacer{flex:1}
+/* Breite Bildschirme: Video rechts stehen lassen, links durch die Notizen scrollen */
+@media (min-width:1100px){
+  #view-history.vod-open:not([hidden]){display:grid;grid-template-columns:minmax(0,1fr) minmax(400px,44%);column-gap:1.1rem;align-items:start}
+  #view-history.vod-open>*{grid-column:1}
+  #view-history.vod-open>.view-head,#view-history.vod-open>.hist-tools{grid-column:1/-1}
+  #view-history.vod-open>.vod-dock{grid-column:2;grid-row:3/span 3;position:sticky;top:84px}
+  #view-history.vod-open .vd-frame{max-height:none}
+}
+.vod-dock{position:sticky;top:72px;z-index:6;margin-bottom:1rem;padding:.7rem;border-radius:18px;border:1px solid rgba(215,180,106,.4);background:rgba(9,15,28,.96);box-shadow:0 20px 50px -20px #000;backdrop-filter:blur(10px)}
+.vd-head{display:flex;align-items:center;gap:.6rem;margin-bottom:.55rem}
+.vd-head b{font-family:var(--fd);color:var(--gold-hi);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vd-tag{font-size:.68rem;font-weight:900;letter-spacing:.1em;color:#1a1206;background:var(--gold);padding:.12rem .45rem;border-radius:6px}
+.vd-frame{position:relative;width:100%;max-width:880px;margin:0 auto;aspect-ratio:16/9;max-height:40vh;border-radius:12px;overflow:hidden;background:#000}
+.vd-frame iframe,.vd-frame #vodPlayer{position:absolute;inset:0;width:100%;height:100%;border:0}
+.vd-msg{padding:1rem;margin:0;color:var(--muted);font-size:.9rem}
+.vd-bar{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-top:.55rem}
+.vd-start{display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--muted);font-weight:700}
+.vd-start input{width:5.2rem;padding:.3rem .5rem;font-variant-numeric:tabular-nums}
+.vod-row{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;padding:.5rem .6rem;margin-bottom:.8rem;border-radius:12px;border:1px dashed var(--line-2);background:rgba(6,10,18,.35)}
+.vod-ic{font-size:1.05rem}
+.vod-in{flex:1;min-width:12rem;padding:.35rem .6rem}
+.vod-link{font-weight:800;color:var(--gold-hi)}
+.vod-btn.on{border-color:var(--gold);color:var(--gold-hi)}
+.tl-seek{border:0;background:none;padding:.1rem 0 0;cursor:pointer;white-space:nowrap}
+.tl-seek:hover{color:var(--gold-hi);text-decoration:underline}
+@media (max-width:720px){.vod-dock{top:8px;padding:.5rem}.vd-frame{max-height:34vh}}
 </style>
 </head>
 <body>
@@ -1654,6 +1682,7 @@ dialog:has(.set-body){width:min(880px,calc(100vw - 1.5rem))}
       <div class="stats" id="histStats"></div>
     </div>
     <div class="hist-tools" id="histTools"></div>
+    <div class="vod-dock" id="vodDock" hidden></div>
     <div id="histStatsView" hidden></div>
     <div class="hist-list" id="history"></div>
   </section>
@@ -1984,7 +2013,8 @@ function render(){
   else if (tab === "pools") renderPools();
   else if (tab === "combos") renderCombos(picks);
   else if (tab === "counters"){ renderCounters(); renderBot(picks); }
-  else if (tab === "history") renderHistory();
+  else if (tab === "history"){ renderHistory(); if (vod) vodBar(); }
+  if (tab !== "history" && vod) vodPause();
   else if (tab === "scout") renderScout();
   else if (tab === "team") renderTeam();
   renderChat();
@@ -2749,11 +2779,12 @@ function shareGame(h){
   if ((h.enemy || []).length) fields.push({ name: `${sideSq(otherSide(h.side))} Gegner`, value: eb ? ROLES.filter(r => eb[r]).map(r => `${ROLE_EMO[r]} ${eb[r]}`).join("\n") : h.enemy.join("\n"), inline: true });
   if ((h.bans || []).length) fields.push({ name: "🚫 Banns", value: h.bans.join(" · ") });
   if (h.note) fields.push({ name: "💬 Fazit", value: h.note });
+  if (h.vod && parseVod(h.vod)) fields.push({ name: "🎬 VOD", value: `[Video ansehen](${h.vod})` });
   const ns = [...(notesById[h.id] || [])].sort((a, b) => timeKey(a.t) - timeKey(b.t));
   [["good", "👍 Lief gut"], ["bad", "👎 Lief schlecht"], ["note", "📝 Notizen"]].forEach(([k, l]) => { const xs = ns.filter(n => n.k === k); if (xs.length) fields.push({ name: l, value: xs.map(n => `${n.t ? "`" + n.t + "` " : "• "}${n.x}${n.by ? " _(" + n.by + ")_" : ""}`).join("\n") }); });
   return withCard(embed({ title: `${res}${h.oppName ? " vs " + h.oppName : ""}`, color: h.result === "win" ? DC.win : h.result === "loss" ? DC.loss : DC.gold,
     description: [kindLabel(h) + (kindOf(h) === "liga" && h.game ? " · Spiel " + h.game : ""), h.side ? (h.side === "blue" ? "Blaue Seite" : "Rote Seite") : "", h.dur ? h.dur + " Min." : "", fmtDate(h.at)].filter(Boolean).join(" · "),
-    fields, thumb: iconUrl((team[0] || {}).champ || "") }), () => cardGame(h), "");
+    fields, thumb: iconUrl((team[0] || {}).champ || "") }), () => cardGame(h), h.vod && parseVod(h.vod) ? `🎬 [VOD ansehen](${h.vod})` : "");
 }
 function shareWeek(info){
   const fields = info.days.map((d, i) => { const st = dayStatus(info.key, i);
@@ -3147,6 +3178,63 @@ function trendHover(e){
 }
 function trendLeave(){ ["trCross", "trDot"].forEach(id => document.getElementById(id)?.setAttribute("visibility", "hidden")); const t = document.getElementById("trTip"); if (t) t.hidden = true; }
 document.addEventListener("pointermove", e => { if (e.target.closest && e.target.closest("#trend")) trendHover(e); else if (document.getElementById("trTip") && !document.getElementById("trTip").hidden) trendLeave(); });
+// ---------- VOD-Review: Video zum Spiel, Notizen springen an die Stelle ----------
+function parseVod(url){
+  try {
+    const u = new URL(String(url || "").trim()), h = u.hostname.replace(/^(www|m)\./, "");
+    if (h === "youtu.be"){ const id = u.pathname.slice(1).split("/")[0]; if (/^[\w-]{6,}$/.test(id)) return { kind: "yt", id }; }
+    if (h === "youtube.com" || h === "music.youtube.com"){ let id = u.searchParams.get("v"); const m = u.pathname.match(/^\/(?:live|shorts|embed)\/([\w-]{6,})/); if (m) id = m[1]; if (id && /^[\w-]{6,}$/.test(id)) return { kind: "yt", id }; }
+    if (h === "twitch.tv"){ const m = u.pathname.match(/^\/videos\/(\d+)/); if (m) return { kind: "tw", id: m[1] }; }
+  } catch(e){}
+  return null;
+}
+const fmtSec = s => { s = Math.max(0, Math.floor(s)); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = String(s % 60).padStart(2, "0"); return h ? `${h}:${String(m).padStart(2, "0")}:${x}` : `${m}:${x}`; };
+const parseSec = v => { const p = String(v || "").trim().replace(/[.,]/g, ":").split(":").map(Number); if (!p.length || p.some(isNaN)) return null; return p.reduce((a, b) => a * 60 + b, 0); };
+let vod = null; // { hid, kind, id, player, ready }
+const loadScript = (src, ready) => new Promise((res, rej) => { if (ready()) return res(); const s = document.createElement("script"); s.src = src; s.onload = () => res(); s.onerror = rej; document.head.appendChild(s); });
+let ytReady = null;
+function loadYT(){ return ytReady || (ytReady = new Promise(res => { if (window.YT && window.YT.Player) return res(); const prev = window.onYouTubeIframeAPIReady; window.onYouTubeIframeAPIReady = () => { prev && prev(); res(); }; loadScript("https://www.youtube.com/iframe_api", () => false).catch(() => {}); })); }
+const vodTime = () => { try { return vod && vod.player ? (vod.kind === "yt" ? vod.player.getCurrentTime() : vod.player.getCurrentTime()) : 0; } catch(e){ return 0; } };
+function vodSeek(sec){
+  if (!vod || !vod.player) return;
+  try { if (vod.kind === "yt"){ vod.player.seekTo(sec, true); vod.player.playVideo(); } else { vod.player.seek(sec); vod.player.play(); } } catch(e){}
+}
+function vodPause(){ try { if (vod && vod.player) vod.kind === "yt" ? vod.player.pauseVideo() : vod.player.pause(); } catch(e){} }
+function vodClose(){ vodPause(); vod = null; const d = $("#vodDock"); d.innerHTML = ""; d.hidden = true; $("#view-history").classList.remove("vod-open"); }
+// Dock einmal aufbauen; danach nur Titel/Startzeit aktualisieren, das Video bleibt stehen
+async function vodOpen(hid, seekTo){
+  const h = history.find(x => x.id === hid), v = h && parseVod(h.vod); if (!v) return toast("Kein gültiger VOD-Link hinterlegt.");
+  if (vod && vod.hid === hid){ if (seekTo != null) vodSeek(seekTo); return; }
+  vodClose();
+  const d = $("#vodDock"); d.hidden = false; $("#view-history").classList.add("vod-open");
+  d.innerHTML = `<div class="vd-head"><span class="vd-tag">VOD</span><b id="vdTitle"></b><span class="spacer"></span><button class="x" data-action="vod-close" aria-label="Video schließen">×</button></div>
+    <div class="vd-frame"><div id="vodPlayer"></div></div>
+    <div class="vd-bar" id="vdBar"></div>`;
+  vod = { hid, kind: v.kind, id: v.id, player: null };
+  vodBar();
+  d.scrollIntoView({ behavior: "smooth", block: "start" });
+  try {
+    if (v.kind === "yt"){
+      await loadYT();
+      await new Promise(res => { vod.player = new YT.Player("vodPlayer", { videoId: v.id, width: "100%", height: "100%", playerVars: { rel: 0, playsinline: 1, modestbranding: 1 }, events: { onReady: () => res() } }); setTimeout(res, 8000); });
+    } else {
+      if (!location.hostname){ $("#vodPlayer").outerHTML = `<p class="vd-msg">Twitch-VODs lassen sich nur abspielen, wenn das Board über eine Web-Adresse läuft (nicht als Datei). <a href="https://www.twitch.tv/videos/${esc(v.id)}" target="_blank" rel="noopener">Auf Twitch öffnen ↗</a></p>`; return; }
+      await loadScript("https://player.twitch.tv/js/embed/v1.js", () => !!window.Twitch);
+      vod.player = new Twitch.Player("vodPlayer", { video: "v" + v.id, parent: [location.hostname], width: "100%", height: "100%", autoplay: false });
+      await new Promise(res => { vod.player.addEventListener(Twitch.Player.READY, res); setTimeout(res, 8000); });
+    }
+    if (seekTo != null) vodSeek(seekTo);
+  } catch(e){ const el = $("#vodPlayer"); if (el) el.outerHTML = `<p class="vd-msg">Video konnte nicht geladen werden. <a href="${esc(h.vod)}" target="_blank" rel="noopener">Im neuen Tab öffnen ↗</a></p>`; }
+}
+function vodBar(){
+  if (!vod) return; const h = history.find(x => x.id === vod.hid); if (!h) return vodClose();
+  $("#vdTitle").textContent = `${h.result === "win" ? "Sieg" : h.result === "loss" ? "Niederlage" : "Spiel"}${h.oppName ? " vs " + h.oppName : ""} · ${kindLabel(h)}${kindOf(h) === "liga" && h.game ? " · Spiel " + h.game : ""}`;
+  const ed = canEdit();
+  $("#vdBar").innerHTML = `<label class="vd-start" title="Bei welcher Videozeit beginnt das Spiel (0:00 Ingame)?"><span>Spielstart im Video</span><input class="inp" id="vodStart" value="${fmtSec(N(h.vodStart))}" ${ed ? "" : "disabled"} inputmode="numeric" aria-label="Spielstart im Video"></label>
+    ${ed ? `<button class="btn sm ghost" data-action="vod-start-now" title="Aktuelle Videostelle als Spielstart">Jetzt</button><span class="spacer"></span><button class="btn sm gold" data-action="vod-note">＋ Notiz an dieser Stelle</button>` : ""}`;
+}
+const vodGameSec = () => { const h = vod && history.find(x => x.id === vod.hid); return h ? Math.max(0, vodTime() - N(h.vodStart)) : 0; };
+function setHist(hid, patch){ history = history.map(x => x.id === hid ? { ...x, ...patch } : x); queueSet("config/history", { items: history }); render(); }
 function renderHistory(){
   const all = history;
   const listF = all.filter(h => histFilter === "all" || kindOf(h) === histFilter);
@@ -3174,6 +3262,7 @@ function renderHistory(){
         : `<span class="res on ${cl(h.result)}">${h.result === "win" ? "Sieg" : h.result === "loss" ? "Niederlage" : "Offen"}</span>`}
       <span class="h-badges"><span class="hb ${cl(kindOf(h))}">${kindLabel(h)}${kindOf(h) === "liga" && h.game ? " · Spiel " + h.game : ""}</span>${h.side ? `<span class="side-dot ${cl(h.side)}">${h.side === "blue" ? "Blau" : "Rot"}</span>` : ""}</span>
       <span class="hint" style="margin:0">${h.oppName ? `<b class="vs">vs ${esc(h.oppName)}</b> · ` : ""}${fmtDate(h.at)}${h.dur ? ` · ${esc(h.dur)} Min. Spielzeit` : ""}</span>
+      ${h.vod && parseVod(h.vod) ? `<button class="btn sm vod-btn ${vod && vod.hid === h.id ? "on" : ""}" data-action="vod-open" data-id="${esc(h.id)}" title="VOD im Board ansehen">▶ VOD</button>` : ""}
       ${canEdit() ? `<span class="spacer"></span><button class="btn sm ghost" data-action="share-game" data-id="${esc(h.id)}">${discordUrl ? "An Discord" : "Discord"}</button><button class="btn sm" data-action="hist-load" data-id="${esc(h.id)}">Wieder laden</button><button class="btn sm danger" data-action="hist-del" data-id="${esc(h.id)}">Löschen</button>` : ""}</div>
     <div class="hist-teams"><div><span class="flabel">Wir</span><div class="opts-row">${(h.team || []).map(x => `<span class="mini" title="${esc(x.player)}: ${esc(x.champ)}">${initials(x.champ)}${img(iconUrl(x.champ))}</span>`).join("")}</div></div>
       ${(h.enemy || []).length ? `<div><span class="flabel">Gegner</span><div class="opts-row">${miniRow(h.enemy)}</div></div>` : ""}</div>
@@ -3181,8 +3270,10 @@ function renderHistory(){
     <button class="notes-toggle" data-action="hist-toggle" data-id="${esc(h.id)}" aria-expanded="${open}">
       <span>Spielnotizen</span>${notes.length ? `<span class="cnt good">${good} gut</span><span class="cnt bad">${bad} schlecht</span>` : `<span class="cnt">noch keine</span>`}<span class="chev">${open ? "▴" : "▾"}</span></button>
     ${open ? `<div class="notes">
+      <div class="vod-row">${h.vod && parseVod(h.vod) ? `<span class="vod-ic">🎬</span><a class="vod-link" href="${esc(h.vod)}" target="_blank" rel="noopener">${parseVod(h.vod).kind === "yt" ? "YouTube" : "Twitch"}-VOD</a>${N(h.vodStart) ? `<span class="hint" style="margin:0">Spielstart bei ${fmtSec(h.vodStart)}</span>` : ""}<span class="spacer"></span><button class="btn sm gold" data-action="vod-open" data-id="${esc(h.id)}">▶ Im Board ansehen</button>${canEdit() ? `<button class="btn sm ghost" data-action="vod-remove" data-id="${esc(h.id)}">Entfernen</button>` : ""}`
+        : canEdit() ? `<span class="vod-ic">🎬</span><input class="inp vod-in" id="vod-${esc(h.id)}" placeholder="VOD-Link (YouTube oder Twitch) einfügen" autocomplete="off" aria-label="VOD-Link"><button class="btn sm" data-action="vod-save" data-id="${esc(h.id)}">Speichern</button>` : `<span class="hint" style="margin:0">Kein VOD hinterlegt.</span>`}</div>
       ${notes.length ? `<ul class="tl">${notes.map(n => `<li class="tl-item k-${esc(n.k)}">
-          <span class="tl-time">${n.t ? esc(n.t) : "–"}</span><span class="tl-dot" aria-hidden="true"></span>
+          ${n.t && h.vod && parseVod(h.vod) ? `<button class="tl-time tl-seek" data-action="vod-seek" data-id="${esc(h.id)}" data-t="${esc(n.t)}" title="Im Video an diese Stelle springen">▶ ${esc(n.t)}</button>` : `<span class="tl-time">${n.t ? esc(n.t) : "–"}</span>`}<span class="tl-dot" aria-hidden="true"></span>
           <div class="tl-body"><span class="tl-kind">${KIND[n.k] || "Notiz"}</span><p>${esc(n.x)}</p><span class="tl-meta">${n.by ? esc(n.by) + " · " : ""}${relTime(n.at)}</span></div>
           ${canEdit() ? `<button class="x" data-action="note-del" data-id="${esc(h.id)}" data-nid="${esc(n.id)}" aria-label="Notiz löschen">×</button>` : ""}
         </li>`).join("")}</ul>` : `<p class="hint" style="margin:.2rem 0 .8rem">Was ist in dem Spiel passiert? Die Spielminute ist optional, damit sortiert sich alles als Zeitleiste.</p>`}
@@ -4173,6 +4264,17 @@ document.addEventListener("click", async e => {
       break;
     }
     case "note-add": addNote(a.dataset.id); break;
+    case "vod-save": { const hid = a.dataset.id, inp = document.getElementById("vod-" + hid), url = (inp && inp.value || "").trim();
+      if (!parseVod(url)) return toast("Bitte einen YouTube- oder Twitch-VOD-Link einfügen.");
+      setHist(hid, { vod: url, vodStart: 0 }); toast("VOD gespeichert – „▶ Im Board ansehen“ startet das Video."); break; }
+    case "vod-remove": { if (!armed(a, "Sicher?")) return; const hid = a.dataset.id; if (vod && vod.hid === hid) vodClose(); setHist(hid, { vod: "", vodStart: 0 }); break; }
+    case "vod-open": vodOpen(a.dataset.id); render(); break;
+    case "vod-close": vodClose(); render(); break;
+    case "vod-seek": { const h = history.find(x => x.id === a.dataset.id); if (!h) break; const sec = N(h.vodStart) + Math.max(0, timeKey(a.dataset.t)); vodOpen(h.id, sec); break; }
+    case "vod-start-now": { if (!vod) break; const sec = Math.floor(vodTime()); setHist(vod.hid, { vodStart: sec }); vodBar(); toast(`Spielstart auf ${fmtSec(sec)} gesetzt.`); break; }
+    case "vod-note": { if (!vod) break; const hid = vod.hid, t = fmtSec(vodGameSec()); vodPause();
+      const c = compose[hid] || (compose[hid] = { kind: "good", t: "", x: "" }); c.t = t; openHist.add(hid); render();
+      const el = document.getElementById("cx-" + hid); if (el){ el.focus(); el.scrollIntoView({ block: "center", behavior: "smooth" }); } toast(`Minute ${t} übernommen – jetzt die Notiz schreiben.`); break; }
     case "note-del": {
       if (!armed(a, "?")) return;
       const hid = a.dataset.id, n = (notesById[hid] || []).find(x => x.id === a.dataset.nid); if (!n) return;
@@ -4354,6 +4456,8 @@ document.addEventListener("input", e => {
   const k = e.target.dataset && e.target.dataset.cbind; if (!k) return;
   const c = compose[e.target.dataset.id] || (compose[e.target.dataset.id] = { kind:"good", t:"", x:"" }); c[k] = e.target.value;
 });
+document.addEventListener("change", e => { if (e.target.id !== "vodStart" || !vod) return; const sec = parseSec(e.target.value); if (sec == null) return toast("Zeit bitte als m:ss angeben, z. B. 1:45."); setHist(vod.hid, { vodStart: sec }); vodBar(); });
+document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id && e.target.id.startsWith("vod-") && e.target.classList.contains("vod-in")){ e.preventDefault(); document.querySelector(`[data-action="vod-save"][data-id="${e.target.id.slice(4)}"]`)?.click(); } });
 document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.dataset && e.target.dataset.cbind){ e.preventDefault(); addNote(e.target.dataset.id); } });
 
 modal.addEventListener("change", async e => {
