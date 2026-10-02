@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="theme-color" content="#050d18">
 <title>Draft Board</title>
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -3195,7 +3196,15 @@ const loadScript = (src, ready) => new Promise((res, rej) => { if (ready()) retu
 let ytReady = null;
 function loadYT(){ return ytReady || (ytReady = new Promise(res => { if (window.YT && window.YT.Player) return res(); const prev = window.onYouTubeIframeAPIReady; window.onYouTubeIframeAPIReady = () => { prev && prev(); res(); }; loadScript("https://www.youtube.com/iframe_api", () => false).catch(() => {}); })); }
 const vodTime = () => { try { return vod && vod.player ? (vod.kind === "yt" ? vod.player.getCurrentTime() : vod.player.getCurrentTime()) : 0; } catch(e){ return 0; } };
+const vodUrl = (v, sec) => v.kind === "yt" ? `https://www.youtube.com/watch?v=${encodeURIComponent(v.id)}${sec ? "&t=" + Math.floor(sec) + "s" : ""}` : `https://www.twitch.tv/videos/${encodeURIComponent(v.id)}${sec ? "?t=" + Math.floor(sec) + "s" : ""}`;
+// Player nicht nutzbar (Datei-Modus, Einbettung gesperrt) → Video im neuen Tab an der Stelle öffnen
+function vodFail(v, why){
+  if (!vod) return; vod.failed = true; vod.player = null;
+  const el = $("#vodPlayer"); if (el) el.outerHTML = `<p class="vd-msg">${why} <a href="${esc(vodUrl(v))}" target="_blank" rel="noopener">${v.kind === "yt" ? "Auf YouTube" : "Auf Twitch"} öffnen ↗</a><br><small>Zeitstempel in den Notizen öffnen das Video dann direkt an der richtigen Stelle.</small></p>`;
+}
+const YT_ERR = { 2: "Ungültige Video-ID im Link.", 5: "Das Video kann im Browser nicht abgespielt werden.", 100: "Video nicht gefunden – gelöscht oder auf „Privat“ gestellt (dann „Nicht gelistet“ verwenden).", 101: "Der Uploader erlaubt das Einbetten dieses Videos nicht.", 150: "Der Uploader erlaubt das Einbetten dieses Videos nicht.", 153: "YouTube hat die Seiten-Adresse nicht erhalten (Fehler 153) – passiert, wenn das Board als Datei geöffnet wird." };
 function vodSeek(sec){
+  if (vod && vod.failed){ const h = history.find(x => x.id === vod.hid), v = h && parseVod(h.vod); if (v) window.open(vodUrl(v, sec), "_blank", "noopener"); return; }
   if (!vod || !vod.player) return;
   try { if (vod.kind === "yt"){ vod.player.seekTo(sec, true); vod.player.playVideo(); } else { vod.player.seek(sec); vod.player.play(); } } catch(e){}
 }
@@ -3215,8 +3224,15 @@ async function vodOpen(hid, seekTo){
   d.scrollIntoView({ behavior: "smooth", block: "start" });
   try {
     if (v.kind === "yt"){
-      await loadYT();
-      await new Promise(res => { vod.player = new YT.Player("vodPlayer", { videoId: v.id, width: "100%", height: "100%", playerVars: { rel: 0, playsinline: 1, modestbranding: 1 }, events: { onReady: () => res() } }); setTimeout(res, 8000); });
+      if (!/^https?:$/.test(location.protocol)){ vodFail(v, "YouTube spielt eingebettete Videos nur ab, wenn das Board über eine Web-Adresse läuft (nicht als Datei)."); if (seekTo != null) vodSeek(seekTo); return; }
+      await loadYT(); const me = vod;
+      await new Promise(res => {
+        vod.player = new YT.Player("vodPlayer", { videoId: v.id, width: "100%", height: "100%",
+          playerVars: { rel: 0, playsinline: 1, modestbranding: 1, origin: location.origin, widget_referrer: location.href },
+          events: { onReady: () => res(), onError: e => { if (vod === me) vodFail(v, YT_ERR[e.data] || `YouTube-Fehler ${e.data}.`); res(); } } });
+        setTimeout(res, 8000);
+      });
+      if (vod !== me || vod.failed) return;
     } else {
       if (!location.hostname){ $("#vodPlayer").outerHTML = `<p class="vd-msg">Twitch-VODs lassen sich nur abspielen, wenn das Board über eine Web-Adresse läuft (nicht als Datei). <a href="https://www.twitch.tv/videos/${esc(v.id)}" target="_blank" rel="noopener">Auf Twitch öffnen ↗</a></p>`; return; }
       await loadScript("https://player.twitch.tv/js/embed/v1.js", () => !!window.Twitch);
