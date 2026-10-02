@@ -2374,14 +2374,14 @@ function reportHtml(t, ed){
 }
 function shareReport(t){
   const R = scoutReport(t); if (!R) return shareTeam(t);
-  const lines = [`**Scouting: ${t.name || t.tag || "Gegner"}**${t.date ? " · " + fmtDay(t.date) : ""}`];
-  lines.push(`${R.avg ? "Ø " + R.avg.txt + " · " : ""}${pct(R.wins, R.games)} % Winrate in ${R.games} Spielen`);
-  R.pools.forEach(p => lines.push(`${p.r}${p.player ? " – " + p.player : ""}: ${p.champs.map(c => `${c.c} ${c.g}× (${pct(c.w, c.g)} %)`).join(", ")}`));
-  if (R.duos.length) lines.push("", "**Spielen zusammen:** " + R.duos.map(d => `${d.a}+${d.b} ${d.n}×${d.top ? " (" + d.top[0] + ")" : ""}`).join(" · "));
-  if (R.flex.length) lines.push("**Flex:** " + R.flex.map(f => `${f.c} (${f.roles.map(y => y.r).join("/")})`).join(", "));
-  if (R.bans.length) lines.push("**Bann-Empfehlung:** " + R.bans.map((x, i) => `${i + 1}. ${x.c}`).join("  "));
-  R.notes.forEach(n => lines.push(`${n.k === "bad" ? "⚠️" : n.k === "good" ? "✅" : "•"} ${n.t}`));
-  return lines.join("\n");
+  const fields = R.pools.map(p => ({ name: `${ROLE_EMO[p.r]} ${p.r}`, value: p.champs.map(c => `**${c.c}** ${c.g}× · ${pct(c.w, c.g)} %`).join("\n"), inline: true }));
+  if (R.duos.length) fields.push({ name: "🤝 Spielen zusammen", value: R.duos.map(d => `**${d.a} + ${d.b}**: ${d.n} Spiele · ${pct(d.w, d.n)} %${d.top ? " (" + d.top[0] + " " + d.top[1] + "×)" : ""}`).join("\n") });
+  if (R.flex.length) fields.push({ name: "🔀 Flex-Picks", value: R.flex.map(f => `**${f.c}** – ${f.roles.map(y => y.r + " " + y.g + "×").join(", ")}`).join("\n") });
+  if (R.bans.length) fields.push({ name: "🚫 Bann-Empfehlung", value: R.bans.map((x, i) => `**${i + 1}. ${x.c}** – ${x.r} · ${x.g} Sp · ${pct(x.w, x.g)} %`).join("\n") });
+  if (R.notes.length) fields.push({ name: "💡 Auffällig", value: R.notes.map(n => `${n.k === "bad" ? "⚠️" : n.k === "good" ? "✅" : "•"} ${n.t}`).join("\n") });
+  return embed({ title: `📋 Scouting: ${t.name || t.tag || "Gegner"}`, url: t.link, color: DC.red,
+    description: [t.date ? "📅 " + fmtDay(t.date) : "", `${R.avg ? "Ø **" + R.avg.txt + "** · " : ""}**${pct(R.wins, R.games)} %** Winrate in ${R.games} Spielen`].filter(Boolean).join("\n"),
+    fields, thumb: iconUrl((R.bans[0] || {}).c || "") });
 }
 // Matchdaten-Zeile eines Gegners zu einem Champion (für Draft und Pick-Dialog)
 function riotChampLine(sr, c, t){
@@ -2461,21 +2461,51 @@ function castVote(pollId, v, date){
 }
 const patchName = v => { if (!v) return ""; const [a, b] = v.split(".").map(Number); return (a >= 15 ? a + 10 : a) + "." + b; };
 const WEBHOOK_RE = /^https:\/\/(?:(?:ptb|canary)\.)?(?:discord|discordapp)\.com\/api\/webhooks\/\d+\/[\w-]+/;
-async function sendDiscord(txt, color, url){
+// ---------- Discord: Nachrichten als Embeds (Felder, Farben, Emojis) ----------
+const DC = { gold: 0xD7B46A, blue: 0x4A8BFF, red: 0xFF6A5C, win: 0x3FD17F, loss: 0xFF6A5C, warn: 0xF0B54A, purple: 0x9D86FF };
+const ROLE_EMO = { Top: "🛡️", Jungle: "🌲", Mid: "✨", Bot: "🏹", Support: "💠" };
+const dClip = (s, n) => { s = String(s ?? ""); return s.length > n ? s.slice(0, n - 1) + "…" : s; };
+const sideSq = s => s === "blue" ? "🟦" : s === "red" ? "🟥" : "⬜";
+const otherSide = s => s === "blue" ? "red" : s === "red" ? "blue" : "";
+const rankTxt = rk => rk ? (TIER_DE[rk.tier] || rk.tier) + (APEX.includes(rk.tier) ? "" : " " + rk.div) + ` · ${rk.lp} LP` : "Unranked";
+// Discord-Grenzen: Titel 256, Beschreibung 4096, 25 Felder à 1024, gesamt 6000 Zeichen
+function embed(o){
+  const e = { title: dClip(o.title, 256), color: o.color ?? DC.gold, footer: { text: "Draft Board" + (o.footer ? " · " + o.footer : "") }, timestamp: new Date().toISOString() };
+  if (o.description) e.description = dClip(o.description, 4000);
+  if (o.url && /^https:\/\//.test(o.url)) e.url = o.url;
+  if (o.thumb && /^https:\/\//.test(o.thumb)) e.thumbnail = { url: o.thumb };
+  let f = (o.fields || []).filter(x => x && String(x.value ?? "").trim()).slice(0, 25).map(x => ({ name: dClip(x.name || "​", 256), value: dClip(x.value, 1024), inline: !!x.inline }));
+  const size = () => e.title.length + (e.description || "").length + f.reduce((s, x) => s + x.name.length + x.value.length, 0);
+  while (f.length && size() > 5800) f.pop();
+  if (f.length) e.fields = f;
+  return e;
+}
+// Für "Kopieren" und den Team-Chat: dasselbe Embed als Text
+function embedToText(e){
+  if (typeof e === "string") return e;
+  const L = [`**${e.title}**`]; if (e.description) L.push(e.description);
+  (e.fields || []).forEach(f => L.push("", `**${f.name}**`, f.value));
+  return L.join("\n");
+}
+async function sendDiscord(msg, color, url){
   const u = url || discordUrl; if (!u) return false;
-  const lines = String(txt).split("\n"), title = lines[0].replace(/\*\*/g, "").slice(0, 250), desc = lines.slice(1).join("\n").trim().slice(0, 4000);
+  let e = msg;
+  if (typeof msg === "string"){ const lines = msg.split("\n"); e = embed({ title: lines[0].replace(/\*\*/g, ""), description: lines.slice(1).join("\n").trim(), color }); }
+  else if (color) e = { ...e, color };
+  const payload = { username: "Draft Board", embeds: [e] };
+  if (location.protocol === "https:") payload.avatar_url = new URL("icons/icon-192.png", location.href).href;
   // Als Formular senden: so braucht der Browser keine Vorab-Anfrage, die Discord blockieren könnte.
   const fd = new FormData();
-  fd.append("payload_json", JSON.stringify({ username: "Draft Board", embeds: [{ title, description: desc || undefined, color: color || 0xD7B46A, footer: { text: "Draft Board" }, timestamp: new Date().toISOString() }] }));
+  fd.append("payload_json", JSON.stringify(payload));
   let res;
   try { res = await fetch(u, { method: "POST", body: fd }); }
-  catch(e){ return "unsure"; } // Anfrage ist raus, nur die Antwort darf der Browser nicht lesen
+  catch(err){ return "unsure"; } // Anfrage ist raus, nur die Antwort darf der Browser nicht lesen
   if (!res.ok) throw new Error(res.status === 404 ? "Webhook existiert nicht mehr." : res.status === 429 ? "Discord bremst gerade – kurz warten." : "Discord hat abgelehnt (" + res.status + ").");
   return true;
 }
-function shareOut(txt, color){
-  if (!discordUrl) return copyText(txt);
-  sendDiscord(txt, color).then(r => toast(r === "unsure" ? "An Discord gesendet – schau kurz in den Kanal." : "An Discord gesendet.")).catch(e => { copyText(txt, "Senden fehlgeschlagen – Text kopiert. " + (e.message || "")); });
+function shareOut(msg, color){
+  if (!discordUrl) return copyText(embedToText(msg));
+  sendDiscord(msg, color).then(r => toast(r === "unsure" ? "An Discord gesendet – schau kurz in den Kanal." : "An Discord gesendet.")).catch(e => { copyText(embedToText(msg), "Senden fehlgeschlagen – Text kopiert. " + (e.message || "")); });
 }
 function copyText(txt, label){
   const done = () => toast(label || "Für Discord kopiert – einfach einfügen.");
@@ -2484,48 +2514,65 @@ function copyText(txt, label){
 }
 function fallbackCopy(txt, done){ const ta = document.createElement("textarea"); ta.value = txt; ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta); ta.select(); let ok = false; try { ok = document.execCommand("copy"); } catch(e){} ta.remove(); ok ? done() : prompt("Text kopieren:", txt); }
 function shareDraft(){
-  const picks = livePicks(), lm = lineupMap(), ot = at();
-  const lines = [`**Draft${ot ? " vs " + (ot.tag || ot.name) : ""}**${draft.side ? " · " + (draft.side === "blue" ? "Blaue" : "Rote") + " Seite" : ""}`];
-  ROLES.forEach(r => { const p = lm[r]; lines.push(`${r}: ${p && picks[p.id] ? "**" + picks[p.id] + "**" : "–"}${p ? " (" + p.name + ")" : ""}`); });
-  if ((draft.enemy || []).length) lines.push(`Gegner: ${ROLES.map(r => (draft.enemyBy || {})[r]).filter(Boolean).join(", ")}`);
-  if (draft.bans.length) lines.push(`Banns: ${draft.bans.join(", ")}`);
-  return lines.join("\n");
+  const picks = livePicks(), lm = lineupMap(), ot = at(), eb = draft.enemyBy || {}, side = draft.side;
+  const our = ROLES.map(r => { const p = lm[r], c = p && picks[p.id]; return `${ROLE_EMO[r]} ${c ? "**" + c + "**" : "–"}${p ? " · " + p.name : ""}`; }).join("\n");
+  const their = ROLES.map(r => `${ROLE_EMO[r]} ${eb[r] ? "**" + eb[r] + "**" : "–"}`).join("\n");
+  const fields = [{ name: `${sideSq(side)} Wir`, value: our, inline: true }, { name: `${sideSq(otherSide(side))} Gegner${ot ? " · " + (ot.tag || ot.name) : ""}`, value: their, inline: true }];
+  if (draft.bans.length) fields.push({ name: "🚫 Banns", value: draft.bans.join(" · ") });
+  const locked = render.locked || new Set(); if (locked.size) fields.push({ name: "🔒 Fearless gesperrt", value: [...locked].join(" · ") });
+  return embed({ title: `⚔️ Draft${ot ? " vs " + (ot.tag || ot.name) : ""}`, color: side === "blue" ? DC.blue : side === "red" ? DC.red : DC.gold,
+    description: [draft.mode === "ranked" ? "Ranked" : "Turnier", side ? (side === "blue" ? "Blaue Seite" : "Rote Seite") : "", `${Object.keys(picks).length}/5 Picks`].filter(Boolean).join(" · "),
+    fields, thumb: iconUrl(Object.values(picks)[0] || "") });
 }
 function shareTeam(t){
-  const lines = [`**Gegner: ${t.name || t.tag || "?"}${t.tag && t.name ? " (" + t.tag + ")" : ""}**${t.date ? " · " + fmtDay(t.date) : ""}`];
-  if (t.note) lines.push(`_${t.note}_`);
-  ROLES.forEach(r => { const sr = roleOf(t, r); if (!sr.player && !sr.champs.length) return;
+  const fields = ROLES.map(r => { const sr = roleOf(t, r); if (!sr.player && !sr.champs.length) return null;
     const rd = riotView(sr.riot), fresh = rd && rd.games && riotFresh(sr, t, rd);
-    const rk = fresh ? (rd.rank ? (TIER_DE[rd.rank.tier] || rd.rank.tier) + (["MASTER","GRANDMASTER","CHALLENGER"].includes(rd.rank.tier) ? "" : " " + rd.rank.div) : "Unranked") + `, ${pct(rd.wins, rd.games)} % in ${rd.games}` : "";
     const most = fresh ? rd.champs.filter(c => c.g >= 2).slice(0, 3).map(c => `${c.c} ${c.g}×`).join(", ") : "";
-    lines.push(`${r}${sr.player ? " – " + sr.player : ""}${rk ? " (" + rk + ")" : ""}: ${sr.champs.map(x => x.danger ? "**" + x.c + "**" : x.c).join(", ") || "–"}${most ? " · meistgespielt: " + most : ""}`); });
-  if (t.banPlan.length) lines.push(`Bann-Plan: ${t.banPlan.map((c, i) => (i + 1) + ". " + c).join("  ")}`);
-  if (t.link) lines.push(t.link);
-  return lines.join("\n");
+    return { name: `${ROLE_EMO[r]} ${r}${sr.player ? " – " + cleanRiotId(sr.player) : ""}`,
+      value: [sr.champs.map(x => x.danger ? `🔥 **${x.c}**` : x.c).join(" · ") || "–", fresh ? `📊 ${rankTxt(rd.rank)} · ${pct(rd.wins, rd.games)} % in ${rd.games} Spielen` : "", most ? `🎮 meistgespielt: ${most}` : ""].filter(Boolean).join("\n") }; }).filter(Boolean);
+  if (t.banPlan.length) fields.push({ name: "🚫 Bann-Plan", value: t.banPlan.map((c, i) => `**${i + 1}.** ${c}`).join("   ") });
+  return embed({ title: `🔎 Gegner: ${t.name || t.tag || "?"}${t.tag && t.name ? " (" + t.tag + ")" : ""}`, url: t.link, color: DC.red,
+    description: [t.date ? "📅 Spieltag: " + fmtDay(t.date) : "", t.note ? "📝 _" + t.note + "_" : ""].filter(Boolean).join("\n"), fields, thumb: iconUrl(t.banPlan[0] || "") });
 }
 function sharePlan(t, pl){
-  const lines = [`**${pl.name} vs ${t.tag || t.name || "?"}**${pl.side ? " · " + (pl.side === "blue" ? "Blau" : "Rot") : ""}`];
-  ROLES.forEach(r => { if (pl.picks && pl.picks[r]) lines.push(`${r}: ${pl.picks[r]}`); });
-  if ((pl.bans || []).length) lines.push(`Banns: ${pl.bans.join(", ")}`);
-  if (pl.note) lines.push(`Idee: ${pl.note}`);
-  return lines.join("\n");
+  const eb = pl.enemyBy || {};
+  const fields = [{ name: `${sideSq(pl.side)} Unsere Picks`, value: ROLES.map(r => `${ROLE_EMO[r]} ${pl.picks && pl.picks[r] ? "**" + pl.picks[r] + "**" : "–"}`).join("\n"), inline: true }];
+  if (ROLES.some(r => eb[r])) fields.push({ name: `${sideSq(otherSide(pl.side))} Erwarteter Gegner`, value: ROLES.map(r => `${ROLE_EMO[r]} ${eb[r] || "–"}`).join("\n"), inline: true });
+  if ((pl.bans || []).length) fields.push({ name: "🚫 Banns", value: pl.bans.join(" · ") });
+  return embed({ title: `📝 ${pl.name} vs ${t.tag || t.name || "?"}`, color: pl.side === "blue" ? DC.blue : pl.side === "red" ? DC.red : DC.purple,
+    description: [pl.side ? (pl.side === "blue" ? "Blaue Seite" : "Rote Seite") : "", pl.note ? "💡 " + pl.note : ""].filter(Boolean).join("\n"), fields, thumb: iconUrl(Object.values(pl.picks || {})[0] || "") });
 }
 function shareGame(h){
-  const res = h.result === "win" ? "✅ Sieg" : h.result === "loss" ? "❌ Niederlage" : "Offen";
-  const lines = [`**${res}${h.oppName ? " vs " + h.oppName : ""}**${kindOf(h) === "liga" && h.game ? " · Spiel " + h.game : kindOf(h) !== "liga" ? " · " + kindLabel(h) : ""}${h.side ? " · " + (h.side === "blue" ? "Blau" : "Rot") : ""}${h.dur ? " · " + h.dur + " Min." : ""}`];
-  lines.push((h.team || []).map(x => `${x.champ} (${x.player})`).join(", "));
-  if ((h.enemy || []).length) lines.push(`Gegner: ${h.enemy.join(", ")}`);
-  if (h.note) lines.push(`Fazit: ${h.note}`);
+  const res = h.result === "win" ? "✅ Sieg" : h.result === "loss" ? "❌ Niederlage" : "⏳ Offen";
+  const team = (h.team || []).slice().sort((a, b) => ROLES.indexOf(a.role) - ROLES.indexOf(b.role));
+  const eb = h.enemyBy && Object.keys(h.enemyBy).length ? h.enemyBy : null;
+  const fields = [{ name: `${sideSq(h.side)} Wir`, value: team.map(x => `${ROLE_EMO[x.role] || "•"} **${x.champ}** · ${x.player}`).join("\n") || "–", inline: true }];
+  if ((h.enemy || []).length) fields.push({ name: `${sideSq(otherSide(h.side))} Gegner`, value: eb ? ROLES.filter(r => eb[r]).map(r => `${ROLE_EMO[r]} ${eb[r]}`).join("\n") : h.enemy.join("\n"), inline: true });
+  if ((h.bans || []).length) fields.push({ name: "🚫 Banns", value: h.bans.join(" · ") });
+  if (h.note) fields.push({ name: "💬 Fazit", value: h.note });
   const ns = [...(notesById[h.id] || [])].sort((a, b) => timeKey(a.t) - timeKey(b.t));
-  ns.forEach(n => lines.push(`${n.k === "good" ? "👍" : n.k === "bad" ? "👎" : "📝"} ${n.t ? n.t + " " : ""}${n.x}`));
-  return lines.join("\n");
+  [["good", "👍 Lief gut"], ["bad", "👎 Lief schlecht"], ["note", "📝 Notizen"]].forEach(([k, l]) => { const xs = ns.filter(n => n.k === k); if (xs.length) fields.push({ name: l, value: xs.map(n => `${n.t ? "`" + n.t + "` " : "• "}${n.x}${n.by ? " _(" + n.by + ")_" : ""}`).join("\n") }); });
+  return embed({ title: `${res}${h.oppName ? " vs " + h.oppName : ""}`, color: h.result === "win" ? DC.win : h.result === "loss" ? DC.loss : DC.gold,
+    description: [kindLabel(h) + (kindOf(h) === "liga" && h.game ? " · Spiel " + h.game : ""), h.side ? (h.side === "blue" ? "Blaue Seite" : "Rote Seite") : "", h.dur ? h.dur + " Min." : "", fmtDate(h.at)].filter(Boolean).join(" · "),
+    fields, thumb: iconUrl((team[0] || {}).champ || "") });
 }
 function shareWeek(info){
-  const lines = [`**Verfügbarkeit KW ${info.wk}**`];
-  info.days.forEach((d, i) => { const st = dayStatus(info.key, i); lines.push(`${DAYS[i]} ${d.getDate()}.${d.getMonth() + 1}.: ${st.ok ? "✅ alle" : st.subOk ? "🟡 mit Ersatz" : st.yes + "/" + st.total}${st.maybe ? " (+" + st.maybe + " vielleicht)" : ""}`); });
+  const fields = info.days.map((d, i) => { const st = dayStatus(info.key, i);
+    return { name: `${DAYS[i]} ${d.getDate()}.${d.getMonth() + 1}.`, value: (st.ok ? "✅ alle" : st.subOk ? "🟡 mit Ersatz" : `${st.yes ? "🔸" : "❌"} ${st.yes}/${st.total}`) + (st.maybe ? ` (+${st.maybe} ?)` : ""), inline: true }; });
   const up = allEvents().filter(e => info.days.some(d => ymd(d) === e.date));
-  if (up.length) lines.push("", ...up.map(e => `📅 ${fmtDay(e.date)}${e.time ? " " + e.time : ""}: ${evTitle(e)}`));
-  return lines.join("\n");
+  if (up.length) fields.push({ name: "📅 Termine", value: up.map(e => `**${fmtDay(e.date)}${e.time ? " " + e.time : ""}** – ${evTitle(e)}`).join("\n") });
+  return embed({ title: `🗓️ Verfügbarkeit KW ${info.wk}`, color: DC.purple, description: `${info.days[0].toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })} – ${info.days[6].toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })} · ✅ alle Stammspieler · 🟡 mit Ersatz`, fields });
+}
+// Termin (Teilen und Erinnerung)
+function eventEmbed(e, mins){
+  const { info: wi, day } = weekKeyOf(e.date), lp = lineupPlayers();
+  const by = v => players.filter(p => avGet(wi.key, p.id, day) === v).map(p => p.name);
+  const miss = lp.filter(p => avGet(wi.key, p.id, day) !== "yes").map(p => p.name);
+  const fields = [{ name: "🕒 Wann", value: `${fmtDay(e.date)}${e.time ? ", " + e.time + " Uhr" : ""}${mins != null ? `\nin ${mins >= 90 ? Math.round(mins / 60) + " Std." : mins + " Min."}` : ""}`, inline: true },
+    { name: "✅ Dabei", value: by("yes").join("\n") || "–", inline: true }];
+  if (by("maybe").length) fields.push({ name: "❔ Vielleicht", value: by("maybe").join("\n"), inline: true });
+  if (miss.length) fields.push({ name: "⚠️ Noch offen", value: miss.join(", ") });
+  return embed({ title: `${mins != null ? "⏰ Erinnerung: " : "📅 "}${evTitle(e)}`, color: mins != null ? DC.warn : e.type === "liga" ? DC.red : DC.purple, description: e.note || "", fields });
 }
 // Turnier-Draft: Bann 1 (6), Pick 1 (6), Bann 2 (4), Pick 2 (4)
 const DRAFT_ORDER = [["ban","B"],["ban","R"],["ban","B"],["ban","R"],["ban","B"],["ban","R"],
@@ -2791,11 +2838,7 @@ async function checkReminders(){
         tx.set(ref, { sent: { [key]: now } }, { merge: true }); return true;
       });
       if (!claimed) continue;
-      const { info: wi, day } = weekKeyOf(e.date), lp = lineupPlayers();
-      const yes = players.filter(p => avGet(wi.key, p.id, day) === "yes").map(p => p.name), maybe = players.filter(p => avGet(wi.key, p.id, day) === "maybe").map(p => p.name);
-      const miss = lp.filter(p => !["yes"].includes(avGet(wi.key, p.id, day))).map(p => p.name);
-      const mins = Math.round((at - now) / 60000);
-      await sendDiscord(`⏰ **Erinnerung: ${evTitle(e)}**\n${fmtDay(e.date)}${e.time ? ", " + e.time + " Uhr" : ""} · in ${mins >= 90 ? Math.round(mins / 60) + " Std." : mins + " Min."}\n✅ Dabei: ${yes.join(", ") || "–"}${maybe.length ? "\n❔ Vielleicht: " + maybe.join(", ") : ""}${miss.length ? "\n⚠️ Noch offen: " + miss.join(", ") : ""}${e.note ? "\n" + e.note : ""}`, 0xF0B54A);
+      await sendDiscord(eventEmbed(e, Math.round((at - now) / 60000)));
     } catch(err){ /* nächste Runde */ }
   }
 }
@@ -3722,9 +3765,8 @@ document.addEventListener("click", async e => {
     case "share-team": shareOut(shareTeam(vt())); break;
     case "share-report": shareOut(shareReport(vt())); break;
     case "share-plan": { const t = vt(), pl = t && (t.plans || []).find(x => x.id === a.dataset.id); if (pl) shareOut(sharePlan(t, pl)); break; }
-    case "share-game": { const h = history.find(x => x.id === a.dataset.id); if (h) shareOut(shareGame(h), h.result === "win" ? 0x3FD17F : h.result === "loss" ? 0xFF6A5C : 0xD7B46A); break; }
-    case "share-ev": { const e = allEvents().find(x => x.id === a.dataset.id); if (!e) break; const { info: wi, day } = weekKeyOf(e.date); const st = dayStatus(wi.key, day);
-      shareOut(`📅 **${evTitle(e)}**\n${fmtDay(e.date)}${e.time ? ", " + e.time + " Uhr" : ""}${e.note ? "\n" + e.note : ""}\nDabei: ${st.ok ? "alle ✅" : st.yes + "/" + st.total}`); break; }
+    case "share-game": { const h = history.find(x => x.id === a.dataset.id); if (h) shareOut(shareGame(h)); break; }
+    case "share-ev": { const e = allEvents().find(x => x.id === a.dataset.id); if (e) shareOut(eventEmbed(e)); break; }
     case "ev-new": openEditor("ev"); break;
     case "ev-edit": openEditor("ev", a.dataset.id); break;
     case "ev-type": b.type = a.dataset.v; renderModal(); break;
@@ -3752,7 +3794,7 @@ document.addEventListener("click", async e => {
     case "hook-test": {
       const u = (b.hook || "").trim(); if (!WEBHOOK_RE.test(u)) return toast("Das ist keine gültige Discord-Webhook-URL.");
       a.disabled = true;
-      try { await sendDiscord("**Draft Board ist verbunden ✅**\nAb jetzt landen Drafts, Scouting und Ergebnisse hier.", 0x3FD17F, u); toast("Testnachricht gesendet – schau in Discord, ob sie angekommen ist."); }
+      try { await sendDiscord(embed({ title: "✅ Draft Board ist verbunden", color: DC.win, description: "Ab jetzt landen hier Drafts, Scouting-Berichte, Ergebnisse und Termine.", fields: [{ name: "⚔️ Draft", value: "Picks, Banns, Gegner", inline: true }, { name: "🔎 Scouting", value: "Ränge, Pools, Bann-Empfehlung", inline: true }, { name: "📅 Team", value: "Termine und Erinnerungen", inline: true }] }), null, u); toast("Testnachricht gesendet – schau in Discord, ob sie angekommen ist."); }
       catch(e){ toast(e.message || "Senden fehlgeschlagen."); }
       a.disabled = false; break;
     }
@@ -3804,7 +3846,7 @@ document.addEventListener("click", async e => {
     }
     case "chat-del": { const m = chat.find(x => x.id === a.dataset.id); if (!m) break; if (!armed(a, "sicher?")) return;
       chat = chat.filter(x => x.id !== m.id); renderChat(); fs.doc("config/chat").update({ items: FV().arrayRemove(m) }).catch(writeError); break; }
-    case "chat-draft": sendChat(shareDraft(), "draft"); break;
+    case "chat-draft": sendChat(embedToText(shareDraft()), "draft"); break;
     case "chat-poll": if (!myName()) return toast("Erst im Chat deinen Namen wählen."); openEditor("poll"); break;
     case "po-ev": b.mkEvent = a.checked; renderModal(); break;
     case "po-evtype": b.evType = a.dataset.v; renderModal(); break;
@@ -3888,7 +3930,7 @@ document.addEventListener("click", async e => {
       openHist.add(entry.id); tab = "history";
       if (clear) setDraft({ picks:{}, bans:[], enemy:[], lineup:{}, live: null }); else render();
       window.scrollTo({ top: 0 }); setTimeout(() => document.getElementById("cx-" + entry.id)?.focus(), 50);
-      if (discordAuto && discordUrl && (entry.result === "win" || entry.result === "loss")) sendDiscord(shareGame(entry), entry.result === "win" ? 0x3FD17F : 0xFF6A5C).then(() => toast("Gespeichert und an Discord gesendet.")).catch(() => toast("Gespeichert – Discord-Senden fehlgeschlagen."));
+      if (discordAuto && discordUrl && (entry.result === "win" || entry.result === "loss")) sendDiscord(shareGame(entry)).then(() => toast("Gespeichert und an Discord gesendet.")).catch(() => toast("Gespeichert – Discord-Senden fehlgeschlagen."));
       else toast("Draft gespeichert – jetzt Notizen eintragen."); break;
     }
     case "hist-load": {
