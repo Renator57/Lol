@@ -1462,6 +1462,33 @@ dialog{border-radius:26px;background:linear-gradient(180deg,rgba(21,31,51,.97),r
 .sr-ok{font-size:.7rem;font-style:normal;color:var(--good);font-weight:800;margin-left:auto}
 .sr-row .ib{margin-left:auto}
 .sr-notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:.4rem;margin-top:.7rem}
+/* Statistik-Dashboard */
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.7rem;margin-bottom:1rem}
+.kpi{padding:.85rem 1rem;border-radius:16px;border:1px solid var(--line);background:linear-gradient(180deg,rgba(23,34,56,.82),rgba(12,19,34,.86));display:flex;flex-direction:column;gap:.15rem;min-width:0}
+.kpi b{font-family:var(--fd);font-size:1.7rem;line-height:1.1;color:var(--text)}
+.kpi span{font-size:.78rem;color:var(--muted);font-weight:700}
+.kpi.w b{color:var(--good)} .kpi.l b{color:var(--bad)}
+.st-card.wide{grid-column:1/-1}
+.trend{position:relative}
+.trend svg{width:100%;height:auto;display:block;touch-action:pan-y}
+.tr-grid{stroke:rgba(255,255,255,.07);stroke-width:1}
+.tr-mid{stroke:rgba(255,255,255,.22);stroke-width:1;stroke-dasharray:4 4}
+.tr-ax{fill:var(--muted);font-size:11px;font-family:var(--fb)}
+.tr-line{fill:none;stroke:#d7b46a;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.tr-dot{fill:#d7b46a;stroke:#0c1424;stroke-width:2}
+.tr-last{fill:var(--text);font-size:12px;font-weight:800;font-family:var(--fd)}
+.tr-cross{stroke:rgba(255,255,255,.35);stroke-width:1}
+.tr-tip{position:absolute;z-index:5;pointer-events:none;padding:.45rem .6rem;border-radius:10px;background:rgba(5,10,20,.95);border:1px solid var(--line-2);font-size:.78rem;line-height:1.4;white-space:nowrap;box-shadow:0 10px 24px -10px #000}
+.tr-tip .w{color:var(--good);font-weight:800} .tr-tip .l{color:var(--bad);font-weight:800}
+.duo-ic{display:flex;gap:2px}
+.duo-ic .mini{width:24px;height:24px}
+.sb-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto 72px 40px;align-items:center;gap:.6rem;padding:.35rem .45rem;border-radius:10px;background:rgba(6,10,18,.3)}
+.sb-row .mini{width:30px;height:30px}
+.sb-name{display:flex;flex-direction:column;min-width:0;line-height:1.25}
+.sb-name b{font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-name small{font-size:.72rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:640px){.sb-row{grid-template-columns:auto minmax(0,1fr) 56px 38px}.sb-row .st-g{display:none}}
+@media (max-width:640px){.kpis{grid-template-columns:1fr 1fr}.kpi b{font-size:1.35rem}}
 </style>
 </head>
 <body>
@@ -2752,29 +2779,103 @@ function renderPatch(){
   $("#patchBanner").innerHTML = isNew ? `<div class="patch-banner"><span class="pb-ic">★</span><div><b>${meta.patch ? "Neuer Patch " + cur : "Aktueller Patch " + cur}</b><span>${meta.patch ? "Seit Patch " + esc(meta.patch) + " hat sich einiges geändert. Schaut, ob eure Tiers und Combos noch passen." : "Ab jetzt meldet das Board, wenn ein neuer Patch erscheint."}</span></div>
     <div class="pb-actions"><button class="btn sm" data-action="patch-pools">Tiers prüfen</button><button class="btn sm gold" data-action="patch-ok">Erledigt</button></div></div>` : "";
 }
+// ---------- Statistik-Dashboard ----------
+let statSeries = []; // Punkte des Winrate-Verlaufs für den Tooltip
+let TW = 960, TH = 230; // an die echte Breite angepasst, damit die Schrift lesbar bleibt
+function statBarRow(label, w, n, sub, icon){
+  const p = n ? Math.round(w / n * 100) : 0;
+  return `<div class="sb-row" title="${esc(label)}: ${w} Siege, ${n - w} Niederlagen (${p} %)">${icon || "<span></span>"}<span class="sb-name"><b>${esc(label)}</b>${sub ? `<small>${sub}</small>` : ""}</span><span class="st-g">${w} S · ${n - w} N</span><span class="wr-bar"><i style="width:${p}%;background:${p >= 55 ? "var(--good)" : p >= 45 ? "var(--gold)" : "var(--bad)"}"></i></span><span class="st-pct">${p} %</span></div>`;
+}
+function trendSvg(done){
+  const asc = [...done].sort((a, b) => (a.at || 0) - (b.at || 0));
+  if (asc.length < 3) return `<p class="small-hint">Ab 3 Spielen mit Ergebnis erscheint hier der Verlauf.</p>`;
+  TW = Math.round(Math.min(960, Math.max(300, ($("#view-history").clientWidth || 960) - 36))); TH = TW < 520 ? 200 : 230;
+  const W = TW, H = TH, L = 50, R = 14, T = 14, B = 28, n = asc.length;
+  const x = i => L + (n === 1 ? 0 : i * (W - L - R) / (n - 1)), y = v => T + (100 - v) * (H - T - B) / 100;
+  statSeries = asc.map((h, i) => { const win = asc.slice(Math.max(0, i - 9), i + 1); const v = Math.round(win.filter(g => g.result === "win").length / win.length * 100); return { i, v, h, x: x(i), y: y(v), k: win.length }; });
+  const path = statSeries.map((p, i) => (i ? "L" : "M") + p.x.toFixed(1) + " " + p.y.toFixed(1)).join(" ");
+  const area = path + ` L${x(n - 1).toFixed(1)} ${y(0)} L${x(0).toFixed(1)} ${y(0)} Z`;
+  const ticks = [...new Set([0, Math.round((n - 1) / 2), n - 1])];
+  return `<div class="trend" id="trend"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Winrate der letzten 10 Spiele im Verlauf, aktuell ${statSeries[n - 1].v} Prozent">
+      <defs><linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d7b46a" stop-opacity=".28"/><stop offset="1" stop-color="#d7b46a" stop-opacity="0"/></linearGradient></defs>
+      ${[0, 50, 100].map(v => `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" class="${v === 50 ? "tr-mid" : "tr-grid"}"/><text x="${L - 6}" y="${y(v) + 4}" class="tr-ax" text-anchor="end">${v} %</text>`).join("")}
+      ${ticks.map(i => `<text x="${x(i)}" y="${H - 6}" class="tr-ax" text-anchor="${i === 0 ? "start" : i === n - 1 ? "end" : "middle"}">Spiel ${i + 1}</text>`).join("")}
+      <path d="${area}" fill="url(#trendFill)"/>
+      <path d="${path}" class="tr-line"/>
+      <circle cx="${statSeries[n - 1].x}" cy="${statSeries[n - 1].y}" r="4.5" class="tr-dot"/>
+      <text x="${Math.min(statSeries[n - 1].x, W - R - 2)}" y="${Math.max(statSeries[n - 1].y - 10, 12)}" text-anchor="end" class="tr-last">${statSeries[n - 1].v} %</text>
+      <line class="tr-cross" id="trCross" x1="0" x2="0" y1="${T}" y2="${y(0)}" visibility="hidden"/>
+      <circle class="tr-dot" id="trDot" r="5" visibility="hidden"/>
+      <rect x="${L}" y="${T}" width="${W - L - R}" height="${H - T - B}" fill="transparent" class="tr-hit"/>
+    </svg><div class="tr-tip" id="trTip" hidden></div></div>
+    <p class="small-hint" style="margin:.3rem 0 0">Winrate der jeweils letzten 10 Spiele. Fahr mit der Maus oder dem Finger über die Linie.</p>`;
+}
 function renderStats(list){
   if (!list.length) return `<p class="loading">Noch keine Spiele${histFilter !== "all" ? " in dieser Auswahl" : ""}. Speichert Drafts mit Ergebnis, dann entsteht hier eure Statistik.</p>`;
   const done = list.filter(h => h.result === "win" || h.result === "loss");
   const pct = (w, n) => n ? Math.round(w / n * 100) : 0;
+  const wins = done.filter(h => h.result === "win").length;
+  // Kennzahlen
+  const durs = list.map(h => +h.dur).filter(v => v > 0), avgDur = durs.length ? Math.round(durs.reduce((a, b) => a + b, 0) / durs.length) : 0;
+  const desc = [...done].sort((a, b) => (b.at || 0) - (a.at || 0)); let streak = 0; for (const h of desc){ if (h.result === desc[0].result) streak++; else break; }
+  const tile = (v, l, cls = "") => `<div class="kpi ${cls}"><b>${v}</b><span>${l}</span></div>`;
+  const kpis = `<div class="kpis">${tile(done.length, done.length === list.length ? "Spiele" : `Spiele mit Ergebnis (${list.length} gesamt)`)}${tile(pct(wins, done.length) + " %", `Winrate · ${wins} S – ${done.length - wins} N`, done.length ? (pct(wins, done.length) >= 50 ? "w" : "l") : "")}${tile(avgDur ? avgDur + " Min." : "–", "Ø Spielzeit")}${tile(desc.length ? streak + "×" : "–", desc.length ? (desc[0].result === "win" ? "Siege in Folge" : "Niederlagen in Folge") : "Serie", desc.length ? (desc[0].result === "win" ? "w" : "l") : "")}</div>`;
+  // Seiten
+  const sideStat = s => { const x = done.filter(h => h.side === s); return { n: x.length, w: x.filter(h => h.result === "win").length }; };
+  const B = sideStat("blue"), Rd = sideStat("red");
+  // Spielarten
+  const kinds = KINDS.map(([k, l]) => { const x = done.filter(h => kindOf(h) === k); return { l, n: x.length, w: x.filter(h => h.result === "win").length }; }).filter(x => x.n);
+  // Spieler
+  const byP = {};
+  done.forEach(h => (h.team || []).forEach(x => { const p = byP[x.player] || (byP[x.player] = { n: 0, w: 0, ch: {} }); p.n++; if (h.result === "win") p.w++; p.ch[x.champ] = (p.ch[x.champ] || 0) + 1; }));
+  const pRows = teamOrder().filter(p => byP[p.name]).map(p => { const s = byP[p.name], top = Object.entries(s.ch).sort((a, b) => b[1] - a[1]).slice(0, 3);
+    return statBarRow(p.name, s.w, s.n, top.map(([c, k]) => `${esc(c)} ${k}×`).join(", "), `<span class="ch-av sm" style="--c:${nameColor(p.name)}">${initials(p.name)}${avatarImg(p)}</span>`); });
+  // Spieldauer
+  const buckets = [["unter 25 Min.", 0, 24], ["25–32 Min.", 25, 32], ["33–40 Min.", 33, 40], ["über 40 Min.", 41, 999]].map(([l, a, b]) => { const x = done.filter(h => +h.dur >= a && +h.dur <= b && +h.dur > 0); return { l, n: x.length, w: x.filter(h => h.result === "win").length }; }).filter(x => x.n);
+  // Bot-Duos
+  const duo = {};
+  done.forEach(h => { const t = h.team || [], a = t.find(x => x.role === "Bot"), s = t.find(x => x.role === "Support"); if (!a || !s) return; const k = a.champ + " + " + s.champ; const d = duo[k] || (duo[k] = { n: 0, w: 0, a: a.champ, s: s.champ }); d.n++; if (h.result === "win") d.w++; });
+  const duoRows = Object.entries(duo).sort((x, y) => y[1].n - x[1].n || pct(y[1].w, y[1].n) - pct(x[1].w, x[1].n)).slice(0, 5);
+  // Champions & Gegner
   const champs = {};
   done.forEach(h => (h.team || []).forEach(x => { const k = x.champ; const c = champs[k] || (champs[k] = { c: k, g: 0, w: 0, who: {} }); c.g++; if (h.result === "win") c.w++; c.who[x.player] = (c.who[x.player] || 0) + 1; }));
   const rows = Object.values(champs).sort((a, b) => b.g - a.g || pct(b.w, b.g) - pct(a.w, a.g));
-  const sideStat = s => { const x = done.filter(h => h.side === s); return { n: x.length, w: x.filter(h => h.result === "win").length }; };
-  const B = sideStat("blue"), R = sideStat("red");
   const enemies = {}; done.forEach(h => (h.enemy || []).forEach(c => { const e = enemies[c] || (enemies[c] = { c, g: 0, w: 0 }); e.g++; if (h.result === "win") e.w++; }));
   const tough = Object.values(enemies).filter(e => e.g >= 2).sort((a, b) => pct(a.w, a.g) - pct(b.w, b.g) || b.g - a.g).slice(0, 6);
-  const bar = p => `<span class="wr-bar"><i style="width:${p}%;background:${p >= 55 ? "var(--good)" : p >= 45 ? "var(--gold)" : "var(--bad)"}"></i></span>`;
-  return `<div class="st-grid">
-    <section class="panel st-card"><h3>Seiten</h3>
-      <div class="st-sides"><div class="st-side blue"><span>Blau</span><b>${pct(B.w, B.n)} %</b><small>${B.w} S · ${B.n - B.w} N</small></div><div class="st-side red"><span>Rot</span><b>${pct(R.w, R.n)} %</b><small>${R.w} S · ${R.n - R.w} N</small></div></div>
-      ${!B.n && !R.n ? `<p class="small-hint">Beim Speichern die Seite angeben, dann füllt sich das.</p>` : ""}</section>
-    <section class="panel st-card"><h3>Schwierige Gegner-Champions</h3>
-      ${tough.length ? tough.map(e => `<div class="st-row"><span class="mini">${initials(e.c)}${img(iconUrl(e.c))}</span><b>${esc(e.c)}</b><span class="st-sub">${e.g} Sp.</span>${bar(pct(e.w, e.g))}<span class="st-pct">${pct(e.w, e.g)} %</span></div>`).join("") : `<p class="small-hint">Ab 2 Spielen gegen denselben Champion erscheint er hier.</p>`}</section>
+  const seen = Object.values(enemies).sort((a, b) => b.g - a.g).slice(0, 6);
+  const cIcon = c => `<span class="mini">${initials(c)}${img(iconUrl(c))}</span>`;
+  const card = (title, body, wide) => `<section class="panel st-card${wide ? " wide" : ""}"><h3>${title}</h3>${body}</section>`;
+  return `${kpis}
+  <div class="st-grid">
+    ${card("Winrate-Verlauf", trendSvg(done), true)}
+    ${card("Seiten", `<div class="st-sides"><div class="st-side blue"><span>Blau</span><b>${pct(B.w, B.n)} %</b><small>${B.w} S · ${B.n - B.w} N</small></div><div class="st-side red"><span>Rot</span><b>${pct(Rd.w, Rd.n)} %</b><small>${Rd.w} S · ${Rd.n - Rd.w} N</small></div></div>${!B.n && !Rd.n ? `<p class="small-hint">Beim Speichern die Seite angeben, dann füllt sich das.</p>` : ""}`)}
+    ${histFilter === "all" && kinds.length > 1 ? card("Nach Spielart", `<div class="st-table">${kinds.map(k => statBarRow(k.l, k.w, k.n, k.n + " Spiele")).join("")}</div>`) : ""}
+    ${pRows.length ? card("Spieler", `<div class="st-table">${pRows.join("")}</div>`) : ""}
+    ${buckets.length ? card("Nach Spieldauer", `<div class="st-table">${buckets.map(b => statBarRow(b.l, b.w, b.n, b.n + " Spiele")).join("")}</div>`) : ""}
+    ${duoRows.length ? card("Bot-Lane-Duos", `<div class="st-table">${duoRows.map(([k, d]) => statBarRow(k, d.w, d.n, d.n + " Spiele", `<span class="duo-ic">${cIcon(d.a)}${cIcon(d.s)}</span>`)).join("")}</div>`) : ""}
+    ${card("Schwierige Gegner-Champions", tough.length ? `<div class="st-table">${tough.map(e => statBarRow(e.c, e.w, e.g, e.g + " Sp.", cIcon(e.c))).join("")}</div>` : `<p class="small-hint">Ab 2 Spielen gegen denselben Champion erscheint er hier.</p>`)}
+    ${seen.length ? card("Am häufigsten gegen", `<div class="st-table">${seen.map(e => statBarRow(e.c, e.w, e.g, e.g + "× gesehen", cIcon(e.c))).join("")}</div>`) : ""}
   </div>
-  <section class="panel st-card"><h3>Eure Champions</h3>
-    <div class="st-table">${rows.map(r => `<div class="st-row"><span class="mini">${initials(r.c)}${img(iconUrl(r.c))}</span><b>${esc(r.c)}</b><span class="st-sub">${Object.keys(r.who).map(esc).join(", ")}</span><span class="st-g">${r.g} Sp.</span>${bar(pct(r.w, r.g))}<span class="st-pct">${pct(r.w, r.g)} %</span></div>`).join("")}</div>
-  </section>`;
+  ${card("Eure Champions", `<div class="st-table">${rows.map(r => statBarRow(r.c, r.w, r.g, Object.keys(r.who).map(esc).join(", "), cIcon(r.c))).join("")}</div>`)}`;
 }
+// Tooltip für den Winrate-Verlauf
+function trendHover(e){
+  const box = document.getElementById("trend"); if (!box || !statSeries.length) return;
+  const svg = box.querySelector("svg"), r = svg.getBoundingClientRect(), pt = e.touches ? e.touches[0] : e;
+  const sx = (pt.clientX - r.left) * TW / r.width;
+  const p = statSeries.reduce((a, b) => Math.abs(b.x - sx) < Math.abs(a.x - sx) ? b : a);
+  const cross = document.getElementById("trCross"), dot = document.getElementById("trDot"), tip = document.getElementById("trTip");
+  cross.setAttribute("x1", p.x); cross.setAttribute("x2", p.x); cross.setAttribute("visibility", "visible");
+  dot.setAttribute("cx", p.x); dot.setAttribute("cy", p.y); dot.setAttribute("visibility", "visible");
+  const h = p.h;
+  tip.innerHTML = `<b>Spiel ${p.i + 1}</b> · ${esc(fmtDate(h.at))}<br><span class="${h.result === "win" ? "w" : "l"}">${h.result === "win" ? "Sieg" : "Niederlage"}</span>${h.oppName ? " vs " + esc(h.oppName) : ""} · ${esc(kindLabel(h))}<br>Winrate letzte ${p.k}: <b>${p.v} %</b>`;
+  tip.hidden = false;
+  const px = p.x * r.width / TW, py = p.y * r.height / TH;
+  tip.style.left = Math.min(Math.max(px - tip.offsetWidth / 2, 0), r.width - tip.offsetWidth) + "px";
+  tip.style.top = Math.max(py - tip.offsetHeight - 12, 0) + "px";
+}
+function trendLeave(){ ["trCross", "trDot"].forEach(id => document.getElementById(id)?.setAttribute("visibility", "hidden")); const t = document.getElementById("trTip"); if (t) t.hidden = true; }
+document.addEventListener("pointermove", e => { if (e.target.closest && e.target.closest("#trend")) trendHover(e); else if (document.getElementById("trTip") && !document.getElementById("trTip").hidden) trendLeave(); });
 function renderHistory(){
   const all = history;
   const listF = all.filter(h => histFilter === "all" || kindOf(h) === histFilter);
@@ -3923,6 +4024,7 @@ function fitNav(){
 }
 new ResizeObserver(() => fitNav()).observe(document.querySelector(".topbar"));
 window.addEventListener("resize", fitNav);
+window.addEventListener("resize", () => { clearTimeout(render.rz); render.rz = setTimeout(() => { if (tab === "history" && histView === "stats") render(); }, 250); }); // Diagramm neu skalieren
 document.fonts && document.fonts.ready.then(fitNav);
 setInterval(checkReminders, 60000); setTimeout(checkReminders, 8000);
 render();
