@@ -49,7 +49,8 @@ export default {
     if (url.pathname === "/health") return json({ ok: true, key: !!env.RIOT_API_KEY, version: VERSION }, 200, cors);
     if (!env.RIOT_API_KEY) return json({ error: "RIOT_API_KEY fehlt im Worker." }, 500, cors);
 
-    const id = (url.searchParams.get("id") || "").trim();
+    // unsichtbare Steuerzeichen (aus dem LoL-Client kopiert) entfernen, sonst antwortet Riot mit 400
+    const id = (url.searchParams.get("id") || "").normalize("NFC").replace(/[\p{Cf}\p{Cc}]/gu, "").replace(/\s+/g, " ").trim();
     const region = (url.searchParams.get("region") || "euw").toLowerCase();
     const queue = (url.searchParams.get("queue") || "ranked").toLowerCase();
     const count = Math.min(MAX_COUNT, Math.max(1, parseInt(url.searchParams.get("count") || "20", 10) || 20));

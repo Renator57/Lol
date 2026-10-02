@@ -1783,8 +1783,10 @@ let notesById = {}, openHist = new Set(), compose = {}, histInit = false;
 let teams = {}, activeId = null, viewId = null, scoutingLoaded = false, migrated = false;
 const blankTeam = () => ({ name: "", tag: "", date: "", link: "", note: "", region: "euw", roles: {}, banPlan: [], createdAt: Date.now() });
 const REGIONS = [["euw","EUW"],["eune","EUNE"],["tr","TR"],["na","NA"],["kr","KR"]];
+// Aus dem LoL-Client kopierte Namen enthalten oft unsichtbare Steuerzeichen (z. B. U+2066/U+2069) – die lehnt Riot ab
+const cleanRiotId = v => String(v || "").normalize("NFC").replace(/[\p{Cf}\p{Cc}]/gu, "").replace(/\s+/g, " ").trim();
 function parseRiotId(v, region){
-  v = String(v || "").trim(); if (!v) return null;
+  v = cleanRiotId(v); if (!v) return null;
   const i = v.lastIndexOf("#");
   const name = (i > 0 ? v.slice(0, i) : v).trim(), tag = (i > 0 ? v.slice(i + 1) : (region || "euw").toUpperCase()).trim();
   return name ? { name, tag } : null;
