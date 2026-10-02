@@ -1571,28 +1571,47 @@ dialog:has(.set-body){width:min(880px,calc(100vw - 1.5rem))}
 /* VOD – Feinschliff */
 .vod-dock{background:linear-gradient(180deg,rgba(18,24,40,.97),rgba(8,13,24,.97));border-color:rgba(215,180,106,.32);box-shadow:0 24px 60px -24px #000,inset 0 1px 0 rgba(255,255,255,.04)}
 .vd-head{gap:.55rem}
-.vd-plat{display:inline-flex;align-items:center;gap:.3rem;font-size:.66rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;padding:.16rem .5rem;border-radius:999px;color:#fff;flex:none}
-.vd-plat.yt{background:#e62117}.vd-plat.tw{background:#9146ff}
-.vd-plat::before{content:"";width:0;height:0;border-left:.42rem solid currentColor;border-top:.26rem solid transparent;border-bottom:.26rem solid transparent}
+.vd-plat{display:inline-flex;align-items:baseline;gap:.35rem;font-size:.66rem;font-weight:900;letter-spacing:.1em;color:#1a1206;background:var(--gold);padding:.14rem .45rem;border-radius:6px;flex:none}
+.vd-plat small{font-size:.62rem;font-weight:700;letter-spacing:.02em;color:rgba(26,18,6,.62)}
 .vd-head .x{width:2rem;height:2rem;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--muted);font-size:1.15rem;line-height:1;cursor:pointer;flex:none}
 .vd-head .x:hover{color:var(--text);border-color:var(--line-2)}
-.vd-frame{box-shadow:0 0 0 1px rgba(255,255,255,.05),0 14px 30px -18px #000}
-.vd-bar{align-items:flex-end;gap:.45rem .5rem;padding:.55rem .6rem;border-radius:12px;background:rgba(255,255,255,.025);border:1px solid var(--line)}
-.vd-clock{display:flex;flex-direction:column;line-height:1.05;padding-right:.65rem;margin-right:.1rem;border-right:1px solid var(--line)}
-.vd-clock small{font-size:.62rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
-.vd-clock b{font-family:var(--fd);font-size:1.25rem;color:var(--gold-hi);font-variant-numeric:tabular-nums;min-width:3.4rem}
+.vd-bar{align-items:flex-end;gap:.45rem .5rem}
 .vd-start{flex-direction:column;align-items:flex-start;gap:.1rem;font-size:.62rem;letter-spacing:.06em;text-transform:uppercase}
 .vd-start input{width:4.6rem;padding:.22rem .45rem;font-size:.85rem;text-transform:none}
-.vd-chaps{display:flex;gap:.35rem;overflow-x:auto;padding:.5rem .1rem .15rem;scrollbar-width:thin}
-.vd-chaps:empty{display:none}
-.vd-chap{flex:none;display:flex;align-items:center;gap:.4rem;max-width:15rem;padding:.3rem .6rem .3rem .45rem;border-radius:999px;border:1px solid var(--line);background:rgba(6,10,18,.55);color:var(--text);font-size:.78rem;cursor:pointer;white-space:nowrap}
-.vd-chap:hover{border-color:var(--gold);background:rgba(215,180,106,.08)}
-.vd-chap i{width:.55rem;height:.55rem;border-radius:50%;background:var(--gold);flex:none}
-.vd-chap.k-good i{background:var(--good)}.vd-chap.k-bad i{background:var(--bad)}
-.vd-chap b{font-family:var(--fd);color:var(--gold-hi);font-variant-numeric:tabular-nums}
-.vd-chap span{overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
-.vd-chap.now{border-color:var(--gold);box-shadow:0 0 0 2px rgba(215,180,106,.18)}
-.vd-chap.now span{color:var(--text)}
+/* Eigener, schlichter Player */
+.vd-frame iframe{pointer-events:none}
+.vd-shield{position:absolute;inset:0;z-index:2;cursor:pointer}
+.vd-ctl{position:absolute;left:0;right:0;bottom:0;z-index:3;display:flex;align-items:center;gap:.35rem;padding:1.6rem .55rem .45rem;background:linear-gradient(180deg,transparent,rgba(0,0,0,.78));opacity:0;transition:opacity .2s}
+.vd-frame:hover .vd-ctl,.vd-frame.paused .vd-ctl,.vd-frame:focus-within .vd-ctl{opacity:1}
+@media (hover:none){.vd-ctl{opacity:1}}
+.vd-frame.failed .vd-ctl,.vd-frame.failed .vd-shield{display:none}
+.vd-b{flex:none;display:grid;place-items:center;width:2rem;height:2rem;border:0;border-radius:8px;background:none;color:#fff;cursor:pointer;opacity:.85}
+.vd-b:hover{opacity:1;background:rgba(255,255,255,.12)}
+.vd-b svg{width:1.15rem;height:1.15rem;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.vd-b svg .f{fill:currentColor;stroke:none}
+.vd-b.on{color:var(--gold-hi);opacity:1}
+.vd-txt{width:auto;padding:0 .45rem;font-weight:900;font-size:.85rem;font-variant-numeric:tabular-nums}
+.vd-play::before{content:"";margin-left:.15rem;border-left:.75rem solid currentColor;border-top:.45rem solid transparent;border-bottom:.45rem solid transparent}
+.vd-play.on::before{margin:0;width:.7rem;height:.85rem;border:0;background:linear-gradient(90deg,currentColor 35%,transparent 35% 65%,currentColor 65%)}
+.vd-time{flex:none;font-size:.78rem;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;opacity:.9;min-width:5.6rem}
+.vd-prog{position:relative;flex:1;height:1.4rem;display:flex;align-items:center;cursor:pointer;touch-action:none}
+.vd-track{position:relative;width:100%;height:4px;border-radius:4px;background:rgba(255,255,255,.25);overflow:hidden;transition:height .15s}
+.vd-prog:hover .vd-track{height:6px}
+.vd-fill{height:100%;width:0;background:var(--gold)}
+.vd-marks{position:absolute;inset:0;pointer-events:none}
+.vd-marks i{position:absolute;top:50%;width:7px;height:7px;margin:-3.5px 0 0 -3.5px;border-radius:50%;background:var(--gold-hi);box-shadow:0 0 0 2px rgba(0,0,0,.6)}
+.vd-marks i.k-good{background:var(--good)}.vd-marks i.k-bad{background:var(--bad)}
+.vd-frame:fullscreen,.vd-frame.max{max-width:none;max-height:none;width:100%;height:100%;border-radius:0;aspect-ratio:auto;background:#000}
+.vd-frame:-webkit-full-screen{max-width:none;max-height:none;width:100%;height:100%;border-radius:0}
+.vd-frame.max{position:fixed;inset:0;z-index:1000}
+/* Klein: schwebendes Mini-Fenster */
+.vod-dock.vd-small{position:fixed;right:1rem;bottom:5.5rem;top:auto;left:auto;z-index:60;width:min(340px,calc(100vw - 2rem));margin:0;padding:.4rem}
+.vod-dock.vd-small .vd-bar,.vod-dock.vd-small .vd-head b,.vod-dock.vd-small .vd-plat{display:none}
+.vod-dock.vd-small .vd-head{position:absolute;top:.55rem;right:.55rem;z-index:5;margin:0}
+.vod-dock.vd-small .vd-head .x{width:1.7rem;height:1.7rem;background:rgba(0,0,0,.55);border-color:transparent;color:#fff}
+.vod-dock.vd-small .vd-frame{max-height:none}
+.vod-dock.vd-small .vd-time,.vod-dock.vd-small #vdRate{display:none}
+@media (max-width:720px){.vod-dock.vd-small{right:.5rem;bottom:5rem;width:min(260px,70vw)}.vd-time{min-width:0}}
 .vd-fail{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:1rem;background:#05080f center/cover no-repeat}
 .vd-fail::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(5,8,15,.72),rgba(5,8,15,.94));backdrop-filter:blur(3px)}
 .vd-fail>div{position:relative;display:grid;justify-items:center;gap:.45rem;max-width:26rem}
@@ -3253,7 +3272,7 @@ function loadYT(){ return ytReady || (ytReady = new Promise(res => { if (window.
 const vodTime = () => { try { return vod && vod.player ? (vod.kind === "yt" ? vod.player.getCurrentTime() : vod.player.getCurrentTime()) : 0; } catch(e){ return 0; } };
 const vodUrl = (v, sec) => v.kind === "yt" ? `https://www.youtube.com/watch?v=${encodeURIComponent(v.id)}${sec ? "&t=" + Math.floor(sec) + "s" : ""}` : `https://www.twitch.tv/videos/${encodeURIComponent(v.id)}${sec ? "?t=" + Math.floor(sec) + "s" : ""}`;
 const vodThumb = v => v.kind === "yt" ? `https://i.ytimg.com/vi/${encodeURIComponent(v.id)}/mqdefault.jpg` : "";
-const platBadge = v => `<span class="vd-plat ${v.kind}">${v.kind === "yt" ? "YouTube" : "Twitch"}</span>`;
+const platBadge = v => `<span class="vd-plat">VOD<small>${v.kind === "yt" ? "YouTube" : "Twitch"}</small></span>`;
 function vodRowHtml(h, notes){
   const v = parseVod(h.vod), th = vodThumb(v), marks = notes.filter(n => n.t).length, on = vod && vod.hid === h.id;
   return `<button class="vod-thumb ${on ? "on" : ""}" data-action="vod-open" data-id="${esc(h.id)}" ${th ? `style="background-image:url('${esc(th)}')"` : ""} aria-label="VOD im Board ansehen"><span class="pl"></span></button>
@@ -3262,7 +3281,7 @@ function vodRowHtml(h, notes){
 }
 // Player nicht nutzbar (Datei-Modus, Einbettung gesperrt) → Video im neuen Tab an der Stelle öffnen
 function vodFail(v, why){
-  if (!vod) return; vod.failed = true; vod.player = null; vodBar();
+  if (!vod) return; vod.failed = true; vod.player = null; vodBar(); const f = $("#vdFrame"); if (f) f.classList.add("failed");
   const h = history.find(x => x.id === vod.hid), th = vodThumb(v), el = $("#vodPlayer");
   if (el) el.outerHTML = `<div class="vd-fail vd-msg" ${th ? `style="background-image:url('${esc(th)}')"` : ""}><div><span class="vd-fail-ic">▶</span><strong>Hier nicht abspielbar</strong><p>${why}</p>
     <a class="btn sm gold" href="${esc(vodUrl(v, h ? N(h.vodStart) : 0))}" target="_blank" rel="noopener">${v.kind === "yt" ? "Auf YouTube" : "Auf Twitch"} ansehen ↗</a><p>Zeitmarken öffnen das Video an der richtigen Stelle.</p></div></div>`;
@@ -3275,11 +3294,46 @@ function vodSeek(sec){
 }
 function vodPause(){ try { if (vod && vod.player) vod.kind === "yt" ? vod.player.pauseVideo() : vod.player.pause(); } catch(e){} }
 let vodTick = null;
-function vodClock(){ const c = document.getElementById("vdClockV"); if (!c || !vod) return; const h = history.find(x => x.id === vod.hid); const g = vodTime() - N(h && h.vodStart);
-  c.textContent = vod.failed ? "–" : (g < 0 ? "-" + fmtSec(-g) : fmtSec(g));
-  const cur = [...document.querySelectorAll("#vdChaps .vd-chap")].filter(b => +b.dataset.s <= g + 1).pop();
-  document.querySelectorAll("#vdChaps .vd-chap.now").forEach(b => b !== cur && b.classList.remove("now")); if (cur) cur.classList.add("now"); }
-function vodClose(){ clearInterval(vodTick); vodTick = null; vodPause(); vod = null; const d = $("#vodDock"); d.innerHTML = ""; d.hidden = true; $("#view-history").classList.remove("vod-open"); }
+const vodPlaying = () => { try { return vod && vod.player ? (vod.kind === "yt" ? vod.player.getPlayerState() === 1 : !vod.player.isPaused()) : false; } catch(e){ return false; } };
+const vodDur = () => { try { return vod && vod.player ? +vod.player.getDuration() || 0 : 0; } catch(e){ return 0; } };
+function vodToggle(){ if (!vod || !vod.player) return; try { if (vodPlaying()) vodPause(); else vod.kind === "yt" ? vod.player.playVideo() : vod.player.play(); } catch(e){} setTimeout(vodUpdate, 60); }
+function vodRate(){ if (!vod || vod.kind !== "yt" || !vod.player) return; vod.rate = vod.rate === 2 ? 1 : 2; try { vod.player.setPlaybackRate(vod.rate); } catch(e){} vodUpdate(); }
+function vodMini(){ if (!vod) return; vod.mini = !vod.mini; if (vod.mini) vodFsExit(); $("#vodDock").classList.toggle("vd-small", vod.mini); $("#view-history").classList.toggle("vod-open", !vod.mini); vodUpdate(); }
+const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
+function vodFsExit(){ const f = $("#vdFrame"); if (f) f.classList.remove("max"); if (fsEl()) (document.exitFullscreen || document.webkitExitFullscreen).call(document); }
+function vodFs(){
+  const f = $("#vdFrame"); if (!f) return;
+  if (fsEl() || f.classList.contains("max")) return vodFsExit();
+  if (vod.mini) vodMini();
+  const req = f.requestFullscreen || f.webkitRequestFullscreen;
+  if (req) Promise.resolve(req.call(f)).catch(() => f.classList.add("max")); else f.classList.add("max");
+}
+// Zeitmarken aus den Notizen auf der Leiste
+function vodMarks(){
+  const el = $("#vdMarks"), d = vodDur(); if (!el || !vod) return; const h = history.find(x => x.id === vod.hid); if (!h || !d) { el.innerHTML = ""; return; }
+  const sig = d + "|" + N(h.vodStart) + "|" + (notesById[h.id] || []).map(n => n.t + n.k).join(); if (el.dataset.sig === sig) return; el.dataset.sig = sig;
+  el.innerHTML = (notesById[h.id] || []).filter(n => n.t).map(n => { const at = N(h.vodStart) + timeKey(n.t); return at > d ? "" : `<i class="k-${esc(n.k)}" style="left:${(at / d * 100).toFixed(2)}%" title="${esc(n.t)} · ${esc(n.x)}"></i>`; }).join("");
+}
+function vodUpdate(){
+  if (!vod) return; const h = history.find(x => x.id === vod.hid), st = N(h && h.vodStart), t = vodTime(), d = vodDur(), on = vodPlaying();
+  const f = $("#vdFrame"); if (!f) return;
+  f.classList.toggle("paused", !on);
+  const pl = $("#vdPlay"); if (pl){ pl.classList.toggle("on", on); pl.setAttribute("aria-label", on ? "Pause" : "Abspielen"); }
+  const g = t - st; $("#vdTime").textContent = (g < 0 ? "-" + fmtSec(-g) : fmtSec(g)) + (d ? " / " + fmtSec(Math.max(0, d - st)) : "");
+  if (!vod.drag) $("#vdFill").style.width = d ? Math.min(100, t / d * 100) + "%" : "0";
+  const r = $("#vdRate"); if (r) r.classList.toggle("on", vod.rate === 2);
+  const m = $("#vdMiniB"); if (m) m.classList.toggle("on", !!vod.mini);
+  vodMarks();
+}
+function vodProgBind(){
+  const p = $("#vdProg"); if (!p) return;
+  const at = e => { const r = p.getBoundingClientRect(); return Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)); };
+  p.addEventListener("pointerdown", e => { const d = vodDur(); if (!d || !vod) return; vod.drag = true; p.setPointerCapture(e.pointerId); $("#vdFill").style.width = at(e) * 100 + "%"; });
+  p.addEventListener("pointermove", e => { if (vod && vod.drag) $("#vdFill").style.width = at(e) * 100 + "%"; });
+  const end = e => { if (!vod || !vod.drag) return; vod.drag = false; vodSeek(at(e) * vodDur()); };
+  p.addEventListener("pointerup", end); p.addEventListener("pointercancel", () => { if (vod) vod.drag = false; });
+}
+function vodClose(){ clearInterval(vodTick); vodTick = null; vodPause(); if (fsEl()) vodFsExit(); vod = null; const d = $("#vodDock"); d.innerHTML = ""; d.hidden = true; d.classList.remove("vd-small"); $("#view-history").classList.remove("vod-open"); }
 // Dock einmal aufbauen; danach nur Titel/Startzeit aktualisieren, das Video bleibt stehen
 async function vodOpen(hid, seekTo){
   const h = history.find(x => x.id === hid), v = h && parseVod(h.vod); if (!v) return toast("Kein gültiger VOD-Link hinterlegt.");
@@ -3287,10 +3341,19 @@ async function vodOpen(hid, seekTo){
   vodClose();
   const d = $("#vodDock"); d.hidden = false; $("#view-history").classList.add("vod-open");
   d.innerHTML = `<div class="vd-head">${platBadge(v)}<b id="vdTitle"></b><span class="spacer"></span><button class="x" data-action="vod-close" aria-label="Video schließen">×</button></div>
-    <div class="vd-frame"><div id="vodPlayer"></div></div>
-    <div class="vd-bar" id="vdBar"></div><div class="vd-chaps" id="vdChaps"></div>`;
+    <div class="vd-frame paused" id="vdFrame"><div id="vodPlayer"></div>
+      <div class="vd-shield" data-action="vod-play" aria-hidden="true"></div>
+      <div class="vd-ctl">
+        <button class="vd-b vd-play" id="vdPlay" data-action="vod-play" aria-label="Abspielen"></button>
+        <span class="vd-time" id="vdTime">0:00</span>
+        <div class="vd-prog" id="vdProg" role="slider" aria-label="Videoposition"><div class="vd-track"><div class="vd-fill" id="vdFill"></div></div><div class="vd-marks" id="vdMarks"></div></div>
+        ${v.kind === "yt" ? `<button class="vd-b vd-txt" id="vdRate" data-action="vod-rate" title="Doppelte Geschwindigkeit">2×</button>` : ""}
+        <button class="vd-b" id="vdMiniB" data-action="vod-mini" title="Klein" aria-label="Klein"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><rect class="f" x="12" y="12" width="7" height="5" rx="1"/></svg></button>
+        <button class="vd-b" data-action="vod-fs" title="Vollbild" aria-label="Vollbild"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+      </div></div>
+    <div class="vd-bar" id="vdBar"></div>`;
   vod = { hid, kind: v.kind, id: v.id, player: null };
-  vodBar(); vodTick = setInterval(vodClock, 1000);
+  vodBar(); vodProgBind(); vodTick = setInterval(vodUpdate, 250);
   d.scrollIntoView({ behavior: "smooth", block: "start" });
   try {
     if (v.kind === "yt"){
@@ -3298,7 +3361,7 @@ async function vodOpen(hid, seekTo){
       await loadYT(); const me = vod;
       await new Promise(res => {
         vod.player = new YT.Player("vodPlayer", { videoId: v.id, width: "100%", height: "100%",
-          playerVars: { rel: 0, playsinline: 1, modestbranding: 1, origin: location.origin, widget_referrer: location.href },
+          playerVars: { controls: 0, disablekb: 1, fs: 0, iv_load_policy: 3, rel: 0, playsinline: 1, modestbranding: 1, origin: location.origin, widget_referrer: location.href },
           events: { onReady: () => res(), onError: e => { if (vod === me) vodFail(v, YT_ERR[e.data] || `YouTube-Fehler ${e.data}.`); res(); } } });
         setTimeout(res, 8000);
       });
@@ -3306,7 +3369,7 @@ async function vodOpen(hid, seekTo){
     } else {
       if (!location.hostname){ vodFail(v, "Twitch-VODs laufen im Board nur, wenn es über eine Web-Adresse geöffnet wird (nicht als Datei)."); if (seekTo != null) vodSeek(seekTo); return; }
       await loadScript("https://player.twitch.tv/js/embed/v1.js", () => !!window.Twitch);
-      vod.player = new Twitch.Player("vodPlayer", { video: "v" + v.id, parent: [location.hostname], width: "100%", height: "100%", autoplay: false });
+      vod.player = new Twitch.Player("vodPlayer", { video: "v" + v.id, parent: [location.hostname], width: "100%", height: "100%", autoplay: false, controls: false });
       await new Promise(res => { vod.player.addEventListener(Twitch.Player.READY, res); setTimeout(res, 8000); });
     }
     if (seekTo != null) vodSeek(seekTo);
@@ -3316,10 +3379,8 @@ function vodBar(){
   if (!vod) return; const h = history.find(x => x.id === vod.hid); if (!h) return vodClose();
   $("#vdTitle").textContent = `${h.result === "win" ? "Sieg" : h.result === "loss" ? "Niederlage" : "Spiel"}${h.oppName ? " vs " + h.oppName : ""} · ${kindLabel(h)}${kindOf(h) === "liga" && h.game ? " · Spiel " + h.game : ""}`;
   const ed = canEdit();
-  const notes = [...(notesById[h.id] || [])].filter(n => n.t).sort((a, b) => timeKey(a.t) - timeKey(b.t));
-  $("#vdChaps").innerHTML = notes.map(n => `<button class="vd-chap k-${esc(n.k)}" data-action="vod-seek" data-id="${esc(h.id)}" data-t="${esc(n.t)}" data-s="${timeKey(n.t)}" title="${esc(n.x)}"><i></i><b>${esc(n.t)}</b><span>${esc(n.x)}</span></button>`).join("");
-  $("#vdBar").innerHTML = `${vod.failed ? "" : `<div class="vd-clock" title="Aktuelle Spielminute (Videozeit minus Spielstart)"><small>Spielzeit</small><b id="vdClockV">0:00</b></div>`}<label class="vd-start" title="Bei welcher Videozeit beginnt das Spiel (0:00 Ingame)?"><span>Spielstart im Video</span><input class="inp" id="vodStart" value="${fmtSec(N(h.vodStart))}" ${ed ? "" : "disabled"} inputmode="numeric" aria-label="Spielstart im Video"></label>
-    ${ed && !vod.failed ? `<button class="btn sm ghost" data-action="vod-start-now" title="Aktuelle Videostelle als Spielstart">Jetzt</button><span class="spacer"></span><button class="btn sm gold" data-action="vod-note">＋ Notiz an dieser Stelle</button>` : ""}`;
+  $("#vdBar").innerHTML = `<label class="vd-start" title="Bei welcher Videozeit beginnt das Spiel (0:00 Ingame)?"><span>Spielstart im Video</span><input class="inp" id="vodStart" value="${fmtSec(N(h.vodStart))}" ${ed ? "" : "disabled"} inputmode="numeric" aria-label="Spielstart im Video"></label>
+    ${ed && !vod.failed ? `<button class="btn sm ghost" data-action="vod-start-now" title="Aktuelle Videostelle als Spielstart">Jetzt</button><span class="spacer"></span><button class="btn sm gold" data-action="vod-note">＋ Notiz hier</button>` : ""}`;
 }
 const vodGameSec = () => { const h = vod && history.find(x => x.id === vod.hid); return h ? Math.max(0, vodTime() - N(h.vodStart)) : 0; };
 function setHist(hid, patch){ history = history.map(x => x.id === hid ? { ...x, ...patch } : x); queueSet("config/history", { items: history }); render(); }
@@ -4358,6 +4419,10 @@ document.addEventListener("click", async e => {
     case "vod-remove": { if (!armed(a, "Sicher?")) return; const hid = a.dataset.id; if (vod && vod.hid === hid) vodClose(); setHist(hid, { vod: "", vodStart: 0 }); break; }
     case "vod-open": vodOpen(a.dataset.id); render(); break;
     case "vod-close": vodClose(); render(); break;
+    case "vod-play": vodToggle(); break;
+    case "vod-rate": vodRate(); break;
+    case "vod-mini": vodMini(); break;
+    case "vod-fs": vodFs(); break;
     case "vod-seek": { const h = history.find(x => x.id === a.dataset.id); if (!h) break; const sec = N(h.vodStart) + Math.max(0, timeKey(a.dataset.t)); vodOpen(h.id, sec); break; }
     case "vod-start-now": { if (!vod) break; const sec = Math.floor(vodTime()); setHist(vod.hid, { vodStart: sec }); vodBar(); toast(`Spielstart auf ${fmtSec(sec)} gesetzt.`); break; }
     case "vod-note": { if (!vod) break; const hid = vod.hid, t = fmtSec(vodGameSec()); vodPause();
