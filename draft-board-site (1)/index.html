@@ -2379,9 +2379,9 @@ function shareReport(t){
   if (R.flex.length) fields.push({ name: "🔀 Flex-Picks", value: R.flex.map(f => `**${f.c}** – ${f.roles.map(y => y.r + " " + y.g + "×").join(", ")}`).join("\n") });
   if (R.bans.length) fields.push({ name: "🚫 Bann-Empfehlung", value: R.bans.map((x, i) => `**${i + 1}. ${x.c}** – ${x.r} · ${x.g} Sp · ${pct(x.w, x.g)} %`).join("\n") });
   if (R.notes.length) fields.push({ name: "💡 Auffällig", value: R.notes.map(n => `${n.k === "bad" ? "⚠️" : n.k === "good" ? "✅" : "•"} ${n.t}`).join("\n") });
-  return embed({ title: `📋 Scouting: ${t.name || t.tag || "Gegner"}`, url: t.link, color: DC.red,
+  return withCard(embed({ title: `📋 Scouting: ${t.name || t.tag || "Gegner"}`, url: t.link, color: DC.red,
     description: [t.date ? "📅 " + fmtDay(t.date) : "", `${R.avg ? "Ø **" + R.avg.txt + "** · " : ""}**${pct(R.wins, R.games)} %** Winrate in ${R.games} Spielen`].filter(Boolean).join("\n"),
-    fields, thumb: iconUrl((R.bans[0] || {}).c || "") });
+    fields, thumb: iconUrl((R.bans[0] || {}).c || "") }), () => cardScout(t), R.notes.filter(n => n.k === "bad").slice(0, 2).map(n => "⚠️ " + n.t).join("\n"));
 }
 // Matchdaten-Zeile eines Gegners zu einem Champion (für Draft und Pick-Dialog)
 function riotChampLine(sr, c, t){
@@ -2487,24 +2487,198 @@ function embedToText(e){
   (e.fields || []).forEach(f => L.push("", `**${f.name}**`, f.value));
   return L.join("\n");
 }
+// ---------- Discord-Bilder: Karten im Board-Look (Canvas) ----------
+const CF = { d: '"Sora", system-ui, sans-serif', b: '"Manrope", system-ui, sans-serif' };
+const CC = { text: "#e8e2d4", hi: "#f0e6d2", muted: "#8b97ab", gold: "#d7b46a", blue: "#4a8bff", red: "#ff6a5c", good: "#3fd17f", warn: "#f0b54a", panel: "rgba(255,255,255,.045)", line: "rgba(255,255,255,.08)" };
+const TIER_HEX = { IRON:"#8a7f7a", BRONZE:"#c08a62", SILVER:"#aab6c6", GOLD:"#e2b552", PLATINUM:"#3fc1ac", EMERALD:"#33d17a", DIAMOND:"#7b95ff", MASTER:"#c67cf2", GRANDMASTER:"#ff6464", CHALLENGER:"#f6d775" };
+const imgCache = new Map();
+function loadImg(url){
+  if (!url) return Promise.resolve(null);
+  if (!imgCache.has(url)) imgCache.set(url, new Promise(res => { const im = new Image(); im.crossOrigin = "anonymous"; const t = setTimeout(() => res(null), 4000);
+    im.onload = () => { clearTimeout(t); res(im); }; im.onerror = () => { clearTimeout(t); res(null); }; im.src = url; }));
+  return imgCache.get(url);
+}
+function rr(c, x, y, w, h, r){ c.beginPath(); if (c.roundRect) c.roundRect(x, y, w, h, r); else c.rect(x, y, w, h); }
+function ctext(c, s, x, y, o = {}){
+  const { size = 20, weight = 600, color = CC.text, font = "b", align = "left", max } = o;
+  c.font = `${weight} ${size}px ${CF[font]}`; c.fillStyle = color; c.textAlign = align; c.textBaseline = "alphabetic";
+  let t = String(s ?? ""); if (max) while (t.length > 1 && c.measureText(t).width > max) t = t.slice(0, -2) + "…";
+  c.fillText(t, x, y); return c.measureText(t).width;
+}
+function cpill(c, s, x, y, bg, fg, size = 15){
+  c.font = `800 ${size}px ${CF.b}`; const w = c.measureText(s).width + 22, h = size + 13;
+  rr(c, x, y, w, h, h / 2); c.fillStyle = bg; c.fill(); ctext(c, s, x + 11, y + size + 3, { size, weight: 800, color: fg }); return w;
+}
+async function cchamp(c, name, x, y, s, o = {}){
+  c.save(); rr(c, x, y, s, s, s * .2); c.clip();
+  c.fillStyle = "#1c2c48"; c.fillRect(x, y, s, s);
+  const im = name ? await loadImg(iconUrl(name)) : null;
+  if (im) c.drawImage(im, x - s * .06, y - s * .06, s * 1.12, s * 1.12);
+  else if (name) ctext(c, initials(name), x + s / 2, y + s / 2 + s * .13, { size: s * .34, weight: 800, color: CC.muted, align: "center", font: "d" });
+  if (o.ban || o.dim){ c.fillStyle = "rgba(5,10,20,.6)"; c.fillRect(x, y, s, s); }
+  c.restore();
+  if (o.ban){ c.strokeStyle = CC.red; c.lineWidth = Math.max(3, s * .06); c.lineCap = "round"; c.beginPath(); c.moveTo(x + s * .2, y + s * .8); c.lineTo(x + s * .8, y + s * .2); c.stroke(); }
+  if (o.border){ c.strokeStyle = o.border; c.lineWidth = 3; rr(c, x + 1.5, y + 1.5, s - 3, s - 3, s * .2); c.stroke(); }
+}
+function newCard(h, accent){
+  const cv = document.createElement("canvas"); cv.width = 1000; cv.height = h;
+  const c = cv.getContext("2d");
+  const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#15243f"); g.addColorStop(1, "#070e1a"); c.fillStyle = g; c.fillRect(0, 0, 1000, h);
+  const rg = c.createRadialGradient(1000, 0, 0, 1000, 0, 520); rg.addColorStop(0, accent + "33"); rg.addColorStop(1, accent + "00"); c.fillStyle = rg; c.fillRect(0, 0, 1000, h);
+  c.fillStyle = accent; c.fillRect(0, 0, 1000, 6);
+  ctext(c, "DRAFT BOARD", 960, 44, { size: 14, weight: 800, color: CC.gold, align: "right", font: "d" });
+  return { cv, c };
+}
+function cheader(c, title, sub, color = CC.hi){
+  ctext(c, title, 40, 64, { size: 34, weight: 800, font: "d", color, max: 780 });
+  if (sub) ctext(c, sub, 40, 98, { size: 19, color: CC.muted, max: 920 });
+}
+function cpanel(c, x, y, w, h){ rr(c, x, y, w, h, 18); c.fillStyle = CC.panel; c.fill(); c.strokeStyle = CC.line; c.lineWidth = 1; c.stroke(); }
+const sideHex = s => s === "blue" ? CC.blue : s === "red" ? CC.red : CC.gold;
+const sideName = s => s === "blue" ? "BLAU" : s === "red" ? "ROT" : "";
+// Zwei Teams nebeneinander (Draft, Spiel, Plan)
+async function teamsBlock(c, y, ours, theirs, side, enemyLabel){
+  const cols = [{ x: 40, rows: ours, label: "WIR" + (side ? " · " + sideName(side) : ""), col: sideHex(side) }, { x: 520, rows: theirs, label: (enemyLabel || "GEGNER") + (side ? " · " + sideName(side === "blue" ? "red" : "blue") : ""), col: side ? sideHex(side === "blue" ? "red" : "blue") : CC.red }];
+  for (const k of cols){
+    cpanel(c, k.x, y, 440, 400);
+    cpill(c, k.label, k.x + 18, y + 16, k.col + "30", k.col, 14);
+    for (let i = 0; i < 5; i++){
+      const r = k.rows[i] || {}, ry = y + 62 + i * 66;
+      await cchamp(c, r.champ, k.x + 18, ry, 56, { border: r.champ ? null : CC.line });
+      ctext(c, ROLES[i].toUpperCase(), k.x + 90, ry + 20, { size: 13, weight: 800, color: CC.muted, font: "d" });
+      ctext(c, r.champ || "–", k.x + 90, ry + 46, { size: 23, weight: 800, color: r.champ ? CC.hi : CC.muted, font: "d", max: 220 });
+      if (r.sub) ctext(c, r.sub, k.x + 422, ry + 38, { size: 16, weight: 700, color: CC.muted, align: "right", max: 120 });
+    }
+  }
+  return y + 400;
+}
+async function bansRow(c, y, bans, label = "BANNS"){
+  if (!bans.length) return y;
+  ctext(c, label, 40, y + 34, { size: 14, weight: 800, color: CC.muted, font: "d" });
+  for (let i = 0; i < Math.min(bans.length, 14); i++) await cchamp(c, bans[i], 130 + i * 58, y + 6, 48, { ban: true });
+  return y + 64;
+}
+const toBlobAsync = cv => new Promise((res, rej) => { try { cv.toBlob(b => b ? res(b) : rej(new Error("leer")), "image/png"); } catch(e){ rej(e); } });
+async function cardDraft(){
+  const picks = livePicks(), lm = lineupMap(), ot = at(), eb = draft.enemyBy || {}, side = draft.side;
+  const { cv, c } = newCard(draft.bans.length ? 610 : 546, sideHex(side));
+  cheader(c, `Draft${ot ? " vs " + (ot.tag || ot.name) : ""}`, [draft.mode === "ranked" ? "Ranked" : "Turnier", side ? (side === "blue" ? "Blaue Seite" : "Rote Seite") : "", `${Object.keys(picks).length}/5 Picks`].filter(Boolean).join("  ·  "));
+  const ours = ROLES.map(r => { const p = lm[r]; return { champ: p && picks[p.id], sub: p ? p.name : "" }; });
+  const theirs = ROLES.map(r => ({ champ: eb[r], sub: eb[r] && ot ? riotChampLine(roleOf(ot, r), eb[r], ot) : "" }));
+  let y = await teamsBlock(c, 120, ours, theirs, side);
+  await bansRow(c, y + 14, draft.bans);
+  return cv;
+}
+async function cardGame(h){
+  const col = h.result === "win" ? CC.good : h.result === "loss" ? CC.red : CC.gold;
+  const ns = [...(notesById[h.id] || [])].sort((a, b) => timeKey(a.t) - timeKey(b.t)).slice(0, 6);
+  const { cv, c } = newCard(546 + ((h.bans || []).length ? 64 : 0) + (h.note ? 40 : 0) + (ns.length ? 24 + ns.length * 32 : 0), col);
+  cheader(c, `${h.result === "win" ? "SIEG" : h.result === "loss" ? "NIEDERLAGE" : "OFFEN"}${h.oppName ? "  vs " + h.oppName : ""}`, [kindLabel(h) + (kindOf(h) === "liga" && h.game ? " · Spiel " + h.game : ""), h.side ? (h.side === "blue" ? "Blaue Seite" : "Rote Seite") : "", h.dur ? h.dur + " Min." : "", fmtDate(h.at)].filter(Boolean).join("  ·  "), col);
+  const ours = ROLES.map(r => { const x = (h.team || []).find(t => t.role === r); return { champ: x && x.champ, sub: x ? x.player : "" }; });
+  const eb = h.enemyBy && Object.keys(h.enemyBy).length ? h.enemyBy : byOrder(h.enemy || []);
+  let y = await teamsBlock(c, 120, ours, ROLES.map(r => ({ champ: eb[r] })), h.side);
+  y = await bansRow(c, y + 14, h.bans || []);
+  if (h.note){ ctext(c, "„" + h.note + "“", 40, y + 28, { size: 19, weight: 600, color: CC.text, max: 920 }); y += 40; }
+  if (ns.length){ y += 10; ns.forEach((n, i) => { const yy = y + i * 32 + 22; c.fillStyle = n.k === "good" ? CC.good : n.k === "bad" ? CC.red : CC.gold; c.beginPath(); c.arc(48, yy - 6, 6, 0, 7); c.fill();
+    if (n.t) ctext(c, n.t, 64, yy, { size: 16, weight: 800, color: CC.muted }); ctext(c, n.x, n.t ? 120 : 64, yy, { size: 18, color: CC.text, max: 820 }); }); }
+  return cv;
+}
+async function cardPlan(t, pl){
+  const { cv, c } = newCard((pl.bans || []).length ? 610 : 546, sideHex(pl.side));
+  cheader(c, `${pl.name}  vs ${t.tag || t.name || "?"}`, [pl.side ? (pl.side === "blue" ? "Blaue Seite" : "Rote Seite") : "", pl.note || ""].filter(Boolean).join("  ·  "));
+  const y = await teamsBlock(c, 120, ROLES.map(r => ({ champ: pl.picks && pl.picks[r] })), ROLES.map(r => ({ champ: (pl.enemyBy || {})[r] })), pl.side, "ERWARTET");
+  await bansRow(c, y + 14, pl.bans || []);
+  return cv;
+}
+// Gegner: pro Rolle Spieler, Rang, Winrate und Champions (Matchdaten oder Top-Picks)
+async function cardScout(t){
+  const R = scoutReport(t);
+  const rows = ROLES.map(r => { const sr = roleOf(t, r), rd = riotView(sr.riot), fresh = rd && rd.games && riotFresh(sr, t, rd);
+    return { r, player: cleanRiotId(sr.player), rd: fresh ? rd : null, picks: sr.champs }; }).filter(x => x.player || x.picks.length || x.rd);
+  const extra = R ? (R.duos.length ? 1 : 0) + (R.flex.length ? 1 : 0) : 0;
+  const { cv, c } = newCard(140 + rows.length * 92 + (extra ? 20 + extra * 34 : 0) + 40, CC.red);
+  cheader(c, `${R ? "Scouting" : "Gegner"}: ${t.name || t.tag || "?"}`, [t.date ? fmtDay(t.date) : "", R && R.avg ? "Ø " + R.avg.txt : "", R ? `${pct(R.wins, R.games)} % Winrate in ${R.games} Spielen` : ""].filter(Boolean).join("  ·  "));
+  const bans = R ? R.bans : t.banPlan.slice(0, 3).map(cn => ({ c: cn }));
+  const leftW = bans.length ? 690 : 920;
+  let y = 124;
+  for (const x of rows){
+    cpanel(c, 40, y, leftW, 80);
+    ctext(c, x.r.toUpperCase(), 60, y + 32, { size: 13, weight: 800, color: "#ffb3aa", font: "d" });
+    ctext(c, x.player || "–", 60, y + 60, { size: 18, weight: 800, color: CC.hi, max: 190 });
+    if (x.rd){ const rk = x.rd.rank; const tc = rk ? TIER_HEX[rk.tier] || CC.muted : CC.muted;
+      c.fillStyle = tc; c.beginPath(); c.arc(270, y + 28, 7, 0, 7); c.fill();
+      ctext(c, rk ? (TIER_DE[rk.tier] || rk.tier) + (APEX.includes(rk.tier) ? "" : " " + rk.div) : "Unranked", 284, y + 34, { size: 17, weight: 800, color: CC.text, max: 140 });
+      const w = pct(x.rd.wins, x.rd.games); ctext(c, `${w} % · ${x.rd.games} Sp.`, 270, y + 60, { size: 16, weight: 700, color: w >= 50 ? CC.good : CC.red }); }
+    const champs = x.rd ? (x.rd.champs.filter(ch => ch.g >= 2).length ? x.rd.champs.filter(ch => ch.g >= 2) : x.rd.champs).slice(0, 3) : x.picks.slice(0, 3).map(p => ({ c: p.c, danger: p.danger }));
+    for (let i = 0; i < champs.length; i++){ const ch = champs[i], cx = 420 + i * (x.rd ? 102 : 70);
+      await cchamp(c, ch.c, cx, y + 14, 52, { border: ch.danger || (ch.g && x.rd && ch.g / x.rd.games >= .5) ? CC.red : null });
+      if (ch.g) ctext(c, `${ch.g}×`, cx + 58, y + 40, { size: 15, weight: 800, color: CC.hi }), ctext(c, `${pct(ch.w, ch.g)}%`, cx + 58, y + 60, { size: 13, weight: 700, color: pct(ch.w, ch.g) >= 50 ? CC.good : CC.red });
+    }
+    y += 92;
+  }
+  if (bans.length){
+    cpanel(c, 750, 124, 210, 46 + bans.length * 70);
+    ctext(c, R ? "BANN-TIPP" : "BANN-PLAN", 770, 156, { size: 14, weight: 800, color: CC.red, font: "d" });
+    for (let i = 0; i < bans.length; i++){ const b = bans[i], by = 172 + i * 70;
+      await cchamp(c, b.c, 770, by, 52, { border: CC.red });
+      ctext(c, b.c, 834, by + 24, { size: 17, weight: 800, color: CC.hi, max: 116 });
+      if (b.g) ctext(c, `${b.r} · ${pct(b.w, b.g)} %`, 834, by + 46, { size: 14, weight: 700, color: CC.muted, max: 116 }); }
+  }
+  if (R && extra){ y += 10;
+    if (R.duos.length){ ctext(c, "ZUSAMMEN", 40, y + 22, { size: 13, weight: 800, color: CC.gold, font: "d" }); ctext(c, R.duos.slice(0, 3).map(d => `${d.a} + ${d.b} (${d.n}×${d.top ? ", " + d.top[0] : ""})`).join("   ·   "), 150, y + 22, { size: 17, color: CC.text, max: 810 }); y += 34; }
+    if (R.flex.length){ ctext(c, "FLEX", 40, y + 22, { size: 13, weight: 800, color: CC.gold, font: "d" }); ctext(c, R.flex.slice(0, 4).map(f => `${f.c} (${f.roles.map(z => z.r).join("/")})`).join("   ·   "), 150, y + 22, { size: 17, color: CC.text, max: 810 }); }
+  }
+  return cv;
+}
+async function cardWeek(info){
+  const ps = teamOrder(), lp = lineupPlayers(), today = ymd(new Date());
+  const { cv, c } = newCard(150 + (ps.length + 1) * 52 + 30, "#9d86ff");
+  cheader(c, `Verfügbarkeit KW ${info.wk}`, `${info.days[0].toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })} – ${info.days[6].toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })}`);
+  const X = 220, CW = (960 - X) / 7, Y = 130;
+  info.days.forEach((d, i) => { const isT = ymd(d) === today; ctext(c, DAYS[i], X + i * CW + CW / 2, Y + 4, { size: 18, weight: 800, color: isT ? CC.gold : CC.hi, align: "center", font: "d" }); ctext(c, `${d.getDate()}.${d.getMonth() + 1}.`, X + i * CW + CW / 2, Y + 26, { size: 13, color: CC.muted, align: "center" }); });
+  const map = { yes: [CC.good, "✓"], maybe: [CC.warn, "?"], no: [CC.red, "✕"] };
+  ps.forEach((p, r) => { const y = Y + 44 + r * 52;
+    ctext(c, p.name, 40, y + 32, { size: 19, weight: 800, color: lp.includes(p) ? CC.hi : CC.muted, max: 150 });
+    ctext(c, lp.includes(p) ? (p.role || "") : "Ersatz", 196, y + 32, { size: 12, weight: 700, color: CC.muted, align: "right" });
+    info.days.forEach((_, i) => { const v = avGet(info.key, p.id, i), m = map[v]; const x = X + i * CW + 6;
+      rr(c, x, y + 6, CW - 12, 40, 10); c.fillStyle = m ? m[0] + "33" : "rgba(255,255,255,.04)"; c.fill();
+      if (m) ctext(c, m[1], x + (CW - 12) / 2, y + 34, { size: 22, weight: 800, color: m[0], align: "center" }); }); });
+  const y = Y + 44 + ps.length * 52;
+  ctext(c, "TEAM", 40, y + 32, { size: 14, weight: 800, color: CC.gold, font: "d" });
+  info.days.forEach((_, i) => { const st = dayStatus(info.key, i), x = X + i * CW + 6;
+    rr(c, x, y + 6, CW - 12, 40, 10); c.fillStyle = st.ok ? CC.good + "55" : st.subOk ? CC.warn + "44" : "rgba(255,255,255,.04)"; c.fill();
+    ctext(c, st.ok ? "Alle" : st.subOk ? "+Ers." : `${st.yes}/${st.total}`, x + (CW - 12) / 2, y + 33, { size: 17, weight: 800, color: st.ok ? CC.good : st.subOk ? CC.warn : CC.muted, align: "center" }); });
+  return cv;
+}
+// Embed bekommt ein Bild; der Text darüber bleibt kurz
+function withCard(e, make, short){ Object.defineProperty(e, "__card", { value: make, enumerable: false }); Object.defineProperty(e, "__short", { value: short, enumerable: false }); return e; }
 async function sendDiscord(msg, color, url){
   const u = url || discordUrl; if (!u) return false;
   let e = msg;
   if (typeof msg === "string"){ const lines = msg.split("\n"); e = embed({ title: lines[0].replace(/\*\*/g, ""), description: lines.slice(1).join("\n").trim(), color }); }
   else if (color) e = { ...e, color };
+  let blob = null;
+  if (msg && msg.__card){ try { await (document.fonts ? document.fonts.ready : null); blob = await toBlobAsync(await msg.__card()); } catch(err){ blob = null; } } // Bild klappt nicht → Textversion
+  if (blob){ const { fields, thumbnail, ...rest } = e; e = { ...rest, description: msg.__short != null ? msg.__short : rest.description, image: { url: "attachment://board.png" } }; if (!e.description) delete e.description; }
   const payload = { username: "Draft Board", embeds: [e] };
+  if (blob) payload.attachments = [{ id: 0, filename: "board.png" }];
   if (location.protocol === "https:") payload.avatar_url = new URL("icons/icon-192.png", location.href).href;
   // Als Formular senden: so braucht der Browser keine Vorab-Anfrage, die Discord blockieren könnte.
   const fd = new FormData();
   fd.append("payload_json", JSON.stringify(payload));
+  if (blob) fd.append("files[0]", blob, "board.png");
   let res;
   try { res = await fetch(u, { method: "POST", body: fd }); }
   catch(err){ return "unsure"; } // Anfrage ist raus, nur die Antwort darf der Browser nicht lesen
   if (!res.ok) throw new Error(res.status === 404 ? "Webhook existiert nicht mehr." : res.status === 429 ? "Discord bremst gerade – kurz warten." : "Discord hat abgelehnt (" + res.status + ").");
   return true;
 }
+async function copyCard(msg){
+  if (!msg || !msg.__card || !navigator.clipboard || !window.ClipboardItem || !window.isSecureContext) return false;
+  try { await navigator.clipboard.write([new ClipboardItem({ "image/png": msg.__card().then(toBlobAsync) })]); toast("Bild kopiert – in Discord mit Strg+V einfügen."); return true; } catch(e){ return false; }
+}
 function shareOut(msg, color){
-  if (!discordUrl) return copyText(embedToText(msg));
+  if (!discordUrl) return copyCard(msg).then(ok => ok || copyText(embedToText(msg)));
   sendDiscord(msg, color).then(r => toast(r === "unsure" ? "An Discord gesendet – schau kurz in den Kanal." : "An Discord gesendet.")).catch(e => { copyText(embedToText(msg), "Senden fehlgeschlagen – Text kopiert. " + (e.message || "")); });
 }
 function copyText(txt, label){
@@ -2520,9 +2694,9 @@ function shareDraft(){
   const fields = [{ name: `${sideSq(side)} Wir`, value: our, inline: true }, { name: `${sideSq(otherSide(side))} Gegner${ot ? " · " + (ot.tag || ot.name) : ""}`, value: their, inline: true }];
   if (draft.bans.length) fields.push({ name: "🚫 Banns", value: draft.bans.join(" · ") });
   const locked = render.locked || new Set(); if (locked.size) fields.push({ name: "🔒 Fearless gesperrt", value: [...locked].join(" · ") });
-  return embed({ title: `⚔️ Draft${ot ? " vs " + (ot.tag || ot.name) : ""}`, color: side === "blue" ? DC.blue : side === "red" ? DC.red : DC.gold,
+  return withCard(embed({ title: `⚔️ Draft${ot ? " vs " + (ot.tag || ot.name) : ""}`, color: side === "blue" ? DC.blue : side === "red" ? DC.red : DC.gold,
     description: [draft.mode === "ranked" ? "Ranked" : "Turnier", side ? (side === "blue" ? "Blaue Seite" : "Rote Seite") : "", `${Object.keys(picks).length}/5 Picks`].filter(Boolean).join(" · "),
-    fields, thumb: iconUrl(Object.values(picks)[0] || "") });
+    fields, thumb: iconUrl(Object.values(picks)[0] || "") }), cardDraft, "");
 }
 function shareTeam(t){
   const fields = ROLES.map(r => { const sr = roleOf(t, r); if (!sr.player && !sr.champs.length) return null;
@@ -2531,16 +2705,16 @@ function shareTeam(t){
     return { name: `${ROLE_EMO[r]} ${r}${sr.player ? " – " + cleanRiotId(sr.player) : ""}`,
       value: [sr.champs.map(x => x.danger ? `🔥 **${x.c}**` : x.c).join(" · ") || "–", fresh ? `📊 ${rankTxt(rd.rank)} · ${pct(rd.wins, rd.games)} % in ${rd.games} Spielen` : "", most ? `🎮 meistgespielt: ${most}` : ""].filter(Boolean).join("\n") }; }).filter(Boolean);
   if (t.banPlan.length) fields.push({ name: "🚫 Bann-Plan", value: t.banPlan.map((c, i) => `**${i + 1}.** ${c}`).join("   ") });
-  return embed({ title: `🔎 Gegner: ${t.name || t.tag || "?"}${t.tag && t.name ? " (" + t.tag + ")" : ""}`, url: t.link, color: DC.red,
-    description: [t.date ? "📅 Spieltag: " + fmtDay(t.date) : "", t.note ? "📝 _" + t.note + "_" : ""].filter(Boolean).join("\n"), fields, thumb: iconUrl(t.banPlan[0] || "") });
+  return withCard(embed({ title: `🔎 Gegner: ${t.name || t.tag || "?"}${t.tag && t.name ? " (" + t.tag + ")" : ""}`, url: t.link, color: DC.red,
+    description: [t.date ? "📅 Spieltag: " + fmtDay(t.date) : "", t.note ? "📝 _" + t.note + "_" : ""].filter(Boolean).join("\n"), fields, thumb: iconUrl(t.banPlan[0] || "") }), () => cardScout(t), t.note ? "📝 " + t.note : "");
 }
 function sharePlan(t, pl){
   const eb = pl.enemyBy || {};
   const fields = [{ name: `${sideSq(pl.side)} Unsere Picks`, value: ROLES.map(r => `${ROLE_EMO[r]} ${pl.picks && pl.picks[r] ? "**" + pl.picks[r] + "**" : "–"}`).join("\n"), inline: true }];
   if (ROLES.some(r => eb[r])) fields.push({ name: `${sideSq(otherSide(pl.side))} Erwarteter Gegner`, value: ROLES.map(r => `${ROLE_EMO[r]} ${eb[r] || "–"}`).join("\n"), inline: true });
   if ((pl.bans || []).length) fields.push({ name: "🚫 Banns", value: pl.bans.join(" · ") });
-  return embed({ title: `📝 ${pl.name} vs ${t.tag || t.name || "?"}`, color: pl.side === "blue" ? DC.blue : pl.side === "red" ? DC.red : DC.purple,
-    description: [pl.side ? (pl.side === "blue" ? "Blaue Seite" : "Rote Seite") : "", pl.note ? "💡 " + pl.note : ""].filter(Boolean).join("\n"), fields, thumb: iconUrl(Object.values(pl.picks || {})[0] || "") });
+  return withCard(embed({ title: `📝 ${pl.name} vs ${t.tag || t.name || "?"}`, color: pl.side === "blue" ? DC.blue : pl.side === "red" ? DC.red : DC.purple,
+    description: [pl.side ? (pl.side === "blue" ? "Blaue Seite" : "Rote Seite") : "", pl.note ? "💡 " + pl.note : ""].filter(Boolean).join("\n"), fields, thumb: iconUrl(Object.values(pl.picks || {})[0] || "") }), () => cardPlan(t, pl), pl.note ? "💡 " + pl.note : "");
 }
 function shareGame(h){
   const res = h.result === "win" ? "✅ Sieg" : h.result === "loss" ? "❌ Niederlage" : "⏳ Offen";
@@ -2552,16 +2726,16 @@ function shareGame(h){
   if (h.note) fields.push({ name: "💬 Fazit", value: h.note });
   const ns = [...(notesById[h.id] || [])].sort((a, b) => timeKey(a.t) - timeKey(b.t));
   [["good", "👍 Lief gut"], ["bad", "👎 Lief schlecht"], ["note", "📝 Notizen"]].forEach(([k, l]) => { const xs = ns.filter(n => n.k === k); if (xs.length) fields.push({ name: l, value: xs.map(n => `${n.t ? "`" + n.t + "` " : "• "}${n.x}${n.by ? " _(" + n.by + ")_" : ""}`).join("\n") }); });
-  return embed({ title: `${res}${h.oppName ? " vs " + h.oppName : ""}`, color: h.result === "win" ? DC.win : h.result === "loss" ? DC.loss : DC.gold,
+  return withCard(embed({ title: `${res}${h.oppName ? " vs " + h.oppName : ""}`, color: h.result === "win" ? DC.win : h.result === "loss" ? DC.loss : DC.gold,
     description: [kindLabel(h) + (kindOf(h) === "liga" && h.game ? " · Spiel " + h.game : ""), h.side ? (h.side === "blue" ? "Blaue Seite" : "Rote Seite") : "", h.dur ? h.dur + " Min." : "", fmtDate(h.at)].filter(Boolean).join(" · "),
-    fields, thumb: iconUrl((team[0] || {}).champ || "") });
+    fields, thumb: iconUrl((team[0] || {}).champ || "") }), () => cardGame(h), "");
 }
 function shareWeek(info){
   const fields = info.days.map((d, i) => { const st = dayStatus(info.key, i);
     return { name: `${DAYS[i]} ${d.getDate()}.${d.getMonth() + 1}.`, value: (st.ok ? "✅ alle" : st.subOk ? "🟡 mit Ersatz" : `${st.yes ? "🔸" : "❌"} ${st.yes}/${st.total}`) + (st.maybe ? ` (+${st.maybe} ?)` : ""), inline: true }; });
   const up = allEvents().filter(e => info.days.some(d => ymd(d) === e.date));
   if (up.length) fields.push({ name: "📅 Termine", value: up.map(e => `**${fmtDay(e.date)}${e.time ? " " + e.time : ""}** – ${evTitle(e)}`).join("\n") });
-  return embed({ title: `🗓️ Verfügbarkeit KW ${info.wk}`, color: DC.purple, description: `${info.days[0].toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })} – ${info.days[6].toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })} · ✅ alle Stammspieler · 🟡 mit Ersatz`, fields });
+  return withCard(embed({ title: `🗓️ Verfügbarkeit KW ${info.wk}`, color: DC.purple, description: `${info.days[0].toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })} – ${info.days[6].toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })} · ✅ alle Stammspieler · 🟡 mit Ersatz`, fields }), () => cardWeek(info), up.length ? up.map(e => `📅 **${fmtDay(e.date)}${e.time ? " " + e.time : ""}** – ${evTitle(e)}`).join("\n") : "");
 }
 // Termin (Teilen und Erinnerung)
 function eventEmbed(e, mins){
