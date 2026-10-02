@@ -1489,6 +1489,31 @@ dialog{border-radius:26px;background:linear-gradient(180deg,rgba(21,31,51,.97),r
 .sb-name small{font-size:.72rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media (max-width:640px){.sb-row{grid-template-columns:auto minmax(0,1fr) 56px 38px}.sb-row .st-g{display:none}}
 @media (max-width:640px){.kpis{grid-template-columns:1fr 1fr}.kpi b{font-size:1.35rem}}
+/* Live-Draft */
+.live-start{margin-left:auto}
+.live-bar{margin:-.2rem 0 .9rem;padding:.8rem .9rem;border-radius:16px;border:1px solid rgba(255,106,92,.45);background:linear-gradient(120deg,rgba(255,106,92,.14),rgba(10,16,30,.6) 60%);display:flex;flex-direction:column;gap:.6rem}
+.live-bar.us{border-color:rgba(215,180,106,.6);background:linear-gradient(120deg,rgba(215,180,106,.18),rgba(10,16,30,.6) 60%)}
+.live-bar.done{border-color:rgba(63,209,127,.5);background:linear-gradient(120deg,rgba(63,209,127,.14),rgba(10,16,30,.6) 60%)}
+.lb-main{display:flex;align-items:center;gap:.8rem}
+.lb-tag{display:inline-flex;align-items:center;gap:.35rem;font-size:.7rem;font-weight:900;letter-spacing:.1em;color:#ff8b7f}
+.lb-tag i{width:.55rem;height:.55rem;border-radius:50%;background:#ff6a5c;animation:lbpulse 1.2s ease-in-out infinite}
+@keyframes lbpulse{50%{opacity:.25}}
+.lb-txt{display:flex;flex-direction:column;flex:1;min-width:0}
+.lb-txt b{font-family:var(--fd);font-size:1.15rem;color:var(--gold-hi)}
+.lb-txt small{font-size:.78rem;color:var(--muted)}
+.lb-time{--p:100;width:3.2rem;height:3.2rem;flex:none;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--gold) calc(var(--p)*1%),rgba(255,255,255,.08) 0);transition:background .3s}
+.lb-time::before{content:"";grid-area:1/1;width:calc(100% - 7px);height:calc(100% - 7px);border-radius:50%;background:#0c1424}
+.lb-time span{grid-area:1/1;position:relative;font-family:var(--fd);font-weight:800;font-size:1rem;font-variant-numeric:tabular-nums}
+.lb-time.low{background:conic-gradient(var(--bad) calc(var(--p)*1%),rgba(255,255,255,.08) 0)}
+.lb-time.low span{color:#ff8b7f}
+.lb-time.over span{font-size:.72rem;color:var(--bad)}
+.lb-act{display:flex;gap:.4rem;flex-wrap:wrap}
+.lb-sugg{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap}
+.lb-chip{display:inline-flex;align-items:center;gap:.4rem;padding:.25rem .55rem .25rem .25rem;border-radius:12px;border:1px dashed rgba(215,180,106,.55);background:rgba(215,180,106,.08);font-size:.8rem;text-align:left}
+.lb-chip .mini{width:28px;height:28px}
+.lb-chip b{display:block;font-size:.82rem}
+.lb-chip small{display:block;font-size:.68rem;color:var(--muted)}
+.lb-chip:hover:not(:disabled){border-style:solid}
 </style>
 </head>
 <body>
@@ -1972,6 +1997,7 @@ function renderDraft(picks, types, rec){
     : "Rot hat Last Pick: hebt einen Counter für Top oder Mid bis zum Schluss auf.";
   const plans = ot ? (ot.plans || []) : [];
   $("#flow").innerHTML = `
+    ${liveBarHtml(steps, next)}
     <div class="flow-top">
       <div class="seg mode-seg" role="group" aria-label="Draft-Art"><button data-action="draft-mode" data-v="" aria-pressed="${!ranked}" ${canEdit() ? "" : "disabled"} title="Turnier-Draft (Liga, Scrims)">Turnier</button><button data-action="draft-mode" data-v="ranked" aria-pressed="${ranked}" ${canEdit() ? "" : "disabled"} title="Ranked-Draft (5er-Flex)">Ranked</button></div>
       <div class="side-pick" role="group" aria-label="Seite">
@@ -1982,6 +2008,7 @@ function renderDraft(picks, types, rec){
       ${ot ? `<div class="plan-pick"><span class="flabel" style="margin:0">Pläne gg. ${esc(ot.tag || ot.name || "Gegner")}</span>
         ${plans.map(pl => `<button class="btn sm" data-action="plan-load" data-id="${esc(pl.id)}" ${canEdit() ? "" : "disabled"} title="${esc(pl.note || "")}">${esc(pl.name)}</button>`).join("")}
         ${canEdit() && Object.keys(livePicks()).length ? `<button class="btn sm ghost" data-action="plan-save">+ Als Plan speichern</button>` : ""}</div>` : ""}
+      ${canEdit() && !liveOn() ? `<button class="btn sm gold live-start" data-action="live-start" title="Gemeinsam Schritt für Schritt mit Timer draften">▶ Live-Draft</button>` : ""}
     </div>
     ${render.locked && render.locked.size ? `<div class="fearless-bar"><span class="flabel" style="margin:0">Fearless · gesperrt</span><div class="opts-row">${miniRow([...render.locked])}</div></div>` : ""}
     ${draft.side ? `<button class="flow-toggle" data-action="toggle-order" aria-expanded="${!!render.showOrder}">${render.showOrder ? "Reihenfolge ausblenden ▴" : "Pick-Reihenfolge anzeigen ▾"}</button>` : ""}
@@ -3124,7 +3151,12 @@ document.getElementById("modal").addEventListener("change", e => {
   row.player = e.target.value; row.options = row.options.filter(o => pool.includes(o) || !players.some(x => champsOf(x).includes(o)));
   renderModal();
 });
-document.getElementById("modal").addEventListener("input", e => { if (e.target.id === "pickQ" && edit){ edit.buf.q = e.target.value; renderPickGrid(); } });
+document.getElementById("modal").addEventListener("input", e => { if (e.target.id === "pickQ" && edit){ edit.buf.q = e.target.value; renderPickGrid(); } if (e.target.id === "liveQ" && edit){ edit.buf.q = e.target.value; renderLiveGrid(); } });
+document.getElementById("modal").addEventListener("keydown", e => {
+  if (e.target.id !== "liveQ" || e.key !== "Enter" || !edit) return;
+  e.preventDefault();
+  const b = $("#liveGrid .tile:not([disabled])"); if (b) b.click();
+});
 document.getElementById("modal").addEventListener("keydown", e => {
   if (e.target.id !== "pickQ" || e.key !== "Enter") return;
   e.preventDefault();
@@ -3173,6 +3205,8 @@ function openEditor(kind, id){
   } else if (kind === "e"){
     const [role, target] = String(id).split(":");
     edit = { kind, isNew: false, buf: { role, target: target || "draft", q: "" } };
+  } else if (kind === "live"){
+    edit = { kind, isNew: false, buf: { q: "", how: id === "suggest" ? "suggest" : "set" } };
   } else if (kind === "ids"){
     edit = { kind, isNew: false, buf: { text: ROLES.map(r => scoutRole(r).player).filter(Boolean).join("\n") } };
   } else if (kind === "poll"){
@@ -3281,6 +3315,18 @@ function renderModal(focusSel){
       </div>
       <div class="m-foot">${cur ? `<button class="btn" data-action="enemy-counter">Counter-Notiz</button><button class="btn danger" data-action="enemy-clear-modal">Platz leeren</button>` : `<button class="btn" data-action="close">Abbrechen</button>`}</div>`;
     renderPickGrid();
+  } else if (edit.kind === "live"){
+    const steps = draftSteps(), next = steps.find(x => !x.done);
+    modal.innerHTML = `
+      <div class="m-head"><h2 id="mTitle">${esc(liveStepText(next, steps))}</h2><button class="x" data-action="close" aria-label="Schließen">×</button></div>
+      <div class="m-body">
+        <div class="seg" style="margin-bottom:.7rem">${canEdit() ? `<button data-action="live-how" data-v="set" aria-pressed="${b.how === "set"}">Eintragen</button>` : ""}<button data-action="live-how" data-v="suggest" aria-pressed="${b.how === "suggest"}">Vorschlagen</button></div>
+        <p class="small-hint" style="margin:0 0 .6rem">${b.how === "suggest" ? "Dein Vorschlag erscheint bei allen im Live-Draft. Wer draftet, übernimmt ihn mit einem Tipp." : "Trägt den Champion direkt für den aktuellen Schritt ein."}</p>
+        <label class="search" style="display:block;margin-bottom:.8rem"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" id="liveQ" value="${esc(b.q)}" placeholder="Champion suchen, Enter wählt den ersten" autocomplete="off" aria-label="Champion suchen"></label>
+        <div id="liveGrid"></div>
+      </div>
+      <div class="m-foot"><button class="btn" data-action="close">Schließen</button></div>`;
+    renderLiveGrid(); return;
   } else if (edit.kind === "ids"){
     modal.innerHTML = `
       <div class="m-head"><h2 id="mTitle">Riot-IDs einfügen</h2><button class="x" data-action="close" aria-label="Schließen">×</button></div>
@@ -3449,11 +3495,115 @@ function addChampTo(listArr, raw){
 }
 
 // ---------- Actions ----------
-function setDraft(next){
+function setDraft(next, opts = {}){
   if (next.enemyBy) next.enemy = ROLES.map(r => next.enemyBy[r]).filter(Boolean);
   else if (next.enemy) next.enemyBy = byOrder(next.enemy);
-  draft = { ...draft, ...next }; render();
-  queueSet("draft/current", { picks: draft.picks, bans: draft.bans, enemy: draft.enemy || [], enemyBy: draft.enemyBy || {}, lineup: draft.lineup || {}, side: draft.side || "", mode: draft.mode || "" });
+  const prev = { picks: { ...draft.picks }, bans: [...draft.bans], enemyBy: { ...(draft.enemyBy || {}) } };
+  draft = { ...draft, ...next };
+  if (liveOn() && !next.live){
+    let lv = { ...draft.live };
+    const changed = JSON.stringify(prev) !== JSON.stringify({ picks: draft.picks, bans: draft.bans, enemyBy: draft.enemyBy || {} });
+    if (changed && !opts.noHist) lv.hist = [...(lv.hist || []), prev].slice(-20);
+    const idx = liveStepIdx();
+    if (idx !== lv.step){ lv = { ...lv, step: idx, at: Date.now(), sugg: [] }; if (lv.paused != null) lv.paused = lv.secs || 30; }
+    draft.live = lv;
+  }
+  render();
+  queueSet("draft/current", { picks: draft.picks, bans: draft.bans, enemy: draft.enemy || [], enemyBy: draft.enemyBy || {}, lineup: draft.lineup || {}, side: draft.side || "", mode: draft.mode || "", live: draft.live || null });
+}
+// ---------- Live-Draft: gemeinsam Schritt für Schritt mit Timer ----------
+const liveOn = () => !!(draft.live && draft.live.on);
+const liveStepIdx = () => { const st = draftSteps(), i = st.findIndex(x => !x.done); return i < 0 ? st.length : i; };
+function liveLeft(){
+  const lv = draft.live; if (!lv) return 0;
+  if (lv.paused != null) return lv.paused;
+  return Math.max(0, (lv.secs || 30) - Math.floor((Date.now() - (lv.at || Date.now())) / 1000));
+}
+function liveStepText(x, steps){
+  if (!x) return "Draft komplett";
+  if (x.t === "ban") return draft.mode === "ranked" ? "Banns (je 5, gleichzeitig)" : `${x.us ? "Ihr bannt" : "Gegner bannt"} · Bann ${x.n}`;
+  let k = x.i, n = 0; while (steps[k] && steps[k].t === "pick" && steps[k].s === x.s && !steps[k].done){ n++; k++; }
+  return `${x.us ? "Ihr pickt" : "Gegner pickt"}${n > 1 ? " · " + n + " Champions" : ""}`;
+}
+function liveBarHtml(steps, next){
+  const lv = draft.live, ed = canEdit();
+  if (!liveOn()) return "";
+  const left = liveLeft(), sugg = (lv.sugg || []).filter(x => x.step === lv.step);
+  return `<div class="live-bar ${next ? (next.us ? "us" : "them") : "done"}">
+    <div class="lb-main">
+      <span class="lb-tag"><i></i>LIVE</span>
+      <div class="lb-txt"><b>${esc(liveStepText(next, steps))}</b><small>${next ? (next.s === "B" ? "Blaue Seite" : "Rote Seite") + ` · Schritt ${next.i + 1} von ${steps.length}` : "Alle Banns und Picks sind drin."}</small></div>
+      ${next ? `<span class="lb-time ${left <= 10 ? "low" : ""} ${left <= 0 ? "over" : ""}" id="liveTime" style="--p:${Math.round(left / (lv.secs || 30) * 100)}"><span>${left > 0 ? left : "Zeit!"}</span></span>` : ""}
+    </div>
+    <div class="lb-act">
+      ${next && ed ? `<button class="btn sm gold" data-action="live-pick">${next.t === "ban" ? "Bann eintragen" : next.us ? "Pick eintragen" : "Gegner-Pick eintragen"}</button>` : ""}
+      ${next ? `<button class="btn sm" data-action="live-suggest">Vorschlagen</button>` : ""}
+      ${ed && (lv.hist || []).length ? `<button class="btn sm ghost" data-action="live-undo" title="Letzten Schritt zurücknehmen">↶ Zurück</button>` : ""}
+      ${ed && next ? `<button class="btn sm ghost" data-action="live-pause">${lv.paused != null ? "▶ Weiter" : "⏸ Pause"}</button>` : ""}
+      ${!next && ed ? `<button class="btn sm gold" data-action="save-draft">Im Verlauf speichern</button>` : ""}
+      ${ed ? `<button class="btn sm ghost" data-action="live-stop">Beenden</button>` : ""}
+    </div>
+    ${sugg.length ? `<div class="lb-sugg"><span class="flabel" style="margin:0">Vorschläge</span>${sugg.map(x => `<button class="lb-chip" data-action="live-take" data-c="${esc(x.c)}" ${ed ? "" : "disabled"} title="${ed ? "Übernehmen" : ""}"><span class="mini">${initials(x.c)}${img(iconUrl(x.c))}</span><span><b>${esc(x.c)}</b><small>${esc(x.by || "")}</small></span></button>`).join("")}</div>` : ""}
+  </div>`;
+}
+// Ein Champion für den aktuellen Live-Schritt
+function liveApply(c){
+  const steps = draftSteps(), next = steps.find(x => !x.done); if (!next) return toast("Der Draft ist schon komplett.");
+  c = officialName(c);
+  const tk = (render.taken || {})[c];
+  if (draft.bans.includes(c)) return toast(`${c} ist gebannt.`);
+  if (tk) return toast(tk.label === "Fearless" ? `${c} ist durch Fearless gesperrt.` : `${c} ist schon vergeben (${tk.label}).`);
+  if (next.t === "ban"){
+    const picks = { ...draft.picks }; Object.keys(picks).forEach(k => { if (picks[k] === c) delete picks[k]; });
+    return setDraft({ bans: [...draft.bans, c], picks });
+  }
+  if (next.us){
+    const lp = lineupPlayers(), picks = livePicks();
+    const target = lp.find(p => p.id === active && !picks[p.id]) || lp.find(p => !picks[p.id]);
+    if (!target) return toast("Alle eure Spieler haben schon einen Pick.");
+    const np = { ...draft.picks, [target.id]: c };
+    const nxt = lp.find(p => p.id !== target.id && !np[p.id]); if (nxt) active = nxt.id;
+    return setDraft({ picks: np });
+  }
+  const eb = { ...(draft.enemyBy || {}) }, role = ROLES.find(r => !eb[r]);
+  if (!role) return toast("Das Gegnerteam ist schon voll.");
+  eb[role] = c; setDraft({ enemyBy: eb });
+  toast(`${c} beim Gegner auf ${role} eingetragen – Rolle lässt sich unten im Gegnerteam ändern.`);
+}
+function liveSuggest(c){
+  c = officialName(c);
+  const lv = draft.live; if (!lv) return;
+  const by = myName() || "Jemand";
+  const sugg = [...(lv.sugg || []).filter(x => !(x.c === c && x.step === lv.step)), { c, by, step: lv.step }].slice(-8);
+  setDraft({ live: { ...lv, sugg } }, { noHist: true });
+  toast(`${c} vorgeschlagen.`);
+}
+setInterval(() => {
+  if (!liveOn()) return;
+  const el = document.getElementById("liveTime"); if (!el) return;
+  const left = liveLeft(), secs = draft.live.secs || 30;
+  el.style.setProperty("--p", Math.round(left / secs * 100));
+  el.classList.toggle("low", left <= 10); el.classList.toggle("over", left <= 0);
+  el.firstElementChild.textContent = left > 0 ? left : "Zeit!";
+}, 500);
+// Champion-Raster für den Live-Dialog
+function renderLiveGrid(){
+  const g = $("#liveGrid"); if (!g || !edit || edit.kind !== "live") return;
+  const q = norm(edit.buf.q || ""), tk = render.taken || {};
+  const steps = draftSteps(), next = steps.find(x => !x.done);
+  // Gegner-Pick: erst die gescouteten und meistgespielten Champions des Gegners
+  let top = [];
+  const ot = at();
+  if (next && next.t === "pick" && !next.us && ot) ROLES.forEach(r => { const sr = roleOf(ot, r), rd = riotView(sr.riot); sr.champs.forEach(x => top.push(x.c)); if (rd && riotFresh(sr, ot, rd)) rd.champs.filter(c => c.g >= 2).forEach(c => top.push(c.c)); });
+  if (next && next.us){ const p = players.find(x => x.id === active) || lineupPlayers().find(x => !livePicks()[x.id]); if (p) top = champsOf(p).sort((a, b) => tierRank((p.tiers || {})[a]) - tierRank((p.tiers || {})[b])); }
+  if (next && next.t === "ban" && ot) top = [...ot.banPlan, ...riotBanIdeas(ot, true).map(x => x.c)];
+  top = uniq(top).filter(n => !q || norm(n).includes(q));
+  const src = DD.names.length ? DD.names : uniq(players.flatMap(champsOf)).sort((a, b) => a.localeCompare(b, "de"));
+  const all = src.filter(n => !q || norm(n).includes(q));
+  const tile = n => { const blocked = draft.bans.includes(n) || !!tk[n];
+    return `<button class="tile ${blocked ? "banned" : ""}" data-action="live-choose" data-c="${esc(n)}" ${blocked && edit.buf.how !== "suggest" ? "disabled" : ""} title="${esc(n)}${draft.bans.includes(n) ? " – gebannt" : tk[n] ? " – " + esc(tk[n].label) : ""}"><span class="portrait">${initials(n)}${img(iconUrl(n))}</span><span class="nm">${esc(n)}</span></button>`; };
+  g.innerHTML = (top.length ? `<span class="flabel">${next && next.t === "ban" ? "Bann-Plan und Vorschläge" : next && next.us ? "Pool von " + esc((players.find(x => x.id === active) || {}).name || "euch") : "Typisch für den Gegner"}</span><div class="tiles pick-tiles top-picks">${top.map(tile).join("")}</div><span class="flabel" style="margin-top:.6rem">Alle Champions</span>` : "")
+    + (all.length ? `<div class="tiles pick-tiles">${all.map(tile).join("")}</div>` : `<p class="empty-state">Kein Champion gefunden.</p>`);
 }
 // Spieler in eine Rolle setzen; steht er schon woanders, tauschen die beiden.
 function swapInto(ov, role, pid){
@@ -3674,6 +3824,23 @@ document.addEventListener("click", async e => {
     case "patch-pools": tab = "pools"; render(); window.scrollTo({ top: 0 }); break;
     case "remind-on": b.remind = a.checked; if (discordUrl){ remindOn = b.remind; db.doc("config/discord").set({ remind: b.remind, lead: b.lead }, { merge: true }).catch(writeError); } break;
     case "draft-mode": setDraft({ mode: a.dataset.v === "ranked" ? "ranked" : "" }); break;
+    case "live-start": {
+      if (!draft.side) return toast("Erst eure Seite wählen (Blau oder Rot).");
+      setDraft({ live: { on: true, step: liveStepIdx(), at: Date.now(), secs: 30, paused: null, sugg: [], hist: [] } });
+      toast("Live-Draft gestartet – alle sehen jetzt den aktuellen Schritt."); break;
+    }
+    case "live-stop": if (!armed(a, "Wirklich beenden?")) return; setDraft({ live: null }); toast("Live-Draft beendet."); break;
+    case "live-pause": { const lv = draft.live; if (!lv) break;
+      setDraft({ live: lv.paused != null ? { ...lv, at: Date.now() - ((lv.secs || 30) - lv.paused) * 1000, paused: null } : { ...lv, paused: liveLeft() } }); break; }
+    case "live-undo": { const lv = draft.live; if (!lv || !(lv.hist || []).length) break;
+      const prev = lv.hist[lv.hist.length - 1];
+      draft.live = { ...lv, hist: lv.hist.slice(0, -1) };
+      setDraft({ picks: prev.picks || {}, bans: prev.bans || [], enemyBy: prev.enemyBy || {} }, { noHist: true }); toast("Letzter Schritt zurückgenommen."); break; }
+    case "live-pick": openEditor("live"); break;
+    case "live-suggest": openEditor("live", "suggest"); break;
+    case "live-how": b.how = a.dataset.v; renderModal(); break;
+    case "live-choose": { const c = a.dataset.c; const how = b.how; closeEditor(); how === "suggest" ? liveSuggest(c) : liveApply(c); break; }
+    case "live-take": liveApply(a.dataset.c); break;
     case "set-side": setDraft({ side: draft.side === a.dataset.v ? "" : a.dataset.v }); break;
     case "plan-save": if (!at()) return toast("Erst ein Gegner-Team wählen."); openEditor("plan"); break;
     case "pl-bans": b.withBans = a.checked; break;
@@ -3717,7 +3884,7 @@ document.addEventListener("click", async e => {
       if (b.type !== "liga") lsSet("draftboard-htype", b.type);
       const clear = b.clear; closeEditor();
       openHist.add(entry.id); tab = "history";
-      if (clear) setDraft({ picks:{}, bans:[], enemy:[], lineup:{} }); else render();
+      if (clear) setDraft({ picks:{}, bans:[], enemy:[], lineup:{}, live: null }); else render();
       window.scrollTo({ top: 0 }); setTimeout(() => document.getElementById("cx-" + entry.id)?.focus(), 50);
       if (discordAuto && discordUrl && (entry.result === "win" || entry.result === "loss")) sendDiscord(shareGame(entry), entry.result === "win" ? 0x3FD17F : 0xFF6A5C).then(() => toast("Gespeichert und an Discord gesendet.")).catch(() => toast("Gespeichert – Discord-Senden fehlgeschlagen."));
       else toast("Draft gespeichert – jetzt Notizen eintragen."); break;
@@ -4044,7 +4211,7 @@ loadDD();
   db.collection("combos").onSnapshot(s => { combos = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)); scheduleRender(); }, onErr);
   db.doc("config/pairs").onSnapshot(s => { pairs = new Set(s.exists ? (s.data().list || []) : []); scheduleRender(); }, onErr);
   db.doc("draft/current").onSnapshot(s => { const d = s.exists ? s.data() : {}; const eb = d.enemyBy && Object.keys(d.enemyBy).length ? { ...d.enemyBy } : byOrder(d.enemy);
-    draft = { side: d.side || "", mode: d.mode === "ranked" ? "ranked" : "", picks: { ...(d.picks || {}) }, bans: [...(d.bans || [])], enemyBy: eb, enemy: ROLES.map(r => eb[r]).filter(Boolean), lineup: { ...(d.lineup || {}) } }; render(); }, onErr);
+    draft = { side: d.side || "", mode: d.mode === "ranked" ? "ranked" : "", live: d.live && typeof d.live === "object" ? d.live : null, picks: { ...(d.picks || {}) }, bans: [...(d.bans || [])], enemyBy: eb, enemy: ROLES.map(r => eb[r]).filter(Boolean), lineup: { ...(d.lineup || {}) } }; render(); }, onErr);
   db.doc("config/counters").onSnapshot(s => { counters = s.exists ? { ...(s.data().map || {}) } : {}; scheduleRender(); }, onErr);
   db.doc("config/scouting").onSnapshot(s => {
     const d = s.exists ? s.data() : {};
