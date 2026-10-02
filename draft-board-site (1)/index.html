@@ -1568,6 +1568,61 @@ dialog:has(.set-body){width:min(880px,calc(100vw - 1.5rem))}
 .tl-seek{border:0;background:none;padding:.1rem 0 0;cursor:pointer;white-space:nowrap}
 .tl-seek:hover{color:var(--gold-hi);text-decoration:underline}
 @media (max-width:720px){.vod-dock{top:8px;padding:.5rem}.vd-frame{max-height:34vh}}
+/* VOD – Feinschliff */
+.vod-dock{background:linear-gradient(180deg,rgba(18,24,40,.97),rgba(8,13,24,.97));border-color:rgba(215,180,106,.32);box-shadow:0 24px 60px -24px #000,inset 0 1px 0 rgba(255,255,255,.04)}
+.vd-head{gap:.55rem}
+.vd-plat{display:inline-flex;align-items:center;gap:.3rem;font-size:.66rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;padding:.16rem .5rem;border-radius:999px;color:#fff;flex:none}
+.vd-plat.yt{background:#e62117}.vd-plat.tw{background:#9146ff}
+.vd-plat::before{content:"";width:0;height:0;border-left:.42rem solid currentColor;border-top:.26rem solid transparent;border-bottom:.26rem solid transparent}
+.vd-head .x{width:2rem;height:2rem;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--muted);font-size:1.15rem;line-height:1;cursor:pointer;flex:none}
+.vd-head .x:hover{color:var(--text);border-color:var(--line-2)}
+.vd-frame{box-shadow:0 0 0 1px rgba(255,255,255,.05),0 14px 30px -18px #000}
+.vd-bar{align-items:flex-end;gap:.45rem .5rem;padding:.55rem .6rem;border-radius:12px;background:rgba(255,255,255,.025);border:1px solid var(--line)}
+.vd-clock{display:flex;flex-direction:column;line-height:1.05;padding-right:.65rem;margin-right:.1rem;border-right:1px solid var(--line)}
+.vd-clock small{font-size:.62rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.vd-clock b{font-family:var(--fd);font-size:1.25rem;color:var(--gold-hi);font-variant-numeric:tabular-nums;min-width:3.4rem}
+.vd-start{flex-direction:column;align-items:flex-start;gap:.1rem;font-size:.62rem;letter-spacing:.06em;text-transform:uppercase}
+.vd-start input{width:4.6rem;padding:.22rem .45rem;font-size:.85rem;text-transform:none}
+.vd-chaps{display:flex;gap:.35rem;overflow-x:auto;padding:.5rem .1rem .15rem;scrollbar-width:thin}
+.vd-chaps:empty{display:none}
+.vd-chap{flex:none;display:flex;align-items:center;gap:.4rem;max-width:15rem;padding:.3rem .6rem .3rem .45rem;border-radius:999px;border:1px solid var(--line);background:rgba(6,10,18,.55);color:var(--text);font-size:.78rem;cursor:pointer;white-space:nowrap}
+.vd-chap:hover{border-color:var(--gold);background:rgba(215,180,106,.08)}
+.vd-chap i{width:.55rem;height:.55rem;border-radius:50%;background:var(--gold);flex:none}
+.vd-chap.k-good i{background:var(--good)}.vd-chap.k-bad i{background:var(--bad)}
+.vd-chap b{font-family:var(--fd);color:var(--gold-hi);font-variant-numeric:tabular-nums}
+.vd-chap span{overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
+.vd-chap.now{border-color:var(--gold);box-shadow:0 0 0 2px rgba(215,180,106,.18)}
+.vd-chap.now span{color:var(--text)}
+.vd-fail{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:1rem;background:#05080f center/cover no-repeat}
+.vd-fail::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(5,8,15,.72),rgba(5,8,15,.94));backdrop-filter:blur(3px)}
+.vd-fail>div{position:relative;display:grid;justify-items:center;gap:.45rem;max-width:26rem}
+.vd-fail strong{font-family:var(--fd);font-size:1.05rem;color:var(--text)}
+.vd-fail p{margin:0;font-size:.8rem;color:var(--muted);line-height:1.4}
+.vd-fail .btn{margin-top:.2rem}
+.vd-fail-ic{width:3rem;height:3rem;border-radius:50%;display:grid;place-items:center;background:rgba(215,180,106,.14);border:1px solid rgba(215,180,106,.45);color:var(--gold-hi);font-size:1.2rem}
+@media (max-width:720px){.vd-fail p{display:none}.vd-fail-ic{width:2.4rem;height:2.4rem}.vd-clock b{font-size:1.1rem}}
+/* VOD-Karte in den Spielnotizen */
+.vod-row.has{border-style:solid;border-color:var(--line);background:linear-gradient(90deg,rgba(215,180,106,.07),rgba(6,10,18,.35) 55%);padding:.5rem;gap:.7rem;flex-wrap:nowrap}
+.vod-thumb{position:relative;flex:none;width:7.4rem;aspect-ratio:16/9;border-radius:9px;overflow:hidden;border:1px solid var(--line-2);background:linear-gradient(135deg,#1b1336,#0b1020) center/cover no-repeat;cursor:pointer;padding:0}
+.vod-thumb::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,.55))}
+.vod-thumb .pl{position:absolute;left:50%;top:50%;z-index:1;width:2rem;height:2rem;margin:-1rem 0 0 -1rem;border-radius:50%;background:rgba(215,180,106,.92);box-shadow:0 4px 14px rgba(0,0,0,.5);transition:transform .15s}
+.vod-thumb .pl::before{content:"";position:absolute;left:.78rem;top:.6rem;border-left:.6rem solid #1a1206;border-top:.4rem solid transparent;border-bottom:.4rem solid transparent}
+.vod-thumb:hover .pl{transform:scale(1.12)}
+.vod-thumb.on{border-color:var(--gold);box-shadow:0 0 0 2px rgba(215,180,106,.25)}
+.vod-info{min-width:0;flex:1;display:grid;gap:.2rem}
+.vod-info .vd-plat{justify-self:start}
+.vod-meta{font-size:.78rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:.15rem .55rem}
+.vod-meta a{color:var(--muted);text-decoration:underline;text-underline-offset:2px}
+.vod-meta a:hover{color:var(--gold-hi)}
+.vod-acts{display:flex;align-items:center;gap:.35rem;flex:none}
+.vod-x{width:1.9rem;height:1.9rem;border-radius:9px;border:1px solid var(--line);background:none;color:var(--muted);cursor:pointer;font-size:1rem}
+.vod-x:hover,.vod-x[data-armed="1"]{color:var(--bad);border-color:rgba(239,90,90,.5)}
+.vod-x[data-armed="1"]{width:auto;padding:0 .55rem;font-size:.75rem;font-weight:800}
+@media (max-width:560px){.vod-row.has{flex-wrap:wrap}.vod-thumb{width:6rem}.vod-acts{width:100%}.vod-acts .btn{flex:1}}
+.tl-item.has-seek{grid-template-columns:3.9rem 1.5rem 1fr auto}
+.tl-seek.tl-time{justify-self:end;display:inline-flex;align-items:center;gap:.28rem;padding:.12rem .45rem .12rem .38rem;margin-top:.05rem;border-radius:999px;border:1px solid rgba(215,180,106,.35);background:rgba(215,180,106,.08);font-size:.78rem;font-variant-numeric:tabular-nums;color:var(--gold-hi)}
+.tl-seek.tl-time::before{content:"";border-left:.4rem solid currentColor;border-top:.25rem solid transparent;border-bottom:.25rem solid transparent}
+.tl-seek.tl-time:hover{background:rgba(215,180,106,.2);border-color:var(--gold);text-decoration:none}
 </style>
 </head>
 <body>
@@ -3197,10 +3252,20 @@ let ytReady = null;
 function loadYT(){ return ytReady || (ytReady = new Promise(res => { if (window.YT && window.YT.Player) return res(); const prev = window.onYouTubeIframeAPIReady; window.onYouTubeIframeAPIReady = () => { prev && prev(); res(); }; loadScript("https://www.youtube.com/iframe_api", () => false).catch(() => {}); })); }
 const vodTime = () => { try { return vod && vod.player ? (vod.kind === "yt" ? vod.player.getCurrentTime() : vod.player.getCurrentTime()) : 0; } catch(e){ return 0; } };
 const vodUrl = (v, sec) => v.kind === "yt" ? `https://www.youtube.com/watch?v=${encodeURIComponent(v.id)}${sec ? "&t=" + Math.floor(sec) + "s" : ""}` : `https://www.twitch.tv/videos/${encodeURIComponent(v.id)}${sec ? "?t=" + Math.floor(sec) + "s" : ""}`;
+const vodThumb = v => v.kind === "yt" ? `https://i.ytimg.com/vi/${encodeURIComponent(v.id)}/mqdefault.jpg` : "";
+const platBadge = v => `<span class="vd-plat ${v.kind}">${v.kind === "yt" ? "YouTube" : "Twitch"}</span>`;
+function vodRowHtml(h, notes){
+  const v = parseVod(h.vod), th = vodThumb(v), marks = notes.filter(n => n.t).length, on = vod && vod.hid === h.id;
+  return `<button class="vod-thumb ${on ? "on" : ""}" data-action="vod-open" data-id="${esc(h.id)}" ${th ? `style="background-image:url('${esc(th)}')"` : ""} aria-label="VOD im Board ansehen"><span class="pl"></span></button>
+    <div class="vod-info">${platBadge(v)}<div class="vod-meta"><span>${N(h.vodStart) ? `Spielstart bei <b>${fmtSec(h.vodStart)}</b>` : "Spielstart noch nicht gesetzt"}</span>${marks ? `<span>${marks} Zeitmarke${marks === 1 ? "" : "n"}</span>` : ""}<a href="${esc(vodUrl(v, N(h.vodStart)))}" target="_blank" rel="noopener">Extern öffnen ↗</a></div></div>
+    <div class="vod-acts"><button class="btn sm gold" data-action="vod-open" data-id="${esc(h.id)}">${on ? "Läuft im Board" : "▶ Ansehen"}</button>${canEdit() ? `<button class="vod-x" data-action="vod-remove" data-id="${esc(h.id)}" title="VOD entfernen" aria-label="VOD entfernen">×</button>` : ""}</div>`;
+}
 // Player nicht nutzbar (Datei-Modus, Einbettung gesperrt) → Video im neuen Tab an der Stelle öffnen
 function vodFail(v, why){
-  if (!vod) return; vod.failed = true; vod.player = null;
-  const el = $("#vodPlayer"); if (el) el.outerHTML = `<p class="vd-msg">${why} <a href="${esc(vodUrl(v))}" target="_blank" rel="noopener">${v.kind === "yt" ? "Auf YouTube" : "Auf Twitch"} öffnen ↗</a><br><small>Zeitstempel in den Notizen öffnen das Video dann direkt an der richtigen Stelle.</small></p>`;
+  if (!vod) return; vod.failed = true; vod.player = null; vodBar();
+  const h = history.find(x => x.id === vod.hid), th = vodThumb(v), el = $("#vodPlayer");
+  if (el) el.outerHTML = `<div class="vd-fail vd-msg" ${th ? `style="background-image:url('${esc(th)}')"` : ""}><div><span class="vd-fail-ic">▶</span><strong>Hier nicht abspielbar</strong><p>${why}</p>
+    <a class="btn sm gold" href="${esc(vodUrl(v, h ? N(h.vodStart) : 0))}" target="_blank" rel="noopener">${v.kind === "yt" ? "Auf YouTube" : "Auf Twitch"} ansehen ↗</a><p>Zeitmarken öffnen das Video an der richtigen Stelle.</p></div></div>`;
 }
 const YT_ERR = { 2: "Ungültige Video-ID im Link.", 5: "Das Video kann im Browser nicht abgespielt werden.", 100: "Video nicht gefunden – gelöscht oder auf „Privat“ gestellt (dann „Nicht gelistet“ verwenden).", 101: "Der Uploader erlaubt das Einbetten dieses Videos nicht.", 150: "Der Uploader erlaubt das Einbetten dieses Videos nicht.", 153: "YouTube hat die Seiten-Adresse nicht erhalten (Fehler 153) – passiert, wenn das Board als Datei geöffnet wird." };
 function vodSeek(sec){
@@ -3209,18 +3274,23 @@ function vodSeek(sec){
   try { if (vod.kind === "yt"){ vod.player.seekTo(sec, true); vod.player.playVideo(); } else { vod.player.seek(sec); vod.player.play(); } } catch(e){}
 }
 function vodPause(){ try { if (vod && vod.player) vod.kind === "yt" ? vod.player.pauseVideo() : vod.player.pause(); } catch(e){} }
-function vodClose(){ vodPause(); vod = null; const d = $("#vodDock"); d.innerHTML = ""; d.hidden = true; $("#view-history").classList.remove("vod-open"); }
+let vodTick = null;
+function vodClock(){ const c = document.getElementById("vdClockV"); if (!c || !vod) return; const h = history.find(x => x.id === vod.hid); const g = vodTime() - N(h && h.vodStart);
+  c.textContent = vod.failed ? "–" : (g < 0 ? "-" + fmtSec(-g) : fmtSec(g));
+  const cur = [...document.querySelectorAll("#vdChaps .vd-chap")].filter(b => +b.dataset.s <= g + 1).pop();
+  document.querySelectorAll("#vdChaps .vd-chap.now").forEach(b => b !== cur && b.classList.remove("now")); if (cur) cur.classList.add("now"); }
+function vodClose(){ clearInterval(vodTick); vodTick = null; vodPause(); vod = null; const d = $("#vodDock"); d.innerHTML = ""; d.hidden = true; $("#view-history").classList.remove("vod-open"); }
 // Dock einmal aufbauen; danach nur Titel/Startzeit aktualisieren, das Video bleibt stehen
 async function vodOpen(hid, seekTo){
   const h = history.find(x => x.id === hid), v = h && parseVod(h.vod); if (!v) return toast("Kein gültiger VOD-Link hinterlegt.");
   if (vod && vod.hid === hid){ if (seekTo != null) vodSeek(seekTo); return; }
   vodClose();
   const d = $("#vodDock"); d.hidden = false; $("#view-history").classList.add("vod-open");
-  d.innerHTML = `<div class="vd-head"><span class="vd-tag">VOD</span><b id="vdTitle"></b><span class="spacer"></span><button class="x" data-action="vod-close" aria-label="Video schließen">×</button></div>
+  d.innerHTML = `<div class="vd-head">${platBadge(v)}<b id="vdTitle"></b><span class="spacer"></span><button class="x" data-action="vod-close" aria-label="Video schließen">×</button></div>
     <div class="vd-frame"><div id="vodPlayer"></div></div>
-    <div class="vd-bar" id="vdBar"></div>`;
+    <div class="vd-bar" id="vdBar"></div><div class="vd-chaps" id="vdChaps"></div>`;
   vod = { hid, kind: v.kind, id: v.id, player: null };
-  vodBar();
+  vodBar(); vodTick = setInterval(vodClock, 1000);
   d.scrollIntoView({ behavior: "smooth", block: "start" });
   try {
     if (v.kind === "yt"){
@@ -3234,20 +3304,22 @@ async function vodOpen(hid, seekTo){
       });
       if (vod !== me || vod.failed) return;
     } else {
-      if (!location.hostname){ $("#vodPlayer").outerHTML = `<p class="vd-msg">Twitch-VODs lassen sich nur abspielen, wenn das Board über eine Web-Adresse läuft (nicht als Datei). <a href="https://www.twitch.tv/videos/${esc(v.id)}" target="_blank" rel="noopener">Auf Twitch öffnen ↗</a></p>`; return; }
+      if (!location.hostname){ vodFail(v, "Twitch-VODs laufen im Board nur, wenn es über eine Web-Adresse geöffnet wird (nicht als Datei)."); if (seekTo != null) vodSeek(seekTo); return; }
       await loadScript("https://player.twitch.tv/js/embed/v1.js", () => !!window.Twitch);
       vod.player = new Twitch.Player("vodPlayer", { video: "v" + v.id, parent: [location.hostname], width: "100%", height: "100%", autoplay: false });
       await new Promise(res => { vod.player.addEventListener(Twitch.Player.READY, res); setTimeout(res, 8000); });
     }
     if (seekTo != null) vodSeek(seekTo);
-  } catch(e){ const el = $("#vodPlayer"); if (el) el.outerHTML = `<p class="vd-msg">Video konnte nicht geladen werden. <a href="${esc(h.vod)}" target="_blank" rel="noopener">Im neuen Tab öffnen ↗</a></p>`; }
+  } catch(e){ if (vod && vod.hid === hid) vodFail(v, "Der Player konnte nicht geladen werden – evtl. blockiert ein Werbeblocker oder die Verbindung."); }
 }
 function vodBar(){
   if (!vod) return; const h = history.find(x => x.id === vod.hid); if (!h) return vodClose();
   $("#vdTitle").textContent = `${h.result === "win" ? "Sieg" : h.result === "loss" ? "Niederlage" : "Spiel"}${h.oppName ? " vs " + h.oppName : ""} · ${kindLabel(h)}${kindOf(h) === "liga" && h.game ? " · Spiel " + h.game : ""}`;
   const ed = canEdit();
-  $("#vdBar").innerHTML = `<label class="vd-start" title="Bei welcher Videozeit beginnt das Spiel (0:00 Ingame)?"><span>Spielstart im Video</span><input class="inp" id="vodStart" value="${fmtSec(N(h.vodStart))}" ${ed ? "" : "disabled"} inputmode="numeric" aria-label="Spielstart im Video"></label>
-    ${ed ? `<button class="btn sm ghost" data-action="vod-start-now" title="Aktuelle Videostelle als Spielstart">Jetzt</button><span class="spacer"></span><button class="btn sm gold" data-action="vod-note">＋ Notiz an dieser Stelle</button>` : ""}`;
+  const notes = [...(notesById[h.id] || [])].filter(n => n.t).sort((a, b) => timeKey(a.t) - timeKey(b.t));
+  $("#vdChaps").innerHTML = notes.map(n => `<button class="vd-chap k-${esc(n.k)}" data-action="vod-seek" data-id="${esc(h.id)}" data-t="${esc(n.t)}" data-s="${timeKey(n.t)}" title="${esc(n.x)}"><i></i><b>${esc(n.t)}</b><span>${esc(n.x)}</span></button>`).join("");
+  $("#vdBar").innerHTML = `${vod.failed ? "" : `<div class="vd-clock" title="Aktuelle Spielminute (Videozeit minus Spielstart)"><small>Spielzeit</small><b id="vdClockV">0:00</b></div>`}<label class="vd-start" title="Bei welcher Videozeit beginnt das Spiel (0:00 Ingame)?"><span>Spielstart im Video</span><input class="inp" id="vodStart" value="${fmtSec(N(h.vodStart))}" ${ed ? "" : "disabled"} inputmode="numeric" aria-label="Spielstart im Video"></label>
+    ${ed && !vod.failed ? `<button class="btn sm ghost" data-action="vod-start-now" title="Aktuelle Videostelle als Spielstart">Jetzt</button><span class="spacer"></span><button class="btn sm gold" data-action="vod-note">＋ Notiz an dieser Stelle</button>` : ""}`;
 }
 const vodGameSec = () => { const h = vod && history.find(x => x.id === vod.hid); return h ? Math.max(0, vodTime() - N(h.vodStart)) : 0; };
 function setHist(hid, patch){ history = history.map(x => x.id === hid ? { ...x, ...patch } : x); queueSet("config/history", { items: history }); render(); }
@@ -3286,10 +3358,10 @@ function renderHistory(){
     <button class="notes-toggle" data-action="hist-toggle" data-id="${esc(h.id)}" aria-expanded="${open}">
       <span>Spielnotizen</span>${notes.length ? `<span class="cnt good">${good} gut</span><span class="cnt bad">${bad} schlecht</span>` : `<span class="cnt">noch keine</span>`}<span class="chev">${open ? "▴" : "▾"}</span></button>
     ${open ? `<div class="notes">
-      <div class="vod-row">${h.vod && parseVod(h.vod) ? `<span class="vod-ic">🎬</span><a class="vod-link" href="${esc(h.vod)}" target="_blank" rel="noopener">${parseVod(h.vod).kind === "yt" ? "YouTube" : "Twitch"}-VOD</a>${N(h.vodStart) ? `<span class="hint" style="margin:0">Spielstart bei ${fmtSec(h.vodStart)}</span>` : ""}<span class="spacer"></span><button class="btn sm gold" data-action="vod-open" data-id="${esc(h.id)}">▶ Im Board ansehen</button>${canEdit() ? `<button class="btn sm ghost" data-action="vod-remove" data-id="${esc(h.id)}">Entfernen</button>` : ""}`
+      <div class="vod-row ${h.vod && parseVod(h.vod) ? "has" : ""}">${h.vod && parseVod(h.vod) ? vodRowHtml(h, notes)
         : canEdit() ? `<span class="vod-ic">🎬</span><input class="inp vod-in" id="vod-${esc(h.id)}" placeholder="VOD-Link (YouTube oder Twitch) einfügen" autocomplete="off" aria-label="VOD-Link"><button class="btn sm" data-action="vod-save" data-id="${esc(h.id)}">Speichern</button>` : `<span class="hint" style="margin:0">Kein VOD hinterlegt.</span>`}</div>
-      ${notes.length ? `<ul class="tl">${notes.map(n => `<li class="tl-item k-${esc(n.k)}">
-          ${n.t && h.vod && parseVod(h.vod) ? `<button class="tl-time tl-seek" data-action="vod-seek" data-id="${esc(h.id)}" data-t="${esc(n.t)}" title="Im Video an diese Stelle springen">▶ ${esc(n.t)}</button>` : `<span class="tl-time">${n.t ? esc(n.t) : "–"}</span>`}<span class="tl-dot" aria-hidden="true"></span>
+      ${notes.length ? `<ul class="tl">${notes.map(n => `<li class="tl-item k-${esc(n.k)}${n.t && h.vod && parseVod(h.vod) ? " has-seek" : ""}">
+          ${n.t && h.vod && parseVod(h.vod) ? `<button class="tl-time tl-seek" data-action="vod-seek" data-id="${esc(h.id)}" data-t="${esc(n.t)}" title="Im Video an diese Stelle springen">${esc(n.t)}</button>` : `<span class="tl-time">${n.t ? esc(n.t) : "–"}</span>`}<span class="tl-dot" aria-hidden="true"></span>
           <div class="tl-body"><span class="tl-kind">${KIND[n.k] || "Notiz"}</span><p>${esc(n.x)}</p><span class="tl-meta">${n.by ? esc(n.by) + " · " : ""}${relTime(n.at)}</span></div>
           ${canEdit() ? `<button class="x" data-action="note-del" data-id="${esc(h.id)}" data-nid="${esc(n.id)}" aria-label="Notiz löschen">×</button>` : ""}
         </li>`).join("")}</ul>` : `<p class="hint" style="margin:.2rem 0 .8rem">Was ist in dem Spiel passiert? Die Spielminute ist optional, damit sortiert sich alles als Zeitleiste.</p>`}
