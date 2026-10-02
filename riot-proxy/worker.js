@@ -28,7 +28,7 @@ const QUEUES = {
   tournament: "type=tournament", // Turnier-Codes (z. B. Prime League)
   all:        "",
 };
-const VERSION = 3;           // vom Board geprüft (Einstellungen → Testen)
+const VERSION = 4;           // vom Board geprüft (Einstellungen → Testen)
 const MAX_COUNT = 30;
 // Cloudflare-eigener Standard-Cache (caches.default fehlt in den Browser-Typen)
 const edgeCache = () => /** @type {Cache} */ (/** @type {any} */ (caches).default);
@@ -63,29 +63,40 @@ export default {
     if (!name || name.length > 32 || !tag || tag.length > 8) return json({ error: "Ungültige Riot-ID (Name#TAG)." }, 400, cors);
 
     // fertige Antwort aus dem Cache?
-    const cacheKey = new Request(`https://cache.local/v2/${region}/${queue}/${count}/${encodeURIComponent(name.toLowerCase() + "#" + tag.toLowerCase())}`);
+    // PUUIDs sind je API-Key verschlüsselt: Cache deshalb pro Key trennen (sonst 400 nach Key-Wechsel)
+    const kt = await keyTag(env.RIOT_API_KEY);
+    const cacheKey = new Request(`https://cache.local/v3/${kt}/${region}/${queue}/${count}/${encodeURIComponent(name.toLowerCase() + "#" + tag.toLowerCase())}`);
     const hit = await edgeCache().match(cacheKey);
     if (hit) return withCors(hit, cors);
 
-    const riot = makeRiot(env, ctx);
+    const riot = makeRiot(env, ctx, kt);
     const api = host => `https://${host}.api.riotgames.com`;
     try {
-      const acc = await riot(`${api(reg.regional)}/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(name)}/${encodeURIComponent(tag)}`, CACHE_ACCOUNT);
-      const puuid = acc.puuid;
+      const accUrl = `${api(reg.regional)}/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(name)}/${encodeURIComponent(tag)}`;
+      let acc = await riot(accUrl, CACHE_ACCOUNT, "Konto");
       const q = QUEUES[queue];
-      const [ids, leagues] = await Promise.all([
-        riot(`${api(reg.regional)}/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=${count}${q ? "&" + q : ""}`, CACHE_IDS),
-        riot(`${api(reg.platform)}/lol/league/v4/entries/by-puuid/${puuid}`, CACHE_LEAGUE).catch(() => []),
+      const load = a => Promise.all([
+        riot(`${api(reg.regional)}/lol/match/v5/matches/by-puuid/${a.puuid}/ids?start=0&count=${count}${q ? "&" + q : ""}`, CACHE_IDS, "Spieleliste"),
+        riot(`${api(reg.platform)}/lol/league/v4/entries/by-puuid/${a.puuid}`, CACHE_LEAGUE, "Rang").catch(() => []),
       ]);
+      let ids, leagues;
+      try { [ids, leagues] = await load(acc); }
+      catch (e) {
+        // veraltete PUUID im Cache? Konto einmal frisch abfragen und erneut versuchen
+        if (e.status !== 400 && e.status !== 404 && e.status !== 403) throw e;
+        acc = await riot(accUrl, CACHE_ACCOUNT, "Konto", true);
+        [ids, leagues] = await load(acc);
+      }
+      const puuid = acc.puuid;
       // Erst alles aus dem Cache holen (kostet kein Riot-Limit) …
       const urls = ids.map(mid => `${api(reg.regional)}/lol/match/v5/matches/${mid}`);
-      const matches = await Promise.all(urls.map(u => cached(u)));
+      const matches = await Promise.all(urls.map(u => cached(u, kt)));
       // … dann nur so viele neue Spiele laden, wie ins 2-Minuten-Budget passen
       const missing = urls.map((u, i) => (matches[i] ? -1 : i)).filter(i => i >= 0);
       const allowed = Math.min(missing.length, budgetLeft(reg.regional));
       await pool(missing.slice(0, allowed), 4, async i => {
         if (budgetLeft(reg.regional) <= 0) return; // Budget unterwegs aufgebraucht
-        matches[i] = await riot(urls[i], CACHE_MATCH).catch(() => null);
+        matches[i] = await riot(urls[i], CACHE_MATCH, "Match").catch(() => null);
       });
       const loaded = matches.filter(Boolean);
       const partial = loaded.length < ids.length;
@@ -99,8 +110,10 @@ export default {
       return withCors(res, cors);
     } catch (e) {
       const status = e.status || 502;
-      const msg = status === 404 ? "Riot-ID nicht gefunden."
-        : status === 400 ? "Ungültige Riot-ID – Schreibweise Name#TAG prüfen."
+      const detail = e.step ? ` (${e.step}${e.msg ? ": " + e.msg : ""})` : "";
+      const msg = status === 404 ? "Riot-ID nicht gefunden." + (e.step && e.step !== "Konto" ? detail : "")
+        : status === 400 && e.step === "Konto" ? "Ungültige Riot-ID – Schreibweise Name#TAG prüfen." + detail
+        : status === 400 ? "Riot lehnt die Anfrage ab" + detail + "."
         : status === 429 ? "Riot-Limit erreicht."
         : status === 401 || status === 403 ? "API-Key ungültig oder abgelaufen."
         : "Riot-API nicht erreichbar.";
@@ -140,14 +153,19 @@ async function throttle(h) {
   if (wait > 0) await sleep(wait);
 }
 
-async function cached(u) {
-  const c = await edgeCache().match(new Request(u));
+const ck = (u, kt) => new Request(u + (u.includes("?") ? "&" : "?") + "__k=" + kt); // Cache-Eintrag je API-Key
+async function keyTag(key) {
+  const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(key)));
+  return [...new Uint8Array(b)].slice(0, 6).map(x => x.toString(16).padStart(2, "0")).join("");
+}
+async function cached(u, kt) {
+  const c = await edgeCache().match(ck(u, kt));
   return c ? c.json() : null;
 }
 
-function makeRiot(env, ctx) {
-  return async function riot(u, ttl) {
-    if (ttl) { const c = await cached(u); if (c) return c; }
+function makeRiot(env, ctx, kt) {
+  return async function riot(u, ttl, step = "", fresh = false) {
+    if (ttl && !fresh) { const c = await cached(u, kt); if (c) return c; }
     const h = hostOf(u);
     for (let attempt = 0; ; attempt++) {
       await throttle(h);
@@ -155,24 +173,27 @@ function makeRiot(env, ctx) {
       readLimits(h, r);
       if (r.ok) {
         const body = await r.text();
-        if (ttl) ctx.waitUntil(edgeCache().put(new Request(u), new Response(body, { headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${ttl}` } })));
+        if (ttl) ctx.waitUntil(edgeCache().put(ck(u, kt), new Response(body, { headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${ttl}` } })));
         return JSON.parse(body);
       }
       const retryAfter = parseInt(r.headers.get("Retry-After") || "0", 10);
       if (r.status === 429) { const s = hostState(h); s.used = s.max; s.seenAt = Date.now(); }
       if (r.status === 429 && attempt === 0 && retryAfter > 0 && retryAfter <= 2) { await sleep(retryAfter * 1000); continue; }
       if (r.status >= 500 && attempt === 0) { await sleep(500); continue; }
-      throw new RiotError(r.status, retryAfter);
+      let msg = ""; try { msg = String((JSON.parse(await r.text()).status || {}).message || "").slice(0, 120); } catch (e) {}
+      throw new RiotError(r.status, retryAfter, step, msg);
     }
   };
 }
 
 class RiotError extends Error {
-  /** @param {number} status @param {number} retryAfter */
-  constructor(status, retryAfter) {
+  /** @param {number} status @param {number} retryAfter @param {string} [step] @param {string} [msg] */
+  constructor(status, retryAfter, step = "", msg = "") {
     super("riot " + status);
     this.status = status;
     this.retryAfter = retryAfter;
+    this.step = step;
+    this.msg = msg;
   }
 }
 
