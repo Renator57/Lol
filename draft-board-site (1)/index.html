@@ -887,8 +887,9 @@ dialog:has(.ce-body){width:min(860px,calc(100vw - 1.5rem))}
 .hb{font-size:.72rem;font-weight:800;padding:.1rem .5rem;border-radius:999px;background:rgba(215,180,106,.15);color:var(--gold-hi)}
 .hb.scrim{background:rgba(76,217,196,.15);color:#8ef0e0}
 .hb.ranked{background:rgba(157,134,255,.16);color:#c7b9ff}
-.st-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;margin-bottom:1rem;align-items:start}
-@media (max-width:860px){.st-grid{grid-template-columns:1fr}}
+.st-grid{columns:2;column-gap:1rem;margin-bottom:0}
+.st-grid>.st-card{break-inside:avoid;display:block;margin:0 0 1rem}
+@media (max-width:860px){.st-grid{columns:1}}
 .st-card{padding:1rem}
 .st-card h3{font-size:1rem;color:var(--gold-hi);margin-bottom:.7rem}
 .st-sides{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
@@ -1503,6 +1504,51 @@ dialog{border-radius:26px;background:linear-gradient(180deg,rgba(21,31,51,.97),r
 .ct-num b{font-family:var(--fd);font-size:1rem}
 @media (max-width:640px){.ch-tiles{grid-template-columns:1fr 1fr;gap:.4rem}.ch-tile{grid-template-columns:auto minmax(0,1fr);padding:.5rem}.ch-tile .mini{width:30px;height:30px}.ct-num{grid-column:1/-1;flex-direction:row;justify-content:space-between;align-items:baseline}}
 .st-more{margin-top:.7rem}
+/* Statistik – ruhigeres Layout */
+.st-hero{display:grid;grid-template-columns:auto minmax(0,1fr);gap:1.4rem;align-items:center;padding:1.1rem 1.3rem;margin-bottom:1rem}
+.sh-wr{position:relative;width:112px;height:112px}
+.st-ring{width:100%;height:100%}
+.rg-bg{fill:none;stroke:rgba(255,255,255,.07);stroke-width:9}
+.rg-fg{fill:none;stroke-width:9;stroke-linecap:round}.rg-fg.w{stroke:var(--good)}.rg-fg.l{stroke:var(--bad)}
+.sh-wr-txt{position:absolute;inset:0;display:grid;place-content:center;text-align:center;line-height:1.1}
+.sh-wr-txt b{font-family:var(--fd);font-size:1.55rem}
+.sh-wr-txt span{font-size:.66rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.sh-cells{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+.sh-cell{display:flex;flex-direction:column;gap:.25rem;padding:.2rem 1.1rem;border-left:1px solid var(--line);min-width:0}
+.sh-cell>span{font-size:.68rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.sh-cell b{font-family:var(--fd);font-size:1.6rem;line-height:1.1}
+.sh-cell b em{font-style:normal;font-size:.9rem;color:var(--muted)}
+.sh-cell b.w{color:var(--good)}.sh-cell b.l{color:var(--bad)}
+.sh-cell small{font-size:.74rem;color:var(--muted)}
+.sh-form .form-row{min-height:1.9rem}
+@media (max-width:900px){.sh-cells{grid-template-columns:1fr 1fr;row-gap:.9rem}.sh-cell:nth-child(3){border-left:0}}
+@media (max-width:560px){.st-hero{grid-template-columns:1fr;justify-items:center;padding:1rem}.sh-cells{width:100%}.sh-cell{padding:.1rem .7rem}.sh-cell:nth-child(odd){border-left:0}.sh-cell b{font-size:1.3rem}}
+.st-card{padding:1.05rem 1.15rem}
+.st-card h3{display:flex;align-items:center;gap:.55rem;font-size:.98rem;margin-bottom:.8rem}
+.st-card h3::before{content:"";width:4px;height:1rem;border-radius:4px;background:var(--gold);flex:none}
+.st-top{align-items:start}
+.st-card .st-table{gap:0}
+.st-card .sb-row{background:none;border-radius:0;padding:.55rem .25rem;border-bottom:1px solid rgba(255,255,255,.05)}
+.st-card .sb-row:last-child{border-bottom:0}
+.st-card .sb-row:hover{background:rgba(255,255,255,.025)}
+.sb-name:has(.sm-ics){flex-direction:row;align-items:center;gap:.6rem}
+.sb-name:has(.sm-ics) small{margin:0}
+.sm-ics .mini{width:22px;height:22px}
+.wr-bar{height:7px;border-radius:7px;background:rgba(255,255,255,.07)}
+.wr-bar i{border-radius:7px}
+.st-sides{gap:.6rem}
+.st-side{background:rgba(6,10,18,.35)!important;border:1px solid var(--line)!important;border-radius:12px;padding:.75rem .85rem;gap:.35rem}
+.ss-top{display:flex;align-items:center;justify-content:space-between;gap:.4rem}
+.ss-top span{display:inline-flex;align-items:center;gap:.4rem;font-size:.75rem;font-weight:800;color:var(--muted)}
+.ss-top span i{width:.6rem;height:.6rem;border-radius:50%}
+.st-side.blue .ss-top i{background:#6b9bff}.st-side.red .ss-top i{background:#ff7a70}
+.st-side b{font-size:1.5rem}
+.st-side .wr-bar{margin-top:.15rem}
+.st-card .ins-list li{background:none;border:0!important;border-bottom:1px solid rgba(255,255,255,.05)!important;border-radius:0;padding:.55rem .1rem}
+.ins-list li:last-child{border-bottom:0!important}
+.st-card .fact{background:none;padding:.35rem .1rem}
+.st-card .ch-tile{border-color:transparent;background:rgba(255,255,255,.03)}
+.st-card .ch-tile:hover{background:rgba(255,255,255,.055)}
 .facts-h{margin:1rem 0 .5rem;font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .facts{display:grid;gap:.4rem}
 .fact{display:flex;align-items:center;gap:.6rem;padding:.4rem .5rem;border-radius:10px;background:rgba(6,10,18,.3)}
@@ -3243,7 +3289,7 @@ function trendSvg(done){
   const asc = [...done].sort((a, b) => (a.at || 0) - (b.at || 0));
   if (asc.length < 3) return `<p class="small-hint">Ab 3 Spielen mit Ergebnis erscheint hier der Verlauf.</p>`;
   const cw = $("#view-history").clientWidth || 960;
-  TW = Math.round(Math.min(900, Math.max(300, cw >= 1000 ? cw * .64 - 40 : cw - 36))); TH = TW < 520 ? 220 : 250;
+  TW = Math.round(Math.min(900, Math.max(300, cw >= 1000 ? cw * .64 - 40 : cw - 36))); TH = TW < 520 ? 220 : 270;
   const W = TW, H = TH, L = 44, R = 16, T = 16, B = 48, n = asc.length, PB = H - B;
   const x = i => L + (n === 1 ? 0 : i * (W - L - R) / (n - 1)), y = v => T + (100 - v) * (PB - T) / 100;
   statSeries = asc.map((h, i) => { const win = asc.slice(Math.max(0, i - 9), i + 1); const v = Math.round(win.filter(g => g.result === "win").length / win.length * 100); return { i, v, h, x: x(i), y: y(v), k: win.length }; });
@@ -3282,9 +3328,16 @@ function renderStats(listAll){
   const desc = [...done].sort((a, b) => (b.at || 0) - (a.at || 0)); let streak = 0; for (const h of desc){ if (h.result === desc[0].result) streak++; else break; }
   const form = desc.slice(0, 5).reverse();
   const tile = (v, l, cls = "") => `<div class="kpi ${cls}"><b>${v}</b><span>${l}</span></div>`;
-  const kpis = `<div class="kpis">${tile(done.length, done.length === list.length ? "Spiele" : `mit Ergebnis (${list.length} gesamt)`)}${tile(pct(wins, done.length) + " %", `Winrate · ${wins} S – ${done.length - wins} N`, done.length ? (pct(wins, done.length) >= 50 ? "w" : "l") : "")}
-    <div class="kpi form"><div class="form-row">${form.length ? form.map(h => `<i class="${h.result === "win" ? "w" : "l"}" title="${h.result === "win" ? "Sieg" : "Niederlage"}${h.oppName ? " vs " + esc(h.oppName) : ""}">${h.result === "win" ? "S" : "N"}</i>`).join("") : "–"}</div><span>Form · letzte ${form.length || 5} (alt → neu)</span></div>
-    ${tile(avgDur ? avgDur + " Min." : "–", "Ø Spielzeit")}${tile(desc.length ? streak + "×" : "–", desc.length ? (desc[0].result === "win" ? "Siege in Folge" : "Niederlagen in Folge") : "Serie", desc.length ? (desc[0].result === "win" ? "w" : "l") : "")}</div>`;
+  const wrAll = pct(wins, done.length), C = 2 * Math.PI * 40;
+  const ring = `<svg class="st-ring" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="40" class="rg-bg"/><circle cx="50" cy="50" r="40" class="rg-fg ${wrAll >= 50 ? "w" : "l"}" stroke-dasharray="${(C * wrAll / 100).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 50 50)"/></svg>`;
+  const kpis = `<section class="panel st-hero">
+    <div class="sh-wr">${ring}<div class="sh-wr-txt"><b>${done.length ? wrAll + " %" : "–"}</b><span>Winrate</span></div></div>
+    <div class="sh-cells">
+      <div class="sh-cell"><span>Spiele</span><b>${done.length}</b><small>${wins} Siege · ${done.length - wins} Niederlagen</small></div>
+      <div class="sh-cell sh-form"><span>Form</span><div class="form-row">${form.length ? form.map(h => `<i class="${h.result === "win" ? "w" : "l"}" title="${h.result === "win" ? "Sieg" : "Niederlage"}${h.oppName ? " vs " + esc(h.oppName) : ""}">${h.result === "win" ? "S" : "N"}</i>`).join("") : "–"}</div><small>letzte ${form.length || 5}, neuestes rechts</small></div>
+      <div class="sh-cell"><span>Serie</span><b class="${desc.length ? (desc[0].result === "win" ? "w" : "l") : ""}">${desc.length ? streak + "×" : "–"}</b><small>${desc.length ? (desc[0].result === "win" ? "Siege in Folge" : "Niederlagen in Folge") : "noch keine"}</small></div>
+      <div class="sh-cell"><span>Ø Spielzeit</span><b>${avgDur ? avgDur + "<em> Min.</em>" : "–"}</b><small>${durs.length ? durs.length + " Spiele mit Dauer" : "Dauer beim Speichern angeben"}</small></div>
+    </div></section>`;
   // Seiten
   const sideStat = s => { const x = done.filter(h => h.side === s); return { n: x.length, w: x.filter(h => h.result === "win").length }; };
   const B = sideStat("blue"), Rd = sideStat("red");
@@ -3335,7 +3388,7 @@ function renderStats(listAll){
     foe && fact(cIcon(foe.c), "Häufigster Gegner", esc(foe.c), `${foe.g}× · ihr gewinnt ${pct(foe.w, foe.g)} %`)].filter(Boolean);
   const insBody = insights + (facts.length ? `<h4 class="facts-h">Auf einen Blick</h4><div class="facts">${facts.join("")}</div>` : "");
   const card = (title, body, cls = "") => `<section class="panel st-card ${cls}"><h3>${title}</h3>${body}</section>`;
-  const sideBox = (cls, l, s) => `<div class="st-side ${cls}"><span>${l}</span><b>${s.n ? pct(s.w, s.n) + " %" : "–"}</b><small>${s.w} S · ${s.n - s.w} N</small><span class="wr-bar"><i style="width:${pct(s.w, s.n)}%"></i></span></div>`;
+  const sideBox = (cls, l, s) => `<div class="st-side ${cls}"><div class="ss-top"><span><i></i>${l}</span><small>${s.w} S · ${s.n - s.w} N</small></div><b>${s.n ? pct(s.w, s.n) + " %" : "–"}</b><span class="wr-bar"><i style="width:${pct(s.w, s.n)}%"></i></span></div>`;
   const champShown = statChampsAll ? rows : rows.slice(0, 12);
   const champTiles = `<div class="ch-tiles">${champShown.map(r => { const p = pct(r.w, r.g); return `<div class="ch-tile" title="${esc(r.c)}: ${r.w} Siege, ${r.g - r.w} Niederlagen">${cIcon(r.c)}<div class="ct-main"><b>${esc(r.c)}</b><small>${Object.keys(r.who).map(esc).join(", ")}</small></div><div class="ct-num"><b>${p} %</b><small>${r.g} Sp.</small></div><span class="wr-bar"><i style="width:${p}%;background:${p >= 55 ? "var(--good)" : p >= 45 ? "var(--gold)" : "var(--bad)"}"></i></span></div>`; }).join("")}</div>
     ${rows.length > 12 ? `<button class="btn sm ghost st-more" data-action="stat-champs">${statChampsAll ? "Weniger zeigen" : `Alle ${rows.length} zeigen`}</button>` : ""}`;
@@ -3350,8 +3403,8 @@ function renderStats(listAll){
       ${histFilter === "all" && kinds.length > 1 ? `<div class="st-table" style="margin-top:.7rem">${kinds.map(k => statBarRow(k.l, k.w, k.n, k.n + " Spiele")).join("")}</div>` : ""}`)}
     ${buckets.length ? card("Nach Spieldauer", `<div class="st-table">${buckets.map(b => statBarRow(b.l, b.w, b.n, b.n + " Spiele")).join("")}</div>`) : ""}
     ${duoRows.length ? card("Bot-Lane-Duos", `<div class="st-table">${duoRows.map(([k, d]) => statBarRow(k, d.w, d.n, d.n + " Spiele", `<span class="duo-ic">${cIcon(d.a)}${cIcon(d.s)}</span>`)).join("")}</div>`) : ""}
-    ${card("Schwierige Gegner-Champions", tough.length ? `<div class="st-table">${tough.map(e => statBarRow(e.c, e.w, e.g, e.g + " Spiele", cIcon(e.c))).join("")}</div>` : `<p class="small-hint">Kein Gegner-Champion unter 50 % (ab 2 Spielen).</p>`)}
-    ${seen.length ? card("Am häufigsten gegen", `<div class="st-table">${seen.map(e => statBarRow(e.c, e.w, e.g, e.g + "× gesehen", cIcon(e.c))).join("")}</div>`) : ""}
+    ${seen.length ? card("Gegner-Champions", `<h4 class="facts-h" style="margin-top:0">Am häufigsten gegen</h4><div class="st-table">${seen.map(e => statBarRow(e.c, e.w, e.g, e.g + "× gesehen", cIcon(e.c))).join("")}</div>
+      <h4 class="facts-h">Schwierig (unter 50 %)</h4>${tough.length ? `<div class="st-table">${tough.map(e => statBarRow(e.c, e.w, e.g, e.g + " Spiele", cIcon(e.c))).join("")}</div>` : `<p class="small-hint" style="margin:0">Keiner – gegen jeden Champion ab 2 Spielen gewinnt ihr mindestens die Hälfte.</p>`}`) : ""}
   </div>
   ${rows.length ? card(`Eure Champions <small class="st-h-sub">${rows.length} gespielt</small>`, champTiles) : ""}`;
 }
