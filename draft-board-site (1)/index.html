@@ -3432,7 +3432,7 @@ function renderHistory(){
     ${open ? `<div class="notes">
       <div class="vod-row ${h.vod && parseVod(h.vod) ? "has" : ""}">${h.vod && parseVod(h.vod) ? vodRowHtml(h, notes)
         : canEdit() ? `<span class="vod-ic">🎬</span><input class="inp vod-in" id="vod-${esc(h.id)}" placeholder="VOD-Link (YouTube oder Twitch) einfügen" autocomplete="off" aria-label="VOD-Link"><button class="btn sm" data-action="vod-save" data-id="${esc(h.id)}">Speichern</button>` : `<span class="hint" style="margin:0">Kein VOD hinterlegt.</span>`}</div>
-      ${notes.length ? `<ul class="tl">${notes.map(n => `<li class="tl-item k-${esc(n.k)}${n.t && h.vod && parseVod(h.vod) ? " has-seek" : ""}">
+      ${notes.length ? `<ul class="tl">${notes.map(n => `<li class="tl-item k-${esc(n.k)}${h.vod && parseVod(h.vod) ? " has-seek" : ""}">
           ${n.t && h.vod && parseVod(h.vod) ? `<button class="tl-time tl-seek" data-action="vod-seek" data-id="${esc(h.id)}" data-t="${esc(n.t)}" title="Im Video an diese Stelle springen">${esc(n.t)}</button>` : `<span class="tl-time">${n.t ? esc(n.t) : "–"}</span>`}<span class="tl-dot" aria-hidden="true"></span>
           <div class="tl-body"><span class="tl-kind">${KIND[n.k] || "Notiz"}</span><p>${esc(n.x)}</p><span class="tl-meta">${n.by ? esc(n.by) + " · " : ""}${relTime(n.at)}</span></div>
           ${canEdit() ? `<button class="x" data-action="note-del" data-id="${esc(h.id)}" data-nid="${esc(n.id)}" aria-label="Notiz löschen">×</button>` : ""}
