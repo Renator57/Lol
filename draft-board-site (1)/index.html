@@ -2224,7 +2224,7 @@ let tab = "draft", mode = "pick", active = null, query = "", edit = null;
 
 function toast(msg, action){
   const t = $("#toast"), ms = action ? 7000 : 2600;
-  const warn = /nicht|fehl|kein|ungültig|falsch|bitte|erst |schon |vergeben/i.test(msg) && !action;
+  const warn = /nicht|fehl|kein|ungültig|falsch|bitte|erst |schon |vergeben|veraltet/i.test(msg) && !action;
   t.className = "toast" + (action ? " has-action" : "") + (warn ? " warn" : "");
   t.innerHTML = `<span class="toast-ic" aria-hidden="true">${warn ? "!" : action ? "↺" : "✓"}</span><span class="toast-msg"></span>${action ? `<button class="toast-btn"></button>` : ""}<span class="toast-bar" style="animation-duration:${ms}ms"></span>`;
   t.querySelector(".toast-msg").textContent = msg;
