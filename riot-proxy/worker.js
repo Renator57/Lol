@@ -52,7 +52,7 @@ export default {
     if (url.pathname.startsWith("/vod/")) return vodApi(req, env, url, cors);
     if (req.method !== "GET") return json({ error: "Nur GET erlaubt." }, 405, cors);
 
-    if (url.pathname === "/health") return json({ ok: true, key: !!env.RIOT_API_KEY, version: VERSION, vod: !!env.VODS, vodAuth: !!env.UPLOAD_KEY }, 200, cors);
+    if (url.pathname === "/health") return json({ ok: true, key: !!env.RIOT_API_KEY, version: VERSION, vod: !!env.VODS, vodAuth: !!env.UPLOAD_KEY }, 200, { ...cors, "Cache-Control": "no-store" });
     if (!env.RIOT_API_KEY) return json({ error: "RIOT_API_KEY fehlt im Worker." }, 500, cors);
 
     // unsichtbare Steuerzeichen (aus dem LoL-Client kopiert) entfernen, sonst antwortet Riot mit 400

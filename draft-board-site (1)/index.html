@@ -2598,7 +2598,8 @@ const TIER_DE = { IRON:"Eisen", BRONZE:"Bronze", SILVER:"Silber", GOLD:"Gold", P
 async function riotFetch(path, params, base = riotUrl){
   let u; try { u = new URL(base.replace(/\/+$/, "") + "/" + path); } catch(e){ throw new Error("Ungültige Proxy-URL."); }
   Object.entries(params || {}).forEach(([k, v]) => u.searchParams.set(k, v));
-  let r; try { r = await fetch(u); } catch(e){ throw new Error("Proxy nicht erreichbar."); }
+  if (path === "health") u.searchParams.set("_", Date.now()); // Version nie aus einem Zwischenspeicher
+  let r; try { r = await fetch(u, path === "health" ? { cache: "no-store" } : undefined); } catch(e){ throw new Error("Proxy nicht erreichbar."); }
   const d = await r.json().catch(() => ({}));
   if (!r.ok) throw Object.assign(new Error(d.error || "Fehler " + r.status), { retry: r.status === 429 ? (+d.retryAfter || 30) : 0 });
   return d;
@@ -4859,7 +4860,7 @@ document.addEventListener("click", async e => {
     case "riot-take": if (viewId){ riotTake(viewId, a.dataset.role); toast("Als Top-Picks eingetragen."); } break;
     case "riot-test": {
       const u = (b.riot || "").trim(); if (!/^https:\/\//.test(u)) return toast("Bitte eine https-Adresse eintragen.");
-      try { const d = await riotFetch("health", {}, u); toast(!d.key ? "Proxy erreichbar, aber RIOT_API_KEY fehlt." : (+d.version || 1) < 6 ? `Proxy läuft (Version ${+d.version || 1}), aber veraltet – neue worker.js (Version 6) bei Cloudflare bereitstellen.` : `Proxy erreichbar (Version ${d.version}), API-Key ist gesetzt.`); } catch(err){ toast(err.message); }
+      try { const d = await riotFetch("health", {}, u); toast(!d.key ? "Proxy erreichbar, aber RIOT_API_KEY fehlt." : (+d.version || 1) < 6 ? `${new URL(u).host} antwortet mit Version ${+d.version || 1} – veraltet. Neue worker.js genau bei diesem Worker bereitstellen.` : `Proxy erreichbar (Version ${d.version}), API-Key ist gesetzt.`); } catch(err){ toast(err.message); }
       break;
     }
     case "riot-save": {
