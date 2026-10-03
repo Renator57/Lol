@@ -887,7 +887,8 @@ dialog:has(.ce-body){width:min(860px,calc(100vw - 1.5rem))}
 .hb{font-size:.72rem;font-weight:800;padding:.1rem .5rem;border-radius:999px;background:rgba(215,180,106,.15);color:var(--gold-hi)}
 .hb.scrim{background:rgba(76,217,196,.15);color:#8ef0e0}
 .hb.ranked{background:rgba(157,134,255,.16);color:#c7b9ff}
-.st-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1rem;margin-bottom:1rem}
+.st-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;margin-bottom:1rem;align-items:start}
+@media (max-width:860px){.st-grid{grid-template-columns:1fr}}
 .st-card{padding:1rem}
 .st-card h3{font-size:1rem;color:var(--gold-hi);margin-bottom:.7rem}
 .st-sides{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
@@ -1464,7 +1465,53 @@ dialog{border-radius:26px;background:linear-gradient(180deg,rgba(21,31,51,.97),r
 .sr-row .ib{margin-left:auto}
 .sr-notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:.4rem;margin-top:.7rem}
 /* Statistik-Dashboard */
-.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.7rem;margin-bottom:1rem}
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.7rem;margin-bottom:1rem}
+.st-range{display:flex;gap:.4rem;flex-wrap:wrap;margin:0 0 .8rem}
+.kpi.form{justify-content:space-between}
+.form-row{display:flex;gap:.3rem;min-height:2rem;align-items:center}
+.form-row i{display:grid;place-items:center;width:1.65rem;height:1.65rem;border-radius:7px;font-style:normal;font-weight:900;font-size:.78rem;font-family:var(--fd)}
+.form-row i.w{background:rgba(63,209,127,.16);color:var(--good);border:1px solid rgba(63,209,127,.45)}
+.form-row i.l{background:rgba(255,106,92,.13);color:var(--bad);border:1px solid rgba(255,106,92,.42)}
+.st-top{display:grid;grid-template-columns:minmax(0,2fr) minmax(260px,1fr);gap:1rem;margin-bottom:1rem;align-items:stretch}
+@media (max-width:999px){.st-top{grid-template-columns:1fr}}
+.st-top .st-card{margin:0}
+.ins-list{list-style:none;margin:0;padding:0;display:grid;gap:.5rem}
+.ins-list li{display:flex;gap:.6rem;align-items:flex-start;padding:.6rem .7rem;border-radius:12px;background:rgba(6,10,18,.4);border:1px solid var(--line);font-size:.86rem;line-height:1.4}
+.ins-list b{color:var(--text)}
+.ins-ic{flex:none;width:1.4rem;height:1.4rem;border-radius:50%;display:grid;place-items:center;font-size:.62rem;margin-top:.05rem}
+.ins-g{border-left:3px solid var(--good)!important}.ins-g .ins-ic{background:rgba(63,209,127,.16);color:var(--good)}
+.ins-b{border-left:3px solid var(--bad)!important}.ins-b .ins-ic{background:rgba(255,106,92,.14);color:var(--bad)}
+.ins-i{border-left:3px solid var(--gold)!important}.ins-i .ins-ic{background:rgba(215,180,106,.14);color:var(--gold)}
+.tr-w{fill:var(--good)}.tr-l{fill:var(--bad)}
+.tr-legend{display:flex;flex-wrap:wrap;gap:.3rem 1rem;margin-top:.4rem;font-size:.75rem;color:var(--muted)}
+.tr-legend span{display:inline-flex;align-items:center;gap:.35rem}
+.tr-legend .ln{width:14px;height:2px;background:#d7b46a;border-radius:2px}
+.tr-legend .sq{width:9px;height:9px;border-radius:2px}.tr-legend .sq.w{background:var(--good)}.tr-legend .sq.l{background:var(--bad)}
+.st-side .wr-bar{margin-top:.45rem}
+.st-side.blue .wr-bar i{background:#6b9bff}.st-side.red .wr-bar i{background:#ff7a70}
+.sm-ics{display:inline-flex;gap:3px;margin-top:2px}
+.sm-ics .mini{width:20px;height:20px;border-radius:5px;font-size:.5rem}
+.sb-name small:has(.sm-ics){overflow:visible}
+.ch-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:.5rem}
+.ch-tile{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:auto auto;column-gap:.6rem;row-gap:.45rem;align-items:center;padding:.55rem .65rem;border-radius:12px;border:1px solid var(--line);background:rgba(6,10,18,.4)}
+.ch-tile .mini{width:36px;height:36px}
+.ch-tile .wr-bar{grid-column:1/-1}
+.ct-main{display:flex;flex-direction:column;min-width:0;line-height:1.25}
+.ct-main b{font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ct-main small,.ct-num small{font-size:.72rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ct-num{display:flex;flex-direction:column;align-items:flex-end;line-height:1.2}
+.ct-num b{font-family:var(--fd);font-size:1rem}
+@media (max-width:640px){.ch-tiles{grid-template-columns:1fr 1fr;gap:.4rem}.ch-tile{grid-template-columns:auto minmax(0,1fr);padding:.5rem}.ch-tile .mini{width:30px;height:30px}.ct-num{grid-column:1/-1;flex-direction:row;justify-content:space-between;align-items:baseline}}
+.st-more{margin-top:.7rem}
+.facts-h{margin:1rem 0 .5rem;font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.facts{display:grid;gap:.4rem}
+.fact{display:flex;align-items:center;gap:.6rem;padding:.4rem .5rem;border-radius:10px;background:rgba(6,10,18,.3)}
+.fact .mini{width:30px;height:30px}.fact .duo-ic .mini{width:24px;height:24px}
+.fact>span:last-child{display:flex;flex-direction:column;min-width:0;line-height:1.25}
+.fact small{font-size:.68rem;color:var(--muted);font-weight:700}
+.fact b{font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fact em{font-style:normal;font-size:.74rem;color:var(--muted)}
+.st-h-sub{font-family:var(--fb);font-size:.75rem;color:var(--muted);font-weight:700;margin-left:.4rem}
 .kpi{padding:.85rem 1rem;border-radius:16px;border:1px solid var(--line);background:linear-gradient(180deg,rgba(23,34,56,.82),rgba(12,19,34,.86));display:flex;flex-direction:column;gap:.15rem;min-width:0}
 .kpi b{font-family:var(--fd);font-size:1.7rem;line-height:1.1;color:var(--text)}
 .kpi span{font-size:.78rem;color:var(--muted);font-weight:700}
@@ -1489,7 +1536,8 @@ dialog{border-radius:26px;background:linear-gradient(180deg,rgba(21,31,51,.97),r
 .sb-name b{font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sb-name small{font-size:.72rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media (max-width:640px){.sb-row{grid-template-columns:auto minmax(0,1fr) 56px 38px}.sb-row .st-g{display:none}}
-@media (max-width:640px){.kpis{grid-template-columns:1fr 1fr}.kpi b{font-size:1.35rem}}
+@media (max-width:900px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:640px){.kpis{grid-template-columns:1fr 1fr}.kpi b{font-size:1.35rem}.kpi.form{grid-column:1/-1;order:-1}}
 /* Live-Draft */
 .live-start{margin-left:auto}
 .live-bar{margin:-.2rem 0 .9rem;padding:.8rem .9rem;border-radius:16px;border:1px solid rgba(255,106,92,.45);background:linear-gradient(120deg,rgba(255,106,92,.14),rgba(10,16,30,.6) 60%);display:flex;flex-direction:column;gap:.6rem}
@@ -3189,50 +3237,65 @@ function statBarRow(label, w, n, sub, icon){
   const p = n ? Math.round(w / n * 100) : 0;
   return `<div class="sb-row" title="${esc(label)}: ${w} Siege, ${n - w} Niederlagen (${p} %)">${icon || "<span></span>"}<span class="sb-name"><b>${esc(label)}</b>${sub ? `<small>${sub}</small>` : ""}</span><span class="st-g">${w} S · ${n - w} N</span><span class="wr-bar"><i style="width:${p}%;background:${p >= 55 ? "var(--good)" : p >= 45 ? "var(--gold)" : "var(--bad)"}"></i></span><span class="st-pct">${p} %</span></div>`;
 }
+let statRange = "all", statChampsAll = false;
+const STAT_RANGES = [["all","Gesamt"],["30","30 Tage"],["7","7 Tage"],["10","Letzte 10"]];
 function trendSvg(done){
   const asc = [...done].sort((a, b) => (a.at || 0) - (b.at || 0));
   if (asc.length < 3) return `<p class="small-hint">Ab 3 Spielen mit Ergebnis erscheint hier der Verlauf.</p>`;
-  TW = Math.round(Math.min(960, Math.max(300, ($("#view-history").clientWidth || 960) - 36))); TH = TW < 520 ? 200 : 230;
-  const W = TW, H = TH, L = 50, R = 14, T = 14, B = 28, n = asc.length;
-  const x = i => L + (n === 1 ? 0 : i * (W - L - R) / (n - 1)), y = v => T + (100 - v) * (H - T - B) / 100;
+  const cw = $("#view-history").clientWidth || 960;
+  TW = Math.round(Math.min(900, Math.max(300, cw >= 1000 ? cw * .64 - 40 : cw - 36))); TH = TW < 520 ? 220 : 250;
+  const W = TW, H = TH, L = 44, R = 16, T = 16, B = 48, n = asc.length, PB = H - B;
+  const x = i => L + (n === 1 ? 0 : i * (W - L - R) / (n - 1)), y = v => T + (100 - v) * (PB - T) / 100;
   statSeries = asc.map((h, i) => { const win = asc.slice(Math.max(0, i - 9), i + 1); const v = Math.round(win.filter(g => g.result === "win").length / win.length * 100); return { i, v, h, x: x(i), y: y(v), k: win.length }; });
   const path = statSeries.map((p, i) => (i ? "L" : "M") + p.x.toFixed(1) + " " + p.y.toFixed(1)).join(" ");
   const area = path + ` L${x(n - 1).toFixed(1)} ${y(0)} L${x(0).toFixed(1)} ${y(0)} Z`;
+  const step = n > 1 ? (W - L - R) / (n - 1) : 20, sq = Math.max(3, Math.min(12, step - 2));
+  const strip = statSeries.map(p => `<rect x="${(p.x - sq / 2).toFixed(1)}" y="${PB + 9}" width="${sq.toFixed(1)}" height="9" rx="2" class="${p.h.result === "win" ? "tr-w" : "tr-l"}"/>`).join("");
   const ticks = [...new Set([0, Math.round((n - 1) / 2), n - 1])];
-  return `<div class="trend" id="trend"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Winrate der letzten 10 Spiele im Verlauf, aktuell ${statSeries[n - 1].v} Prozent">
-      <defs><linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d7b46a" stop-opacity=".28"/><stop offset="1" stop-color="#d7b46a" stop-opacity="0"/></linearGradient></defs>
-      ${[0, 50, 100].map(v => `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" class="${v === 50 ? "tr-mid" : "tr-grid"}"/><text x="${L - 6}" y="${y(v) + 4}" class="tr-ax" text-anchor="end">${v} %</text>`).join("")}
-      ${ticks.map(i => `<text x="${x(i)}" y="${H - 6}" class="tr-ax" text-anchor="${i === 0 ? "start" : i === n - 1 ? "end" : "middle"}">Spiel ${i + 1}</text>`).join("")}
+  const d = h => { const t = new Date(h.at || 0); return `${t.getDate()}.${t.getMonth() + 1}.`; };
+  const last = statSeries[n - 1];
+  return `<div class="trend" id="trend"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Winrate der letzten 10 Spiele im Verlauf, aktuell ${last.v} Prozent">
+      <defs><linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d7b46a" stop-opacity=".22"/><stop offset="1" stop-color="#d7b46a" stop-opacity="0"/></linearGradient></defs>
+      ${[0, 50, 100].map(v => `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" class="${v === 50 ? "tr-mid" : "tr-grid"}"/><text x="${L - 8}" y="${y(v) + 4}" class="tr-ax" text-anchor="end">${v} %</text>`).join("")}
       <path d="${area}" fill="url(#trendFill)"/>
       <path d="${path}" class="tr-line"/>
-      <circle cx="${statSeries[n - 1].x}" cy="${statSeries[n - 1].y}" r="4.5" class="tr-dot"/>
-      <text x="${Math.min(statSeries[n - 1].x, W - R - 2)}" y="${Math.max(statSeries[n - 1].y - 10, 12)}" text-anchor="end" class="tr-last">${statSeries[n - 1].v} %</text>
-      <line class="tr-cross" id="trCross" x1="0" x2="0" y1="${T}" y2="${y(0)}" visibility="hidden"/>
+      ${strip}
+      ${ticks.map(i => `<text x="${x(i)}" y="${H - 6}" class="tr-ax" text-anchor="${i === 0 ? "start" : i === n - 1 ? "end" : "middle"}">${d(asc[i])}</text>`).join("")}
+      <circle cx="${last.x}" cy="${last.y}" r="4.5" class="tr-dot"/>
+      <text x="${Math.min(last.x, W - R - 2)}" y="${last.y > T + 22 ? last.y - 10 : last.y + 20}" text-anchor="end" class="tr-last">${last.v} %</text>
+      <line class="tr-cross" id="trCross" x1="0" x2="0" y1="${T}" y2="${PB + 18}" visibility="hidden"/>
       <circle class="tr-dot" id="trDot" r="5" visibility="hidden"/>
-      <rect x="${L}" y="${T}" width="${W - L - R}" height="${H - T - B}" fill="transparent" class="tr-hit"/>
+      <rect x="${L - 6}" y="${T}" width="${W - L - R + 12}" height="${PB - T + 20}" fill="transparent" class="tr-hit"/>
     </svg><div class="tr-tip" id="trTip" hidden></div></div>
-    <p class="small-hint" style="margin:.3rem 0 0">Winrate der jeweils letzten 10 Spiele. Fahr mit der Maus oder dem Finger über die Linie.</p>`;
+    <div class="tr-legend"><span><i class="ln"></i>Winrate der letzten 10 Spiele</span><span><i class="sq w"></i>Sieg</span><span><i class="sq l"></i>Niederlage</span></div>`;
 }
-function renderStats(list){
-  if (!list.length) return `<p class="loading">Noch keine Spiele${histFilter !== "all" ? " in dieser Auswahl" : ""}. Speichert Drafts mit Ergebnis, dann entsteht hier eure Statistik.</p>`;
+function renderStats(listAll){
+  const now = Date.now(), byAt = [...listAll].sort((a, b) => (b.at || 0) - (a.at || 0));
+  const list = statRange === "all" ? listAll : statRange === "10" ? byAt.filter(h => h.result === "win" || h.result === "loss").slice(0, 10) : listAll.filter(h => (h.at || 0) >= now - +statRange * 864e5);
+  const rangeBar = `<div class="st-range" role="group" aria-label="Zeitraum">${STAT_RANGES.map(([v, l]) => `<button class="cf-chip ${statRange === v ? "on" : ""}" data-action="stat-range" data-v="${v}">${l}</button>`).join("")}</div>`;
+  if (!list.length) return rangeBar + `<p class="loading">Noch keine Spiele${histFilter !== "all" || statRange !== "all" ? " in dieser Auswahl" : ""}. Speichert Drafts mit Ergebnis, dann entsteht hier eure Statistik.</p>`;
   const done = list.filter(h => h.result === "win" || h.result === "loss");
   const pct = (w, n) => n ? Math.round(w / n * 100) : 0;
   const wins = done.filter(h => h.result === "win").length;
   // Kennzahlen
   const durs = list.map(h => +h.dur).filter(v => v > 0), avgDur = durs.length ? Math.round(durs.reduce((a, b) => a + b, 0) / durs.length) : 0;
   const desc = [...done].sort((a, b) => (b.at || 0) - (a.at || 0)); let streak = 0; for (const h of desc){ if (h.result === desc[0].result) streak++; else break; }
+  const form = desc.slice(0, 5).reverse();
   const tile = (v, l, cls = "") => `<div class="kpi ${cls}"><b>${v}</b><span>${l}</span></div>`;
-  const kpis = `<div class="kpis">${tile(done.length, done.length === list.length ? "Spiele" : `Spiele mit Ergebnis (${list.length} gesamt)`)}${tile(pct(wins, done.length) + " %", `Winrate · ${wins} S – ${done.length - wins} N`, done.length ? (pct(wins, done.length) >= 50 ? "w" : "l") : "")}${tile(avgDur ? avgDur + " Min." : "–", "Ø Spielzeit")}${tile(desc.length ? streak + "×" : "–", desc.length ? (desc[0].result === "win" ? "Siege in Folge" : "Niederlagen in Folge") : "Serie", desc.length ? (desc[0].result === "win" ? "w" : "l") : "")}</div>`;
+  const kpis = `<div class="kpis">${tile(done.length, done.length === list.length ? "Spiele" : `mit Ergebnis (${list.length} gesamt)`)}${tile(pct(wins, done.length) + " %", `Winrate · ${wins} S – ${done.length - wins} N`, done.length ? (pct(wins, done.length) >= 50 ? "w" : "l") : "")}
+    <div class="kpi form"><div class="form-row">${form.length ? form.map(h => `<i class="${h.result === "win" ? "w" : "l"}" title="${h.result === "win" ? "Sieg" : "Niederlage"}${h.oppName ? " vs " + esc(h.oppName) : ""}">${h.result === "win" ? "S" : "N"}</i>`).join("") : "–"}</div><span>Form · letzte ${form.length || 5} (alt → neu)</span></div>
+    ${tile(avgDur ? avgDur + " Min." : "–", "Ø Spielzeit")}${tile(desc.length ? streak + "×" : "–", desc.length ? (desc[0].result === "win" ? "Siege in Folge" : "Niederlagen in Folge") : "Serie", desc.length ? (desc[0].result === "win" ? "w" : "l") : "")}</div>`;
   // Seiten
   const sideStat = s => { const x = done.filter(h => h.side === s); return { n: x.length, w: x.filter(h => h.result === "win").length }; };
   const B = sideStat("blue"), Rd = sideStat("red");
-  // Spielarten
   const kinds = KINDS.map(([k, l]) => { const x = done.filter(h => kindOf(h) === k); return { l, n: x.length, w: x.filter(h => h.result === "win").length }; }).filter(x => x.n);
+  const cIcon = c => `<span class="mini">${initials(c)}${img(iconUrl(c))}</span>`;
+  const smIcons = arr => `<span class="sm-ics">${arr.map(([c, k]) => `<span class="mini" title="${esc(c)} · ${k}×">${initials(c)}${img(iconUrl(c))}</span>`).join("")}</span>`;
   // Spieler
   const byP = {};
   done.forEach(h => (h.team || []).forEach(x => { const p = byP[x.player] || (byP[x.player] = { n: 0, w: 0, ch: {} }); p.n++; if (h.result === "win") p.w++; p.ch[x.champ] = (p.ch[x.champ] || 0) + 1; }));
   const pRows = teamOrder().filter(p => byP[p.name]).map(p => { const s = byP[p.name], top = Object.entries(s.ch).sort((a, b) => b[1] - a[1]).slice(0, 3);
-    return statBarRow(p.name, s.w, s.n, top.map(([c, k]) => `${esc(c)} ${k}×`).join(", "), `<span class="ch-av sm" style="--c:${nameColor(p.name)}">${initials(p.name)}${avatarImg(p)}</span>`); });
+    return statBarRow(p.name, s.w, s.n, smIcons(top), `<span class="ch-av sm" style="--c:${nameColor(p.name)}">${initials(p.name)}${avatarImg(p)}</span>`); });
   // Spieldauer
   const buckets = [["unter 25 Min.", 0, 24], ["25–32 Min.", 25, 32], ["33–40 Min.", 33, 40], ["über 40 Min.", 41, 999]].map(([l, a, b]) => { const x = done.filter(h => +h.dur >= a && +h.dur <= b && +h.dur > 0); return { l, n: x.length, w: x.filter(h => h.result === "win").length }; }).filter(x => x.n);
   // Bot-Duos
@@ -3244,22 +3307,53 @@ function renderStats(list){
   done.forEach(h => (h.team || []).forEach(x => { const k = x.champ; const c = champs[k] || (champs[k] = { c: k, g: 0, w: 0, who: {} }); c.g++; if (h.result === "win") c.w++; c.who[x.player] = (c.who[x.player] || 0) + 1; }));
   const rows = Object.values(champs).sort((a, b) => b.g - a.g || pct(b.w, b.g) - pct(a.w, a.g));
   const enemies = {}; done.forEach(h => (h.enemy || []).forEach(c => { const e = enemies[c] || (enemies[c] = { c, g: 0, w: 0 }); e.g++; if (h.result === "win") e.w++; }));
-  const tough = Object.values(enemies).filter(e => e.g >= 2).sort((a, b) => pct(a.w, a.g) - pct(b.w, b.g) || b.g - a.g).slice(0, 6);
-  const seen = Object.values(enemies).sort((a, b) => b.g - a.g).slice(0, 6);
-  const cIcon = c => `<span class="mini">${initials(c)}${img(iconUrl(c))}</span>`;
-  const card = (title, body, wide) => `<section class="panel st-card${wide ? " wide" : ""}"><h3>${title}</h3>${body}</section>`;
-  return `${kpis}
+  const tough = Object.values(enemies).filter(e => e.g >= 2 && pct(e.w, e.g) < 50).sort((a, b) => pct(a.w, a.g) - pct(b.w, b.g) || b.g - a.g).slice(0, 5);
+  const seen = Object.values(enemies).sort((a, b) => b.g - a.g).slice(0, 5);
+  // Erkenntnisse: nur mit genug Spielen, sonst lieber nichts sagen
+  const ins = [];
+  const wr = done.length ? pct(wins, done.length) : 0;
+  if (form.length >= 5){ const fw = form.filter(h => h.result === "win").length; if (fw >= 4) ins.push(["g", `Gute Form: <b>${fw} der letzten 5</b> gewonnen.`]); else if (fw <= 1) ins.push(["b", `Schwache Phase: nur <b>${fw} der letzten 5</b> gewonnen.`]); }
+  if (B.n >= 3 && Rd.n >= 3 && Math.abs(pct(B.w, B.n) - pct(Rd.w, Rd.n)) >= 12){ const blueBetter = pct(B.w, B.n) > pct(Rd.w, Rd.n); ins.push([blueBetter ? "i" : "i", `Auf <b>${blueBetter ? "Blau" : "Rot"}</b> gewinnt ihr ${pct(blueBetter ? B.w : Rd.w, blueBetter ? B.n : Rd.n)} %, auf ${blueBetter ? "Rot" : "Blau"} nur ${pct(blueBetter ? Rd.w : B.w, blueBetter ? Rd.n : B.n)} %.`]); }
+  const bestC = rows.filter(r => r.g >= 3).sort((a, b) => pct(b.w, b.g) - pct(a.w, a.g) || b.g - a.g)[0];
+  if (bestC && pct(bestC.w, bestC.g) >= Math.max(60, wr + 10)) ins.push(["g", `<b>${esc(bestC.c)}</b> läuft: ${bestC.w} von ${bestC.g} gewonnen.`]);
+  const worstC = rows.filter(r => r.g >= 3).sort((a, b) => pct(a.w, a.g) - pct(b.w, b.g))[0];
+  if (worstC && worstC !== bestC && pct(worstC.w, worstC.g) <= Math.min(40, wr - 10)) ins.push(["b", `<b>${esc(worstC.c)}</b> klappt nicht: nur ${worstC.w} von ${worstC.g} gewonnen.`]);
+  const toughest = tough.filter(e => e.g >= 3)[0];
+  if (toughest) ins.push(["b", `Gegen <b>${esc(toughest.c)}</b> nur ${pct(toughest.w, toughest.g)} % (${toughest.g} Spiele) – bannen oder Plan machen.`]);
+  const bb = buckets.filter(x => x.n >= 3).sort((a, b) => pct(b.w, b.n) - pct(a.w, a.n));
+  if (bb.length >= 2 && pct(bb[0].w, bb[0].n) - pct(bb.at(-1).w, bb.at(-1).n) >= 20) ins.push(["i", `Spiele <b>${bb[0].l}</b> gewinnt ihr am häufigsten (${pct(bb[0].w, bb[0].n)} %), <b>${bb.at(-1).l}</b> am seltensten (${pct(bb.at(-1).w, bb.at(-1).n)} %).`]);
+  const insIc = { g: "▲", b: "▼", i: "●" };
+  const insights = ins.length ? `<ul class="ins-list">${ins.slice(0, 5).map(([k, t]) => `<li class="ins-${k}"><span class="ins-ic" aria-hidden="true">${insIc[k]}</span><span>${t}</span></li>`).join("")}</ul>`
+    : `<p class="small-hint">Noch zu wenige Spiele für sichere Aussagen. Ab etwa 3 Spielen pro Champion, Seite oder Gegner erscheinen hier Hinweise.</p>`;
+  // Auf einen Blick: feste Kurzfakten, damit die Karte auch mit wenigen Spielen etwas sagt
+  const most = rows[0], bestDuo = duoRows.filter(([, d]) => d.n >= 3).sort((a, b) => pct(b[1].w, b[1].n) - pct(a[1].w, a[1].n))[0], foe = seen[0];
+  const bestP = teamOrder().filter(p => byP[p.name] && byP[p.name].n >= 3).sort((a, b) => pct(byP[b.name].w, byP[b.name].n) - pct(byP[a.name].w, byP[a.name].n))[0];
+  const fact = (ic, l, v, sub) => `<div class="fact">${ic}<span><small>${l}</small><b>${v}</b>${sub ? `<em>${sub}</em>` : ""}</span></div>`;
+  const facts = [most && fact(cIcon(most.c), "Meistgespielt", esc(most.c), `${most.g} Spiele · ${pct(most.w, most.g)} %`),
+    bestC && fact(cIcon(bestC.c), "Beste Winrate", esc(bestC.c), `${pct(bestC.w, bestC.g)} % in ${bestC.g} Spielen`),
+    bestDuo && fact(`<span class="duo-ic">${cIcon(bestDuo[1].a)}${cIcon(bestDuo[1].s)}</span>`, "Bestes Bot-Duo", esc(bestDuo[0]), `${pct(bestDuo[1].w, bestDuo[1].n)} % in ${bestDuo[1].n} Spielen`),
+    foe && fact(cIcon(foe.c), "Häufigster Gegner", esc(foe.c), `${foe.g}× · ihr gewinnt ${pct(foe.w, foe.g)} %`)].filter(Boolean);
+  const insBody = insights + (facts.length ? `<h4 class="facts-h">Auf einen Blick</h4><div class="facts">${facts.join("")}</div>` : "");
+  const card = (title, body, cls = "") => `<section class="panel st-card ${cls}"><h3>${title}</h3>${body}</section>`;
+  const sideBox = (cls, l, s) => `<div class="st-side ${cls}"><span>${l}</span><b>${s.n ? pct(s.w, s.n) + " %" : "–"}</b><small>${s.w} S · ${s.n - s.w} N</small><span class="wr-bar"><i style="width:${pct(s.w, s.n)}%"></i></span></div>`;
+  const champShown = statChampsAll ? rows : rows.slice(0, 12);
+  const champTiles = `<div class="ch-tiles">${champShown.map(r => { const p = pct(r.w, r.g); return `<div class="ch-tile" title="${esc(r.c)}: ${r.w} Siege, ${r.g - r.w} Niederlagen">${cIcon(r.c)}<div class="ct-main"><b>${esc(r.c)}</b><small>${Object.keys(r.who).map(esc).join(", ")}</small></div><div class="ct-num"><b>${p} %</b><small>${r.g} Sp.</small></div><span class="wr-bar"><i style="width:${p}%;background:${p >= 55 ? "var(--good)" : p >= 45 ? "var(--gold)" : "var(--bad)"}"></i></span></div>`; }).join("")}</div>
+    ${rows.length > 12 ? `<button class="btn sm ghost st-more" data-action="stat-champs">${statChampsAll ? "Weniger zeigen" : `Alle ${rows.length} zeigen`}</button>` : ""}`;
+  return `${rangeBar}${kpis}
+  <div class="st-top">
+    ${card("Winrate-Verlauf", trendSvg(done), "st-trend")}
+    ${card("Erkenntnisse", insBody, "st-ins")}
+  </div>
   <div class="st-grid">
-    ${card("Winrate-Verlauf", trendSvg(done), true)}
-    ${card("Seiten", `<div class="st-sides"><div class="st-side blue"><span>Blau</span><b>${pct(B.w, B.n)} %</b><small>${B.w} S · ${B.n - B.w} N</small></div><div class="st-side red"><span>Rot</span><b>${pct(Rd.w, Rd.n)} %</b><small>${Rd.w} S · ${Rd.n - Rd.w} N</small></div></div>${!B.n && !Rd.n ? `<p class="small-hint">Beim Speichern die Seite angeben, dann füllt sich das.</p>` : ""}`)}
-    ${histFilter === "all" && kinds.length > 1 ? card("Nach Spielart", `<div class="st-table">${kinds.map(k => statBarRow(k.l, k.w, k.n, k.n + " Spiele")).join("")}</div>`) : ""}
     ${pRows.length ? card("Spieler", `<div class="st-table">${pRows.join("")}</div>`) : ""}
+    ${card("Seiten & Spielart", `<div class="st-sides">${sideBox("blue", "Blau", B)}${sideBox("red", "Rot", Rd)}</div>${!B.n && !Rd.n ? `<p class="small-hint">Beim Speichern die Seite angeben, dann füllt sich das.</p>` : ""}
+      ${histFilter === "all" && kinds.length > 1 ? `<div class="st-table" style="margin-top:.7rem">${kinds.map(k => statBarRow(k.l, k.w, k.n, k.n + " Spiele")).join("")}</div>` : ""}`)}
     ${buckets.length ? card("Nach Spieldauer", `<div class="st-table">${buckets.map(b => statBarRow(b.l, b.w, b.n, b.n + " Spiele")).join("")}</div>`) : ""}
     ${duoRows.length ? card("Bot-Lane-Duos", `<div class="st-table">${duoRows.map(([k, d]) => statBarRow(k, d.w, d.n, d.n + " Spiele", `<span class="duo-ic">${cIcon(d.a)}${cIcon(d.s)}</span>`)).join("")}</div>`) : ""}
-    ${card("Schwierige Gegner-Champions", tough.length ? `<div class="st-table">${tough.map(e => statBarRow(e.c, e.w, e.g, e.g + " Sp.", cIcon(e.c))).join("")}</div>` : `<p class="small-hint">Ab 2 Spielen gegen denselben Champion erscheint er hier.</p>`)}
+    ${card("Schwierige Gegner-Champions", tough.length ? `<div class="st-table">${tough.map(e => statBarRow(e.c, e.w, e.g, e.g + " Spiele", cIcon(e.c))).join("")}</div>` : `<p class="small-hint">Kein Gegner-Champion unter 50 % (ab 2 Spielen).</p>`)}
     ${seen.length ? card("Am häufigsten gegen", `<div class="st-table">${seen.map(e => statBarRow(e.c, e.w, e.g, e.g + "× gesehen", cIcon(e.c))).join("")}</div>`) : ""}
   </div>
-  ${card("Eure Champions", `<div class="st-table">${rows.map(r => statBarRow(r.c, r.w, r.g, Object.keys(r.who).map(esc).join(", "), cIcon(r.c))).join("")}</div>`)}`;
+  ${rows.length ? card(`Eure Champions <small class="st-h-sub">${rows.length} gespielt</small>`, champTiles) : ""}`;
 }
 // Tooltip für den Winrate-Verlauf
 function trendHover(e){
@@ -4500,6 +4594,8 @@ document.addEventListener("click", async e => {
     }
     case "hist-filter": histFilter = a.dataset.v; render(); break;
     case "hist-view": histView = a.dataset.v; render(); break;
+    case "stat-range": statRange = a.dataset.v; render(); break;
+    case "stat-champs": statChampsAll = !statChampsAll; render(); break;
     case "p-main": b.main = a.checked; break;
     case "p-role": b.role = a.dataset.v; renderModal(); break;
     case "g-type": b.groups[+a.dataset.g].type = a.dataset.v; renderModal(); break;
