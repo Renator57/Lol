@@ -1571,7 +1571,7 @@ dialog:has(.set-body){width:min(880px,calc(100vw - 1.5rem))}
 /* VOD – Feinschliff */
 .vod-dock{background:linear-gradient(180deg,rgba(18,24,40,.97),rgba(8,13,24,.97));border-color:rgba(215,180,106,.32);box-shadow:0 24px 60px -24px #000,inset 0 1px 0 rgba(255,255,255,.04)}
 .vd-head{gap:.55rem}
-.vd-plat{display:inline-flex;align-items:baseline;gap:.35rem;font-size:.66rem;font-weight:900;letter-spacing:.1em;color:#1a1206;background:var(--gold);padding:.14rem .45rem;border-radius:6px;flex:none}
+.vd-plat{display:inline-flex;align-items:baseline;font-size:.66rem;font-weight:900;letter-spacing:.1em;color:#1a1206;background:var(--gold);padding:.14rem .45rem;border-radius:6px;flex:none}
 .vd-plat small{font-size:.62rem;font-weight:700;letter-spacing:.02em;color:rgba(26,18,6,.62)}
 .vd-head .x{width:2rem;height:2rem;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--muted);font-size:1.15rem;line-height:1;cursor:pointer;flex:none}
 .vd-head .x:hover{color:var(--text);border-color:var(--line-2)}
@@ -1581,6 +1581,16 @@ dialog:has(.set-body){width:min(880px,calc(100vw - 1.5rem))}
 /* Eigener, schlichter Player */
 .vd-frame iframe{pointer-events:none}
 .vd-shield{position:absolute;inset:0;z-index:2;cursor:pointer}
+/* YouTube-Einblendungen (Titel, Logo, „Weitere Videos“) liegen am Rand des iframes → Rand wegschneiden, Bild bleibt gleich groß */
+.vd-frame.yt iframe,.vd-frame.yt #vodPlayer{top:-100%;bottom:auto;height:300%}
+.vd-cover{position:absolute;inset:0;z-index:2;display:grid;place-items:center;cursor:pointer;background:rgba(4,7,14,.55);opacity:0;pointer-events:none;transition:opacity .18s}
+.vd-frame.paused .vd-cover{opacity:1;pointer-events:auto}
+.vd-frame.fresh .vd-cover{background:#05080f var(--th,none) center/cover no-repeat}
+.vd-frame.fresh .vd-cover::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(4,7,14,.15),rgba(4,7,14,.6))}
+.vd-big{position:relative;width:4.2rem;height:4.2rem;border-radius:50%;background:rgba(215,180,106,.95);box-shadow:0 10px 30px rgba(0,0,0,.55);transition:transform .15s}
+.vd-big::before{content:"";position:absolute;left:1.6rem;top:1.25rem;border-left:1.3rem solid #1a1206;border-top:.85rem solid transparent;border-bottom:.85rem solid transparent}
+.vd-cover:hover .vd-big{transform:scale(1.07)}
+.vod-dock.vd-small .vd-big{width:3rem;height:3rem}.vod-dock.vd-small .vd-big::before{left:1.15rem;top:.9rem;border-left-width:.95rem;border-top-width:.6rem;border-bottom-width:.6rem}
 .vd-ctl{position:absolute;left:0;right:0;bottom:0;z-index:3;display:flex;align-items:center;gap:.35rem;padding:1.6rem .55rem .45rem;background:linear-gradient(180deg,transparent,rgba(0,0,0,.78));opacity:0;transition:opacity .2s}
 .vd-frame:hover .vd-ctl,.vd-frame.paused .vd-ctl,.vd-frame:focus-within .vd-ctl{opacity:1}
 @media (hover:none){.vd-ctl{opacity:1}}
@@ -3272,7 +3282,7 @@ function loadYT(){ return ytReady || (ytReady = new Promise(res => { if (window.
 const vodTime = () => { try { return vod && vod.player ? (vod.kind === "yt" ? vod.player.getCurrentTime() : vod.player.getCurrentTime()) : 0; } catch(e){ return 0; } };
 const vodUrl = (v, sec) => v.kind === "yt" ? `https://www.youtube.com/watch?v=${encodeURIComponent(v.id)}${sec ? "&t=" + Math.floor(sec) + "s" : ""}` : `https://www.twitch.tv/videos/${encodeURIComponent(v.id)}${sec ? "?t=" + Math.floor(sec) + "s" : ""}`;
 const vodThumb = v => v.kind === "yt" ? `https://i.ytimg.com/vi/${encodeURIComponent(v.id)}/mqdefault.jpg` : "";
-const platBadge = v => `<span class="vd-plat">VOD<small>${v.kind === "yt" ? "YouTube" : "Twitch"}</small></span>`;
+const platBadge = () => `<span class="vd-plat">VOD</span>`;
 function vodRowHtml(h, notes){
   const v = parseVod(h.vod), th = vodThumb(v), marks = notes.filter(n => n.t).length, on = vod && vod.hid === h.id;
   return `<button class="vod-thumb ${on ? "on" : ""}" data-action="vod-open" data-id="${esc(h.id)}" ${th ? `style="background-image:url('${esc(th)}')"` : ""} aria-label="VOD im Board ansehen"><span class="pl"></span></button>
@@ -3317,7 +3327,7 @@ function vodMarks(){
 function vodUpdate(){
   if (!vod) return; const h = history.find(x => x.id === vod.hid), st = N(h && h.vodStart), t = vodTime(), d = vodDur(), on = vodPlaying();
   const f = $("#vdFrame"); if (!f) return;
-  f.classList.toggle("paused", !on);
+  f.classList.toggle("paused", !on); if (on || t > 0.5) f.classList.remove("fresh");
   const pl = $("#vdPlay"); if (pl){ pl.classList.toggle("on", on); pl.setAttribute("aria-label", on ? "Pause" : "Abspielen"); }
   const g = t - st; $("#vdTime").textContent = (g < 0 ? "-" + fmtSec(-g) : fmtSec(g)) + (d ? " / " + fmtSec(Math.max(0, d - st)) : "");
   if (!vod.drag) $("#vdFill").style.width = d ? Math.min(100, t / d * 100) + "%" : "0";
@@ -3341,8 +3351,9 @@ async function vodOpen(hid, seekTo){
   vodClose();
   const d = $("#vodDock"); d.hidden = false; $("#view-history").classList.add("vod-open");
   d.innerHTML = `<div class="vd-head">${platBadge(v)}<b id="vdTitle"></b><span class="spacer"></span><button class="x" data-action="vod-close" aria-label="Video schließen">×</button></div>
-    <div class="vd-frame paused" id="vdFrame"><div id="vodPlayer"></div>
+    <div class="vd-frame paused fresh ${v.kind}" id="vdFrame"><div id="vodPlayer"></div>
       <div class="vd-shield" data-action="vod-play" aria-hidden="true"></div>
+      <div class="vd-cover" data-action="vod-play" ${vodThumb(v) ? `style="--th:url('${esc(vodThumb(v))}')"` : ""}><span class="vd-big" aria-hidden="true"></span></div>
       <div class="vd-ctl">
         <button class="vd-b vd-play" id="vdPlay" data-action="vod-play" aria-label="Abspielen"></button>
         <span class="vd-time" id="vdTime">0:00</span>
