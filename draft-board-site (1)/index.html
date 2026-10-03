@@ -3070,6 +3070,54 @@ async function cardWeek(info){
     ctext(c, st.ok ? "Alle" : st.subOk ? "+Ers." : `${st.yes}/${st.total}`, x + (CW - 12) / 2, y + 33, { size: 17, weight: 800, color: st.ok ? CC.good : st.subOk ? CC.warn : CC.muted, align: "center" }); });
   return cv;
 }
+// Rundes Profilbild (oder Initialen in der Spielerfarbe)
+async function cavatar(c, p, x, y, s, ring){
+  const r = s / 2, src = p && safeImg(p.avatar), im = src ? await loadImg(src) : null;
+  c.save(); c.beginPath(); c.arc(x + r, y + r, r, 0, Math.PI * 2); c.clip();
+  if (im){ const k = Math.max(s / im.width, s / im.height); c.drawImage(im, x + (s - im.width * k) / 2, y + (s - im.height * k) / 2, im.width * k, im.height * k); }
+  else { c.fillStyle = nameColor(p ? p.name : "?"); c.fillRect(x, y, s, s); ctext(c, initials(p ? p.name : "?"), x + r, y + r + s * .13, { size: s * .38, weight: 800, color: "#0b1220", align: "center", font: "d" }); }
+  c.restore();
+  if (ring){ c.strokeStyle = ring; c.lineWidth = 4; c.beginPath(); c.arc(x + r, y + r, r - 2, 0, Math.PI * 2); c.stroke(); }
+}
+// Termin als Bild: Titel, Zeit, Countdown und wer dabei ist
+async function cardEvent(e, mins){
+  const { info: wi, day } = weekKeyOf(e.date), lp = lineupPlayers(), lm = lineupMap();
+  const ps = [...lp, ...players.filter(p => !lp.includes(p) && avGet(wi.key, p.id, day))];
+  const st = p => avGet(wi.key, p.id, day);
+  const ST = { yes: ["DABEI", CC.good], maybe: ["VIELLEICHT", CC.warn], no: ["ABSAGE", CC.red], "": ["OFFEN", CC.muted] };
+  const col = mins != null ? CC.warn : e.type === "liga" ? CC.red : e.type === "scrim" ? CC.blue : e.type === "ranked" ? CC.gold : "#9d86ff";
+  const rows = Math.ceil(ps.length / 2), H = 250 + rows * 96 + (e.note ? 44 : 0) + 30;
+  const { cv, c } = newCard(H, col);
+  // Kopf
+  let px = 40; px += cpill(c, mins != null ? "ERINNERUNG" : "TERMIN", px, 26, col + "30", col, 14) + 8;
+  if (!e.plain) cpill(c, (EV_TYPE[e.type] || "Termin").toUpperCase(), px, 26, "rgba(255,255,255,.07)", CC.text, 14);
+  const opp = e.type === "liga" && e.oppId && team(e.oppId);
+  ctext(c, evTitle(e), 40, 108, { size: 36, weight: 800, font: "d", color: CC.hi, max: opp ? 790 : 920 });
+  const when = `${fmtDay(e.date)}${e.time ? "  ·  " + e.time + " Uhr" : ""}`;
+  ctext(c, when, 40, 146, { size: 21, weight: 700, color: CC.text });
+  if (mins != null){ const left = mins >= 90 ? `in ${Math.round(mins / 60)} Std.` : `in ${mins} Min.`; const w = c.measureText(when).width; cpill(c, left, 40 + w + 16, 124, col + "30", col, 15); }
+  // Gegner-Logo rechts (Liga)
+  if (opp){ rr(c, 860, 66, 100, 100, 22); c.fillStyle = CC.red + "26"; c.fill(); c.strokeStyle = CC.red + "66"; c.lineWidth = 2; c.stroke(); ctext(c, (opp.tag || initials(opp.name || "?")).slice(0, 4), 910, 128, { size: 30, weight: 800, font: "d", color: CC.hi, align: "center" }); }
+  // Spieler
+  const y0 = 186; ctext(c, "AUFSTELLUNG", 40, y0 + 14, { size: 14, weight: 800, color: CC.muted, font: "d" });
+  const yes = lp.filter(p => st(p) === "yes").length;
+  ctext(c, `${yes}/${lp.length} Stammspieler dabei`, 960, y0 + 14, { size: 15, weight: 800, color: yes === lp.length ? CC.good : CC.warn, align: "right" });
+  for (let i = 0; i < ps.length; i++){
+    const p = ps[i], x = 40 + (i % 2) * 470, y = y0 + 30 + Math.floor(i / 2) * 96, [lbl, sc] = ST[st(p)] || ST[""];
+    cpanel(c, x, y, 450, 82);
+    await cavatar(c, p, x + 14, y + 11, 60, sc);
+    const role = Object.keys(lm).find(r => lm[r] === p) || (lp.includes(p) ? p.role : "Ersatz");
+    ctext(c, p.name, x + 90, y + 38, { size: 23, weight: 800, font: "d", color: CC.hi, max: 210 });
+    ctext(c, (role || "").toUpperCase(), x + 90, y + 62, { size: 13, weight: 800, color: CC.muted, font: "d" });
+    c.font = `800 14px ${CF.b}`; const pw = c.measureText(lbl).width + 22;
+    cpill(c, lbl, x + 450 - 16 - pw, y + 27, sc + "26", sc, 14);
+  }
+  let y = y0 + 30 + rows * 96;
+  if (e.note){ ctext(c, "„" + e.note + "“", 40, y + 26, { size: 19, color: CC.text, max: 920 }); y += 44; }
+  const open = lp.filter(p => !st(p)).map(p => p.name);
+  ctext(c, open.length ? "Noch offen: " + open.join(", ") : "Alle Stammspieler haben geantwortet.", 40, y + 34, { size: 17, weight: 700, color: open.length ? CC.warn : CC.good, max: 920 });
+  return cv;
+}
 // Embed bekommt ein Bild; der Text darüber bleibt kurz
 function withCard(e, make, short){ Object.defineProperty(e, "__card", { value: make, enumerable: false }); Object.defineProperty(e, "__short", { value: short, enumerable: false }); return e; }
 async function sendDiscord(msg, color, url){
@@ -3168,7 +3216,8 @@ function eventEmbed(e, mins){
     { name: "✅ Dabei", value: by("yes").join("\n") || "–", inline: true }];
   if (by("maybe").length) fields.push({ name: "❔ Vielleicht", value: by("maybe").join("\n"), inline: true });
   if (miss.length) fields.push({ name: "⚠️ Noch offen", value: miss.join(", ") });
-  return embed({ title: `${mins != null ? "⏰ Erinnerung: " : "📅 "}${evTitle(e)}`, color: mins != null ? DC.warn : e.type === "liga" ? DC.red : DC.purple, description: e.note || "", fields });
+  const short = `🕒 **${fmtDay(e.date)}${e.time ? ", " + e.time + " Uhr" : ""}**${mins != null ? ` · in ${mins >= 90 ? Math.round(mins / 60) + " Std." : mins + " Min."}` : ""}${miss.length ? `\n⚠️ Noch offen: ${miss.join(", ")}` : ""}`;
+  return withCard(embed({ title: `${mins != null ? "⏰ Erinnerung: " : "📅 "}${evTitle(e)}`, color: mins != null ? DC.warn : e.type === "liga" ? DC.red : DC.purple, description: e.note || "", fields }), () => cardEvent(e, mins), short);
 }
 // Turnier-Draft: Bann 1 (6), Pick 1 (6), Bann 2 (4), Pick 2 (4)
 const DRAFT_ORDER = [["ban","B"],["ban","R"],["ban","B"],["ban","R"],["ban","B"],["ban","R"],
