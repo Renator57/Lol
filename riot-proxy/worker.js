@@ -43,6 +43,8 @@ const CACHE_MATCH = 2592000;   // Match-Details ändern sich nie: 30 Tage
 
 export default {
   async fetch(req, env, ctx) {
+    // Key beim Einfügen oft mit Leerzeichen, Zeilenumbruch oder Anführungszeichen kopiert → bereinigen
+    if (env.RIOT_API_KEY) env = { ...env, RIOT_API_KEY: String(env.RIOT_API_KEY).trim().replace(/^["']|["']$/g, "").trim() };
     const cors = corsHeaders(req, env);
     if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
     const url = new URL(req.url);
@@ -52,7 +54,7 @@ export default {
     if (url.pathname.startsWith("/vod/")) return vodApi(req, env, url, cors);
     if (req.method !== "GET") return json({ error: "Nur GET erlaubt." }, 405, cors);
 
-    if (url.pathname === "/health") return json({ ok: true, key: !!env.RIOT_API_KEY, version: VERSION, vod: !!env.VODS, vodAuth: !!env.UPLOAD_KEY }, 200, { ...cors, "Cache-Control": "no-store" });
+    if (url.pathname === "/health") return json({ ok: true, key: !!env.RIOT_API_KEY, keyOk: /^RGAPI-[0-9a-f-]{36}$/i.test(env.RIOT_API_KEY || ""), version: VERSION, vod: !!env.VODS, vodAuth: !!env.UPLOAD_KEY }, 200, { ...cors, "Cache-Control": "no-store" });
     if (!env.RIOT_API_KEY) return json({ error: "RIOT_API_KEY fehlt im Worker." }, 500, cors);
 
     // unsichtbare Steuerzeichen (aus dem LoL-Client kopiert) entfernen, sonst antwortet Riot mit 400

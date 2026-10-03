@@ -2223,7 +2223,7 @@ let loaded = false;
 let tab = "draft", mode = "pick", active = null, query = "", edit = null;
 
 function toast(msg, action){
-  const t = $("#toast"), ms = action ? 7000 : 2600;
+  const t = $("#toast"), ms = action ? 7000 : Math.max(2600, msg.length * 60); // lange Hinweise länger stehen lassen
   const warn = /nicht|fehl|kein|ungültig|falsch|bitte|erst |schon |vergeben|veraltet/i.test(msg) && !action;
   t.className = "toast" + (action ? " has-action" : "") + (warn ? " warn" : "");
   t.innerHTML = `<span class="toast-ic" aria-hidden="true">${warn ? "!" : action ? "↺" : "✓"}</span><span class="toast-msg"></span>${action ? `<button class="toast-btn"></button>` : ""}<span class="toast-bar" style="animation-duration:${ms}ms"></span>`;
@@ -2601,7 +2601,7 @@ async function riotFetch(path, params, base = riotUrl){
   if (path === "health") u.searchParams.set("_", Date.now()); // Version nie aus einem Zwischenspeicher
   let r; try { r = await fetch(u, path === "health" ? { cache: "no-store" } : undefined); } catch(e){ throw new Error("Proxy nicht erreichbar."); }
   const d = await r.json().catch(() => ({}));
-  if (!r.ok) throw Object.assign(new Error(d.error || "Fehler " + r.status), { retry: r.status === 429 ? (+d.retryAfter || 30) : 0 });
+  if (!r.ok) throw Object.assign(new Error(d.error || "Fehler " + r.status), { retry: r.status === 429 ? (+d.retryAfter || 30) : 0, auth: d.status === 401 || d.status === 403 || /API-Key/.test(d.error || "") });
   return d;
 }
 // Kompakte Form, die im Team-Dokument gespeichert wird
@@ -2628,7 +2628,8 @@ async function riotWaitMany(keys, sec){
   await sleep(sec * 1000);
   keys.forEach(k => delete riotWait[k]);
 }
-let riotOldWarned = false;
+let riotOldWarned = false, riotKeyBad = 0;
+const RIOT_KEY_MSG = "Riot lehnt den API-Key ab. Aktuellen Key von developer.riotgames.com kopieren und bei Cloudflare → Worker → Variablen als RIOT_API_KEY ersetzen (Development Keys laufen nach 24 Std. ab).";
 // Ein Abruf für einen Spieler. Ergebnis: ok, retry (Sekunden bis zum nächsten Versuch) und Fortschritt.
 async function riotFetchRole(teamId, r){
   const t = team(teamId); if (!t) return { ok: false };
@@ -2647,6 +2648,7 @@ async function riotFetchRole(teamId, r){
     return d.partial && !oldProxy ? { ok: true, retry: +d.retryIn || 30, loaded: N(d.loaded) } : { ok: true };
   }
   if (err.retry) { renderScout(); return { ok: false, retry: err.retry, loaded: -1 }; }
+  if (err.auth) riotKeyBad = Date.now();
   mutTeam(teamId, x => { x.roles[r] = { ...roleOf(x, r), riot: { ...(roleOf(x, r).riot || {}), err: err.message, errAt: Date.now() } }; });
   renderScout();
   return { ok: false };
@@ -2656,10 +2658,11 @@ async function riotFetchRole(teamId, r){
 async function riotLoadRoles(teamId, roles){
   const keys = roles.map(r => teamId + ":" + r).filter(k => !riotBusy.has(k) && !riotWait[k]);
   let pending = roles.filter(r => keys.includes(teamId + ":" + r));
-  const done = new Set(), best = {}, stuck = {};
+  const done = new Set(), best = {}, stuck = {}, startAt = Date.now() - 1;
   for (let round = 1; pending.length && round <= RIOT_MAX_ROUNDS; round++){
     const next = []; let wait = 0;
     for (const r of pending){
+      if (riotKeyBad > startAt) break; // Key abgelaufen: die anderen Spieler würden genauso scheitern
       const res = await riotFetchRole(teamId, r);
       if (res.ok && !res.retry) { done.add(r); continue; }
       if (!res.retry) continue; // echter Fehler steht beim Spieler
@@ -2678,6 +2681,7 @@ async function riotLoadAll(teamId){
   const roles = ROLES.filter(r => parseRiotId(roleOf(t, r).player, t.region));
   if (!roles.length) return toast("Erst Riot-IDs eintragen.");
   const ok = await riotLoadRoles(teamId, roles);
+  if (riotKeyBad && Date.now() - riotKeyBad < 60e3 && !ok) return toast(RIOT_KEY_MSG);
   toast((ok === roles.length ? `Matchdaten für ${ok} Spieler geladen.` : `${ok} von ${roles.length} geladen – Fehler stehen beim Spieler.`) + (riotOldWarned ? " Hinweis: Riot-Proxy ist veraltet, bitte neue worker.js bereitstellen." : ""));
 }
 // Gespeicherte Matchdaten bereinigen: Zahlen erzwingen, Champion-IDs in Anzeigenamen umwandeln
@@ -3615,6 +3619,7 @@ async function duoLoad(force){
         else duoBusy[p.id] = "fertig";
       } catch(e){
         if (e.retry){ next.push(p); wait = Math.max(wait, e.retry); duoBusy[p.id] = "Riot-Limit"; }
+        else if (e.auth){ duoBusy = null; render(); return toast(RIOT_KEY_MSG); }
         else { duoBusy[p.id] = "Fehler"; duoSave({ data: { [p.id]: { ...(duoCfg.data[p.id] || {}), err: e.message, at: Date.now(), id: duoCfg.ids[p.id], qq: duoCfg.queue, n: +duoCfg.count } } }); }
       }
       render();
@@ -4856,11 +4861,11 @@ document.addEventListener("click", async e => {
     case "s-tab": b.stab = a.dataset.v; renderModal(); modal.querySelector(".m-body")?.scrollTo(0, 0);
       if (b.stab === "riot" && riotUrl && upKey() && !vodCloud.checked) vodCloudCheck().then(() => edit && renderModal()); break;
     case "riot-all": if (viewId) riotLoadAll(viewId); break;
-    case "riot-role": if (viewId) riotLoadRole(viewId, a.dataset.role).then(ok => ok && toast("Matchdaten geladen.")); break;
+    case "riot-role": if (viewId) riotLoadRole(viewId, a.dataset.role).then(ok => ok ? toast("Matchdaten geladen.") : riotKeyBad && Date.now() - riotKeyBad < 60e3 && toast(RIOT_KEY_MSG)); break;
     case "riot-take": if (viewId){ riotTake(viewId, a.dataset.role); toast("Als Top-Picks eingetragen."); } break;
     case "riot-test": {
       const u = (b.riot || "").trim(); if (!/^https:\/\//.test(u)) return toast("Bitte eine https-Adresse eintragen.");
-      try { const d = await riotFetch("health", {}, u); toast(!d.key ? "Proxy erreichbar, aber RIOT_API_KEY fehlt." : (+d.version || 1) < 6 ? `${new URL(u).host} antwortet mit Version ${+d.version || 1} – veraltet. Neue worker.js genau bei diesem Worker bereitstellen.` : `Proxy erreichbar (Version ${d.version}), API-Key ist gesetzt.`); } catch(err){ toast(err.message); }
+      try { const d = await riotFetch("health", {}, u); toast(!d.key ? "Proxy erreichbar, aber RIOT_API_KEY fehlt." : d.keyOk === false ? "RIOT_API_KEY bei Cloudflare sieht falsch aus – er muss mit RGAPI- beginnen (ohne Anführungszeichen)." : (+d.version || 1) < 6 ? `${new URL(u).host} antwortet mit Version ${+d.version || 1} – veraltet. Neue worker.js genau bei diesem Worker bereitstellen.` : `Proxy erreichbar (Version ${d.version}), API-Key ist gesetzt.`); } catch(err){ toast(err.message); }
       break;
     }
     case "riot-save": {
