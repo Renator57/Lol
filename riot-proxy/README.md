@@ -111,3 +111,29 @@ Darauf ist alles abgestimmt:
   `europe`, der Rang über `euw1`.
 - „API-Key ungültig oder abgelaufen“ heißt meistens, dass noch der 24-Stunden-Development-Key
   eingetragen ist. Dann den Personal Key als `RIOT_API_KEY` eintragen.
+
+## Video-Upload (optional)
+
+Damit ihr Spielvideos direkt im Board hochladen könnt (Verlauf → Spielnotizen → **⬆ Hochladen**),
+speichert derselbe Worker sie in **Cloudflare R2**. Kostenlos sind 10 GB Speicher, und das Abspielen
+kostet nichts (R2 berechnet keinen Datenverkehr). Für R2 verlangt Cloudflare einmalig eine hinterlegte
+Zahlungsmethode, auch wenn ihr im kostenlosen Rahmen bleibt.
+
+1. **R2 → Bucket erstellen**, Name `draftboard-vods`.
+2. Worker → **Einstellungen → Bindungen → Hinzufügen → R2-Bucket**: Variablenname `VODS`, Bucket `draftboard-vods`.
+3. Worker → **Variablen und Geheimnisse**: Typ **Geheimnis**, Name `UPLOAD_KEY`, Wert = ein Upload-Passwort.
+4. Die neue [`worker.js`](worker.js) (Version 5) bereitstellen.
+5. Im Board: **Einstellungen → Riot → Video-Upload** das Passwort eintragen und **Speichern & prüfen** klicken.
+
+Mit der Kommandozeile: `wrangler r2 bucket create draftboard-vods`, dann in `wrangler.toml` den
+`[[r2_buckets]]`-Block aktivieren, `wrangler secret put UPLOAD_KEY` ausführen und `wrangler deploy`.
+
+Hinweise:
+
+- Hochladen darf nur, wer das Upload-Passwort kennt. Ansehen kann jeder, der den Link aus dem Board hat
+  (die Dateinamen sind zufällig und nicht erratbar).
+- Große Dateien werden in Teilen zu je 24 MB hochgeladen. Die Seite muss offen bleiben, bis der Upload fertig ist.
+- **MP4 (H.264)** läuft in jedem Browser. 10 GB reichen für etwa 10 bis 20 Spiele in 720p.
+  OBS-Tipp: 720p, 30 fps und etwa 4000 kbit/s ergeben pro Spiel rund 1 GB.
+- Wenn ihr ein VOD im Board entfernt, wird auch die Datei gelöscht (bei dem, der das Upload-Passwort eingetragen hat).
+- Ohne Einrichtung geht immer **„Nur hier abspielen“**: Die Datei läuft dann nur auf diesem Gerät, ohne Upload.

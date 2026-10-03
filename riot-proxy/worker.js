@@ -3,10 +3,13 @@
 //
 //   GET /?id=Name%23TAG&region=euw&queue=ranked&count=20
 //   GET /health
+//   /vod/...  Video-Upload für die VOD-Review (optional, braucht R2, siehe README.md)
 //
 // Secrets / Variablen (siehe README.md):
 //   RIOT_API_KEY     – Pflicht, per `wrangler secret put RIOT_API_KEY`
 //   ALLOWED_ORIGINS  – empfohlen, kommagetrennt, z. B. "https://name.github.io" (Standard: alle)
+//   VODS             – optional, R2-Bucket-Bindung für hochgeladene Videos
+//   UPLOAD_KEY       – optional, Upload-Passwort (Geheimnis); ohne es ist Hochladen gesperrt
 //
 // Ausgelegt auf einen Personal API Key (20 Aufrufe/s, 100 Aufrufe/2 Min.):
 // Match-Details werden 30 Tage gecacht, neue Spiele nur geladen, solange das
@@ -28,7 +31,7 @@ const QUEUES = {
   tournament: "type=tournament", // Turnier-Codes (z. B. Prime League)
   all:        "",
 };
-const VERSION = 4;           // vom Board geprüft (Einstellungen → Testen)
+const VERSION = 5;           // vom Board geprüft (Einstellungen → Testen)
 const MAX_COUNT = 30;
 // Cloudflare-eigener Standard-Cache (caches.default fehlt in den Browser-Typen)
 const edgeCache = () => /** @type {Cache} */ (/** @type {any} */ (caches).default);
@@ -42,11 +45,14 @@ export default {
   async fetch(req, env, ctx) {
     const cors = corsHeaders(req, env);
     if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
-    if (req.method !== "GET") return json({ error: "Nur GET erlaubt." }, 405, cors);
-    if (!cors["Access-Control-Allow-Origin"]) return json({ error: "Origin nicht erlaubt." }, 403, cors);
-
     const url = new URL(req.url);
-    if (url.pathname === "/health") return json({ ok: true, key: !!env.RIOT_API_KEY, version: VERSION }, 200, cors);
+    // Videos abspielen: <video> schickt keinen Origin-Header → ohne Origin-Prüfung, Datei-Namen sind zufällig
+    if (url.pathname.startsWith("/vod/f/") && (req.method === "GET" || req.method === "HEAD")) return vodGet(req, env, url, cors);
+    if (!cors["Access-Control-Allow-Origin"]) return json({ error: "Origin nicht erlaubt." }, 403, cors);
+    if (url.pathname.startsWith("/vod/")) return vodApi(req, env, url, cors);
+    if (req.method !== "GET") return json({ error: "Nur GET erlaubt." }, 405, cors);
+
+    if (url.pathname === "/health") return json({ ok: true, key: !!env.RIOT_API_KEY, version: VERSION, vod: !!env.VODS, vodAuth: !!env.UPLOAD_KEY }, 200, cors);
     if (!env.RIOT_API_KEY) return json({ error: "RIOT_API_KEY fehlt im Worker." }, 500, cors);
 
     // unsichtbare Steuerzeichen (aus dem LoL-Client kopiert) entfernen, sonst antwortet Riot mit 400
@@ -245,8 +251,91 @@ function corsHeaders(req, env) {
   const origin = req.headers.get("Origin") || "";
   const allowed = (env.ALLOWED_ORIGINS || "*").split(",").map(s => s.trim()).filter(Boolean);
   const ok = allowed.includes("*") ? "*" : allowed.includes(origin) ? origin : "";
-  return ok ? { "Access-Control-Allow-Origin": ok, "Access-Control-Allow-Methods": "GET, OPTIONS", "Access-Control-Max-Age": "86400", "Vary": "Origin" } : {};
+  return ok ? { "Access-Control-Allow-Origin": ok, "Access-Control-Allow-Methods": "GET, HEAD, POST, PUT, DELETE, OPTIONS", "Access-Control-Allow-Headers": "Content-Type, X-Upload-Key, Range", "Access-Control-Expose-Headers": "Content-Range, Content-Length, Accept-Ranges", "Access-Control-Max-Age": "86400", "Vary": "Origin" } : {};
 }
 const json = (data, status, headers) => new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json; charset=utf-8", ...headers } });
 function withCors(res, cors) { const r = new Response(res.body, res); Object.entries(cors).forEach(([k, v]) => r.headers.set(k, v)); return r; }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// ---------- VOD-Upload (Cloudflare R2) ----------
+// Große Dateien kommen in Teilen (Multipart, je ≤ 50 MB) – so bleibt jede Anfrage unter dem Worker-Limit.
+const VOD_PART_MAX = 52 * 1024 * 1024;
+const VOD_TYPES = { "video/mp4": "mp4", "video/webm": "webm", "video/quicktime": "mov", "video/x-matroska": "mkv" };
+const vodKeyOk = k => /^v\/[a-z0-9]{20}\.(mp4|webm|mov|mkv)$/.test(k || "");
+function vodAuthed(req, env) {
+  const a = req.headers.get("X-Upload-Key") || "", b = env.UPLOAD_KEY || "";
+  if (!a || !b || a.length !== b.length) return false;
+  let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return d === 0;
+}
+async function vodApi(req, env, url, cors) {
+  if (!env.VODS) return json({ error: "Kein R2-Bucket verbunden (Bindung VODS fehlt)." }, 501, cors);
+  if (!env.UPLOAD_KEY) return json({ error: "UPLOAD_KEY fehlt im Worker." }, 501, cors);
+  if (!vodAuthed(req, env)) return json({ error: "Upload-Passwort falsch." }, 401, cors);
+  const p = url.pathname, q = url.searchParams;
+  try {
+    if (p === "/vod/check" && req.method === "GET") return json({ ok: true }, 200, cors);
+    if (p === "/vod/usage" && req.method === "GET") {
+      let bytes = 0, files = 0, cursor;
+      do { const l = await env.VODS.list({ prefix: "v/", cursor }); for (const o of l.objects) { bytes += o.size; files++; } cursor = l.truncated ? l.cursor : undefined; } while (cursor);
+      return json({ bytes, files }, 200, cors);
+    }
+    if (p === "/vod/create" && req.method === "POST") {
+      const b = await req.json().catch(() => ({}));
+      const ext = VOD_TYPES[b.type] || (/\.(mp4|webm|mov|mkv)$/i.exec(b.name || "") || [])[1]?.toLowerCase();
+      if (!ext) return json({ error: "Nur MP4, WebM, MOV oder MKV." }, 400, cors);
+      const id = [...crypto.getRandomValues(new Uint8Array(20))].map(x => "abcdefghijklmnopqrstuvwxyz0123456789"[x % 36]).join("");
+      const key = `v/${id}.${ext}`;
+      const mpu = await env.VODS.createMultipartUpload(key, { httpMetadata: { contentType: b.type || "video/" + ext }, customMetadata: { name: String(b.name || "").slice(0, 200) } });
+      return json({ key, uploadId: mpu.uploadId }, 200, cors);
+    }
+    const key = q.get("key"), uploadId = q.get("uploadId");
+    if (p === "/vod/part" && req.method === "PUT") {
+      const n = parseInt(q.get("part") || "", 10);
+      if (!vodKeyOk(key) || !uploadId || !(n >= 1 && n <= 10000)) return json({ error: "Ungültiger Teil." }, 400, cors);
+      const buf = await req.arrayBuffer();
+      if (!buf.byteLength || buf.byteLength > VOD_PART_MAX) return json({ error: "Teil zu groß." }, 413, cors);
+      const part = await env.VODS.resumeMultipartUpload(key, uploadId).uploadPart(n, buf);
+      return json(part, 200, cors);
+    }
+    if (p === "/vod/complete" && req.method === "POST") {
+      const b = await req.json().catch(() => ({}));
+      if (!vodKeyOk(b.key) || !b.uploadId || !Array.isArray(b.parts)) return json({ error: "Ungültig." }, 400, cors);
+      await env.VODS.resumeMultipartUpload(b.key, b.uploadId).complete(b.parts.map(x => ({ partNumber: +x.partNumber, etag: String(x.etag) })));
+      return json({ url: `${url.origin}/vod/f/${b.key}` }, 200, cors);
+    }
+    if (p === "/vod/abort" && req.method === "POST") {
+      const b = await req.json().catch(() => ({}));
+      if (vodKeyOk(b.key) && b.uploadId) await env.VODS.resumeMultipartUpload(b.key, b.uploadId).abort().catch(() => {});
+      return json({ ok: true }, 200, cors);
+    }
+    if (p.startsWith("/vod/f/") && req.method === "DELETE") {
+      const k = p.slice(7); if (!vodKeyOk(k)) return json({ error: "Ungültig." }, 400, cors);
+      await env.VODS.delete(k); return json({ ok: true }, 200, cors);
+    }
+    return json({ error: "Unbekannt." }, 404, cors);
+  } catch (e) {
+    return json({ error: "R2: " + (e && e.message || e) }, 500, cors);
+  }
+}
+// Abspielen mit Range-Unterstützung (Spulen im Video)
+async function vodGet(req, env, url, cors) {
+  const h = { "Access-Control-Allow-Origin": cors["Access-Control-Allow-Origin"] || "*", "Access-Control-Expose-Headers": "Content-Range, Content-Length, Accept-Ranges" };
+  if (!env.VODS) return new Response("Kein Video-Speicher.", { status: 501, headers: h });
+  const key = url.pathname.slice(7); if (!vodKeyOk(key)) return new Response("Nicht gefunden.", { status: 404, headers: h });
+  const range = req.headers.get("Range");
+  const obj = await env.VODS.get(key, range ? { range: req.headers } : {});
+  if (!obj) return new Response("Nicht gefunden.", { status: 404, headers: h });
+  const headers = new Headers(h);
+  obj.writeHttpMetadata(headers);
+  headers.set("Accept-Ranges", "bytes"); headers.set("ETag", obj.httpEtag); headers.set("Cache-Control", "public, max-age=31536000, immutable");
+  const r = /** @type {any} */ (obj).range;
+  if (range && r) {
+    const start = r.offset ?? (r.suffix != null ? obj.size - r.suffix : 0);
+    const len = r.length ?? (r.suffix != null ? r.suffix : obj.size - start);
+    headers.set("Content-Range", `bytes ${start}-${start + len - 1}/${obj.size}`); headers.set("Content-Length", String(len));
+    return new Response(req.method === "HEAD" ? null : obj.body, { status: 206, headers });
+  }
+  headers.set("Content-Length", String(obj.size));
+  return new Response(req.method === "HEAD" ? null : obj.body, { status: 200, headers });
+}

@@ -1648,6 +1648,22 @@ dialog:has(.set-body){width:min(880px,calc(100vw - 1.5rem))}
 .vod-x:hover,.vod-x[data-armed="1"]{color:var(--bad);border-color:rgba(239,90,90,.5)}
 .vod-x[data-armed="1"]{width:auto;padding:0 .55rem;font-size:.75rem;font-weight:800}
 @media (max-width:560px){.vod-row.has{flex-wrap:wrap}.vod-thumb{width:6rem}.vod-acts{width:100%}.vod-acts .btn{flex:1}}
+.vod-or{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;width:100%;padding-top:.45rem;margin-top:.1rem;border-top:1px dashed var(--line)}
+.vod-or>span{font-size:.75rem;color:var(--muted);margin-right:auto}
+.vod-file{cursor:pointer}
+.vod-title{display:flex;align-items:center;gap:.45rem;min-width:0}
+.vod-title b{font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vod-title small{color:var(--muted);font-size:.72rem;flex:none}
+.vod-up{width:100%;display:grid;gap:.35rem}
+.up-head{display:flex;align-items:center;gap:.5rem}.up-head b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.88rem}
+.up-bar{height:8px;border-radius:8px;background:rgba(255,255,255,.08);overflow:hidden}
+.up-fill{height:100%;width:0;border-radius:8px;background:linear-gradient(90deg,var(--gold),var(--gold-hi));transition:width .3s}
+.up-txt{font-size:.8rem;font-weight:700;font-variant-numeric:tabular-nums}
+.vod-up small{color:var(--muted);font-size:.72rem}
+.up-usage{display:grid;gap:.3rem;margin:.2rem 0 .6rem}.up-usage span{font-size:.78rem;color:var(--muted)}
+.vd-frame.file video{background:#000;object-fit:contain}
+.vd-frame.file.fresh .vd-cover{background:rgba(4,7,14,.35)}
+.vd-frame.file.fresh .vd-cover::before{display:none}
 .tl-item.has-seek{grid-template-columns:3.9rem 1.5rem 1fr auto}
 .tl-seek.tl-time{justify-self:end;display:inline-flex;align-items:center;gap:.28rem;padding:.12rem .45rem .12rem .38rem;margin-top:.05rem;border-radius:999px;border:1px solid rgba(215,180,106,.35);background:rgba(215,180,106,.08);font-size:.78rem;font-variant-numeric:tabular-nums;color:var(--gold-hi)}
 .tl-seek.tl-time::before{content:"";border-left:.4rem solid currentColor;border-top:.25rem solid transparent;border-bottom:.25rem solid transparent}
@@ -3270,6 +3286,7 @@ function parseVod(url){
     if (h === "youtu.be"){ const id = u.pathname.slice(1).split("/")[0]; if (/^[\w-]{6,}$/.test(id)) return { kind: "yt", id }; }
     if (h === "youtube.com" || h === "music.youtube.com"){ let id = u.searchParams.get("v"); const m = u.pathname.match(/^\/(?:live|shorts|embed)\/([\w-]{6,})/); if (m) id = m[1]; if (id && /^[\w-]{6,}$/.test(id)) return { kind: "yt", id }; }
     if (h === "twitch.tv"){ const m = u.pathname.match(/^\/videos\/(\d+)/); if (m) return { kind: "tw", id: m[1] }; }
+    if (u.protocol === "https:" && /\.(mp4|webm|mov|mkv|m4v)$/i.test(u.pathname)) return { kind: "file", id: u.href.split("#")[0], cloud: /\/vod\/f\/v\/[a-z0-9]{20}\./.test(u.pathname) };
   } catch(e){}
   return null;
 }
@@ -3279,35 +3296,126 @@ let vod = null; // { hid, kind, id, player, ready }
 const loadScript = (src, ready) => new Promise((res, rej) => { if (ready()) return res(); const s = document.createElement("script"); s.src = src; s.onload = () => res(); s.onerror = rej; document.head.appendChild(s); });
 let ytReady = null;
 function loadYT(){ return ytReady || (ytReady = new Promise(res => { if (window.YT && window.YT.Player) return res(); const prev = window.onYouTubeIframeAPIReady; window.onYouTubeIframeAPIReady = () => { prev && prev(); res(); }; loadScript("https://www.youtube.com/iframe_api", () => false).catch(() => {}); })); }
-const vodTime = () => { try { return vod && vod.player ? (vod.kind === "yt" ? vod.player.getCurrentTime() : vod.player.getCurrentTime()) : 0; } catch(e){ return 0; } };
-const vodUrl = (v, sec) => v.kind === "yt" ? `https://www.youtube.com/watch?v=${encodeURIComponent(v.id)}${sec ? "&t=" + Math.floor(sec) + "s" : ""}` : `https://www.twitch.tv/videos/${encodeURIComponent(v.id)}${sec ? "?t=" + Math.floor(sec) + "s" : ""}`;
+const vodTime = () => { try { return vod && vod.player ? (vod.player.getCurrentTime()) : 0; } catch(e){ return 0; } };
+const vodUrl = (v, sec) => v.kind === "file" ? v.id + (sec ? "#t=" + Math.floor(sec) : "") : v.kind === "yt" ? `https://www.youtube.com/watch?v=${encodeURIComponent(v.id)}${sec ? "&t=" + Math.floor(sec) + "s" : ""}` : `https://www.twitch.tv/videos/${encodeURIComponent(v.id)}${sec ? "?t=" + Math.floor(sec) + "s" : ""}`;
 const vodThumb = v => v.kind === "yt" ? `https://i.ytimg.com/vi/${encodeURIComponent(v.id)}/mqdefault.jpg` : "";
 const platBadge = () => `<span class="vd-plat">VOD</span>`;
+function vodUpHtml(hid){
+  const u = uploads[hid], pct = u.total ? Math.floor(u.loaded / u.total * 100) : 0;
+  return `<div class="vod-up" id="up-${esc(hid)}"><div class="up-head"><b>⬆ ${esc(u.name)}</b><button class="btn sm ghost" data-action="vod-up-cancel" data-id="${esc(hid)}">Abbrechen</button></div>
+    <div class="up-bar"><div class="up-fill" style="width:${pct}%"></div></div><span class="up-txt">${pct} % · ${fmtBytes(u.loaded)} von ${fmtBytes(u.total)}</span><small>Seite bitte offen lassen, bis der Upload fertig ist.</small></div>`;
+}
 function vodRowHtml(h, notes){
   const v = parseVod(h.vod), th = vodThumb(v), marks = notes.filter(n => n.t).length, on = vod && vod.hid === h.id;
   return `<button class="vod-thumb ${on ? "on" : ""}" data-action="vod-open" data-id="${esc(h.id)}" ${th ? `style="background-image:url('${esc(th)}')"` : ""} aria-label="VOD im Board ansehen"><span class="pl"></span></button>
-    <div class="vod-info">${platBadge(v)}<div class="vod-meta"><span>${N(h.vodStart) ? `Spielstart bei <b>${fmtSec(h.vodStart)}</b>` : "Spielstart noch nicht gesetzt"}</span>${marks ? `<span>${marks} Zeitmarke${marks === 1 ? "" : "n"}</span>` : ""}<a href="${esc(vodUrl(v, N(h.vodStart)))}" target="_blank" rel="noopener">Extern öffnen ↗</a></div></div>
+    <div class="vod-info"><span class="vod-title">${platBadge(v)}${v.kind === "file" ? `<b>${esc(h.vodName || "Video-Datei")}</b>${h.vodSize ? `<small>${fmtBytes(h.vodSize)}</small>` : ""}` : ""}</span><div class="vod-meta"><span>${N(h.vodStart) ? `Spielstart bei <b>${fmtSec(h.vodStart)}</b>` : "Spielstart noch nicht gesetzt"}</span>${marks ? `<span>${marks} Zeitmarke${marks === 1 ? "" : "n"}</span>` : ""}<a href="${esc(vodUrl(v, N(h.vodStart)))}" target="_blank" rel="noopener">Extern öffnen ↗</a></div></div>
     <div class="vod-acts"><button class="btn sm gold" data-action="vod-open" data-id="${esc(h.id)}">${on ? "Läuft im Board" : "▶ Ansehen"}</button>${canEdit() ? `<button class="vod-x" data-action="vod-remove" data-id="${esc(h.id)}" title="VOD entfernen" aria-label="VOD entfernen">×</button>` : ""}</div>`;
 }
+// Eigene Videodatei (hochgeladen oder lokal) mit denselben Methoden wie der YouTube-Player
+function fileVideoPlayer(el, src, onReady, onError){
+  const vEl = document.createElement("video"); vEl.id = "vodPlayer"; vEl.src = src; vEl.preload = "metadata"; vEl.playsInline = true; vEl.setAttribute("playsinline", "");
+  vEl.addEventListener("loadedmetadata", onReady, { once: true }); vEl.addEventListener("error", onError, { once: true });
+  el.replaceWith(vEl);
+  return { getCurrentTime: () => vEl.currentTime, getDuration: () => vEl.duration || 0, getPlayerState: () => vEl.paused ? 2 : 1,
+    seekTo: t => { vEl.currentTime = t; }, playVideo: () => { vEl.play().catch(() => {}); }, pauseVideo: () => vEl.pause(), setPlaybackRate: r => { vEl.playbackRate = r; } };
+}
+// ---------- Video-Upload über den Worker (Cloudflare R2) ----------
+const UPKEY = "draftboard-upkey";
+const upKey = () => { try { return localStorage.getItem(UPKEY) || ""; } catch(e){ return ""; } };
+let vodCloud = { checked: false, ok: false, msg: "", usage: null }; // Status aus /health + /vod/usage
+const uploads = {}; // hid → { loaded, total, name, xhrs, abort }
+const fmtBytes = n => !n ? "0 MB" : n >= 1e9 ? (n / 1e9).toFixed(n >= 1e10 ? 0 : 1).replace(".", ",") + " GB" : Math.max(1, Math.round(n / 1e6)) + " MB";
+async function vodApi(path, opts = {}, key = upKey()){
+  if (!riotUrl) throw new Error("Erst in den Einstellungen die Worker-Adresse eintragen.");
+  const r = await fetch(riotUrl.replace(/\/+$/, "") + path, { ...opts, headers: { "X-Upload-Key": key, ...(opts.body && typeof opts.body === "string" ? { "Content-Type": "application/json" } : {}), ...(opts.headers || {}) } });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || `Worker antwortet mit ${r.status}.`);
+  return d;
+}
+async function vodCloudCheck(key = upKey()){
+  vodCloud = { checked: true, ok: false, msg: "", usage: null };
+  try {
+    const hl = await fetch(riotUrl.replace(/\/+$/, "") + "/health").then(r => r.json());
+    if (!hl.vod) vodCloud.msg = (+hl.version || 0) < 5 ? "Worker ist veraltet – neue worker.js bereitstellen." : "Im Worker ist noch kein R2-Bucket (VODS) verbunden.";
+    else if (!hl.vodAuth) vodCloud.msg = "Im Worker fehlt das Geheimnis UPLOAD_KEY.";
+    else if (!key) vodCloud.msg = "Upload-Passwort eintragen.";
+    else { vodCloud.usage = await vodApi("/vod/usage", {}, key); vodCloud.ok = true; }
+  } catch(e){ vodCloud.msg = e.message || "Worker nicht erreichbar."; }
+  return vodCloud;
+}
+function upProgress(hid){
+  const u = uploads[hid], el = document.getElementById("up-" + hid); if (!u || !el) return;
+  const pct = u.total ? Math.floor(u.loaded / u.total * 100) : 0;
+  el.querySelector(".up-fill").style.width = pct + "%";
+  el.querySelector(".up-txt").textContent = `${pct} % · ${fmtBytes(u.loaded)} von ${fmtBytes(u.total)}`;
+}
+function upPut(url, blob, onProg, u){
+  return new Promise((res, rej) => {
+    const x = new XMLHttpRequest(); u.xhrs.add(x);
+    x.open("PUT", url); x.setRequestHeader("X-Upload-Key", upKey());
+    x.upload.onprogress = e => onProg(e.loaded);
+    x.onload = () => { u.xhrs.delete(x); let d = {}; try { d = JSON.parse(x.responseText); } catch(e){} x.status < 300 ? res(d) : rej(new Error(d.error || "Upload-Fehler " + x.status)); };
+    x.onerror = () => { u.xhrs.delete(x); rej(new Error("Verbindung abgebrochen.")); };
+    x.onabort = () => { u.xhrs.delete(x); rej(new Error("abgebrochen")); };
+    x.send(blob);
+  });
+}
+async function vodUpload(hid, file){
+  if (uploads[hid]) return;
+  if (!/^video\//.test(file.type) && !/\.(mp4|webm|mov|mkv|m4v)$/i.test(file.name)) return toast("Bitte eine Videodatei wählen (am besten MP4).");
+  const st = vodCloud.checked ? vodCloud : await vodCloudCheck();
+  if (!st.ok) return toast("Upload nicht eingerichtet: " + st.msg);
+  const PART = 24 * 1024 * 1024, n = Math.ceil(file.size / PART), done = new Array(n).fill(0);
+  const u = uploads[hid] = { loaded: 0, total: file.size, name: file.name, xhrs: new Set(), stop: false };
+  render();
+  let meta = null;
+  try {
+    meta = await vodApi("/vod/create", { method: "POST", body: JSON.stringify({ name: file.name, size: file.size, type: file.type }) });
+    const base = riotUrl.replace(/\/+$/, "") + `/vod/part?key=${encodeURIComponent(meta.key)}&uploadId=${encodeURIComponent(meta.uploadId)}&part=`;
+    const parts = new Array(n); let next = 0;
+    await Promise.all(Array.from({ length: Math.min(3, n) }, async () => {
+      while (next < n && !u.stop){
+        const i = next++, blob = file.slice(i * PART, Math.min(file.size, (i + 1) * PART));
+        for (let tries = 0; ; tries++){
+          try { parts[i] = await upPut(base + (i + 1), blob, l => { done[i] = l; u.loaded = done.reduce((a, b) => a + b, 0); upProgress(hid); }, u); break; }
+          catch(e){ if (u.stop || tries >= 3) throw e; await new Promise(r => setTimeout(r, 1500 * (tries + 1))); }
+        }
+        done[i] = blob.size;
+      }
+    }));
+    if (u.stop) throw new Error("abgebrochen");
+    const fin = await vodApi("/vod/complete", { method: "POST", body: JSON.stringify({ key: meta.key, uploadId: meta.uploadId, parts }) });
+    delete uploads[hid];
+    setHist(hid, { vod: fin.url, vodStart: 0, vodName: file.name.slice(0, 120), vodSize: file.size });
+    vodCloud.checked = false;
+    toast("Video hochgeladen – das ganze Team kann es jetzt ansehen.");
+  } catch(e){
+    u.xhrs.forEach(x => x.abort());
+    if (meta) vodApi("/vod/abort", { method: "POST", body: JSON.stringify(meta) }).catch(() => {});
+    delete uploads[hid]; render();
+    toast(e.message === "abgebrochen" ? "Upload abgebrochen." : "Upload fehlgeschlagen: " + e.message);
+  }
+}
+window.addEventListener("beforeunload", e => { if (Object.keys(uploads).length){ e.preventDefault(); e.returnValue = ""; } });
 // Player nicht nutzbar (Datei-Modus, Einbettung gesperrt) → Video im neuen Tab an der Stelle öffnen
 function vodFail(v, why){
   if (!vod) return; vod.failed = true; vod.player = null; vodBar(); const f = $("#vdFrame"); if (f) f.classList.add("failed");
   const h = history.find(x => x.id === vod.hid), th = vodThumb(v), el = $("#vodPlayer");
   if (el) el.outerHTML = `<div class="vd-fail vd-msg" ${th ? `style="background-image:url('${esc(th)}')"` : ""}><div><span class="vd-fail-ic">▶</span><strong>Hier nicht abspielbar</strong><p>${why}</p>
-    <a class="btn sm gold" href="${esc(vodUrl(v, h ? N(h.vodStart) : 0))}" target="_blank" rel="noopener">${v.kind === "yt" ? "Auf YouTube" : "Auf Twitch"} ansehen ↗</a><p>Zeitmarken öffnen das Video an der richtigen Stelle.</p></div></div>`;
+    ${v.local ? "" : `<a class="btn sm gold" href="${esc(vodUrl(v, h ? N(h.vodStart) : 0))}" target="_blank" rel="noopener">${v.kind === "yt" ? "Auf YouTube" : v.kind === "tw" ? "Auf Twitch" : "Im neuen Tab"} ansehen ↗</a><p>Zeitmarken öffnen das Video an der richtigen Stelle.</p>`}</div></div>`;
 }
 const YT_ERR = { 2: "Ungültige Video-ID im Link.", 5: "Das Video kann im Browser nicht abgespielt werden.", 100: "Video nicht gefunden – gelöscht oder auf „Privat“ gestellt (dann „Nicht gelistet“ verwenden).", 101: "Der Uploader erlaubt das Einbetten dieses Videos nicht.", 150: "Der Uploader erlaubt das Einbetten dieses Videos nicht.", 153: "YouTube hat die Seiten-Adresse nicht erhalten (Fehler 153) – passiert, wenn das Board als Datei geöffnet wird." };
 function vodSeek(sec){
   if (vod && vod.failed){ const h = history.find(x => x.id === vod.hid), v = h && parseVod(h.vod); if (v) window.open(vodUrl(v, sec), "_blank", "noopener"); return; }
   if (!vod || !vod.player) return;
-  try { if (vod.kind === "yt"){ vod.player.seekTo(sec, true); vod.player.playVideo(); } else { vod.player.seek(sec); vod.player.play(); } } catch(e){}
+  try { if (vod.kind !== "tw"){ vod.player.seekTo(sec, true); vod.player.playVideo(); } else { vod.player.seek(sec); vod.player.play(); } } catch(e){}
 }
-function vodPause(){ try { if (vod && vod.player) vod.kind === "yt" ? vod.player.pauseVideo() : vod.player.pause(); } catch(e){} }
+function vodPause(){ try { if (vod && vod.player) vod.kind !== "tw" ? vod.player.pauseVideo() : vod.player.pause(); } catch(e){} }
 let vodTick = null;
-const vodPlaying = () => { try { return vod && vod.player ? (vod.kind === "yt" ? vod.player.getPlayerState() === 1 : !vod.player.isPaused()) : false; } catch(e){ return false; } };
+const vodPlaying = () => { try { return vod && vod.player ? (vod.kind !== "tw" ? vod.player.getPlayerState() === 1 : !vod.player.isPaused()) : false; } catch(e){ return false; } };
 const vodDur = () => { try { return vod && vod.player ? +vod.player.getDuration() || 0 : 0; } catch(e){ return 0; } };
-function vodToggle(){ if (!vod || !vod.player) return; try { if (vodPlaying()) vodPause(); else vod.kind === "yt" ? vod.player.playVideo() : vod.player.play(); } catch(e){} setTimeout(vodUpdate, 60); }
-function vodRate(){ if (!vod || vod.kind !== "yt" || !vod.player) return; vod.rate = vod.rate === 2 ? 1 : 2; try { vod.player.setPlaybackRate(vod.rate); } catch(e){} vodUpdate(); }
+function vodToggle(){ if (!vod || !vod.player) return; try { if (vodPlaying()) vodPause(); else vod.kind !== "tw" ? vod.player.playVideo() : vod.player.play(); } catch(e){} setTimeout(vodUpdate, 60); }
+function vodRate(){ if (!vod || vod.kind === "tw" || !vod.player) return; vod.rate = vod.rate === 2 ? 1 : 2; try { vod.player.setPlaybackRate(vod.rate); } catch(e){} vodUpdate(); }
 function vodMini(){ if (!vod) return; vod.mini = !vod.mini; if (vod.mini) vodFsExit(); $("#vodDock").classList.toggle("vd-small", vod.mini); $("#view-history").classList.toggle("vod-open", !vod.mini); vodUpdate(); }
 const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
 function vodFsExit(){ const f = $("#vdFrame"); if (f) f.classList.remove("max"); if (fsEl()) (document.exitFullscreen || document.webkitExitFullscreen).call(document); }
@@ -3343,11 +3451,11 @@ function vodProgBind(){
   const end = e => { if (!vod || !vod.drag) return; vod.drag = false; vodSeek(at(e) * vodDur()); };
   p.addEventListener("pointerup", end); p.addEventListener("pointercancel", () => { if (vod) vod.drag = false; });
 }
-function vodClose(){ clearInterval(vodTick); vodTick = null; vodPause(); if (fsEl()) vodFsExit(); vod = null; const d = $("#vodDock"); d.innerHTML = ""; d.hidden = true; d.classList.remove("vd-small"); $("#view-history").classList.remove("vod-open"); }
+function vodClose(){ if (vod && vod.local) setTimeout(((u) => () => URL.revokeObjectURL(u))(vod.local), 1000); clearInterval(vodTick); vodTick = null; vodPause(); if (fsEl()) vodFsExit(); vod = null; const d = $("#vodDock"); d.innerHTML = ""; d.hidden = true; d.classList.remove("vd-small"); $("#view-history").classList.remove("vod-open"); }
 // Dock einmal aufbauen; danach nur Titel/Startzeit aktualisieren, das Video bleibt stehen
-async function vodOpen(hid, seekTo){
-  const h = history.find(x => x.id === hid), v = h && parseVod(h.vod); if (!v) return toast("Kein gültiger VOD-Link hinterlegt.");
-  if (vod && vod.hid === hid){ if (seekTo != null) vodSeek(seekTo); return; }
+async function vodOpen(hid, seekTo, local){
+  const h = history.find(x => x.id === hid), v = local ? { kind: "file", id: local.url, local: true } : h && parseVod(h.vod); if (!h || !v) return toast("Kein gültiger VOD-Link hinterlegt.");
+  if (vod && vod.hid === hid && !local){ if (seekTo != null) vodSeek(seekTo); return; }
   vodClose();
   const d = $("#vodDock"); d.hidden = false; $("#view-history").classList.add("vod-open");
   d.innerHTML = `<div class="vd-head">${platBadge(v)}<b id="vdTitle"></b><span class="spacer"></span><button class="x" data-action="vod-close" aria-label="Video schließen">×</button></div>
@@ -3358,16 +3466,20 @@ async function vodOpen(hid, seekTo){
         <button class="vd-b vd-play" id="vdPlay" data-action="vod-play" aria-label="Abspielen"></button>
         <span class="vd-time" id="vdTime">0:00</span>
         <div class="vd-prog" id="vdProg" role="slider" aria-label="Videoposition"><div class="vd-track"><div class="vd-fill" id="vdFill"></div></div><div class="vd-marks" id="vdMarks"></div></div>
-        ${v.kind === "yt" ? `<button class="vd-b vd-txt" id="vdRate" data-action="vod-rate" title="Doppelte Geschwindigkeit">2×</button>` : ""}
+        ${v.kind !== "tw" ? `<button class="vd-b vd-txt" id="vdRate" data-action="vod-rate" title="Doppelte Geschwindigkeit">2×</button>` : ""}
         <button class="vd-b" id="vdMiniB" data-action="vod-mini" title="Klein" aria-label="Klein"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><rect class="f" x="12" y="12" width="7" height="5" rx="1"/></svg></button>
         <button class="vd-b" data-action="vod-fs" title="Vollbild" aria-label="Vollbild"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
       </div></div>
     <div class="vd-bar" id="vdBar"></div>`;
-  vod = { hid, kind: v.kind, id: v.id, player: null };
+  vod = { hid, kind: v.kind, id: v.id, player: null, local: local ? local.url : null };
   vodBar(); vodProgBind(); vodTick = setInterval(vodUpdate, 250);
   d.scrollIntoView({ behavior: "smooth", block: "start" });
   try {
-    if (v.kind === "yt"){
+    if (v.kind === "file"){
+      const me = vod;
+      await new Promise(res => { vod.player = fileVideoPlayer($("#vodPlayer"), v.id, res, () => { if (vod === me) vodFail(v, local ? "Diese Datei kann der Browser nicht abspielen – am besten als MP4 (H.264) speichern." : "Video-Datei konnte nicht geladen werden – evtl. gelöscht oder kein MP4."); res(); }); setTimeout(res, 15000); });
+      if (vod !== me || vod.failed) return;
+    } else if (v.kind === "yt"){
       if (!/^https?:$/.test(location.protocol)){ vodFail(v, "YouTube spielt eingebettete Videos nur ab, wenn das Board über eine Web-Adresse läuft (nicht als Datei)."); if (seekTo != null) vodSeek(seekTo); return; }
       await loadYT(); const me = vod;
       await new Promise(res => {
@@ -3431,7 +3543,10 @@ function renderHistory(){
       <span>Spielnotizen</span>${notes.length ? `<span class="cnt good">${good} gut</span><span class="cnt bad">${bad} schlecht</span>` : `<span class="cnt">noch keine</span>`}<span class="chev">${open ? "▴" : "▾"}</span></button>
     ${open ? `<div class="notes">
       <div class="vod-row ${h.vod && parseVod(h.vod) ? "has" : ""}">${h.vod && parseVod(h.vod) ? vodRowHtml(h, notes)
-        : canEdit() ? `<span class="vod-ic">🎬</span><input class="inp vod-in" id="vod-${esc(h.id)}" placeholder="VOD-Link (YouTube oder Twitch) einfügen" autocomplete="off" aria-label="VOD-Link"><button class="btn sm" data-action="vod-save" data-id="${esc(h.id)}">Speichern</button>` : `<span class="hint" style="margin:0">Kein VOD hinterlegt.</span>`}</div>
+        : uploads[h.id] ? vodUpHtml(h.id)
+        : canEdit() ? `<span class="vod-ic">🎬</span><input class="inp vod-in" id="vod-${esc(h.id)}" placeholder="VOD-Link (YouTube oder Twitch) einfügen" autocomplete="off" aria-label="VOD-Link"><button class="btn sm" data-action="vod-save" data-id="${esc(h.id)}">Speichern</button>
+          <div class="vod-or"><span>oder Video-Datei</span><label class="btn sm gold vod-file" title="Lädt das Video hoch – danach kann es das ganze Team ansehen">⬆ Hochladen<input type="file" accept="video/*,.mkv" data-upload="${esc(h.id)}" hidden></label><label class="btn sm ghost vod-file" title="Spielt eine Datei von diesem Gerät ab, ohne Upload">Nur hier abspielen<input type="file" accept="video/*,.mkv" data-local="${esc(h.id)}" hidden></label></div>`
+        : `<span class="hint" style="margin:0">Kein VOD hinterlegt.</span><label class="btn sm ghost vod-file" style="margin-left:auto">Datei abspielen<input type="file" accept="video/*,.mkv" data-local="${esc(h.id)}" hidden></label>`}</div>
       ${notes.length ? `<ul class="tl">${notes.map(n => `<li class="tl-item k-${esc(n.k)}${h.vod && parseVod(h.vod) ? " has-seek" : ""}">
           ${n.t && h.vod && parseVod(h.vod) ? `<button class="tl-time tl-seek" data-action="vod-seek" data-id="${esc(h.id)}" data-t="${esc(n.t)}" title="Im Video an diese Stelle springen">${esc(n.t)}</button>` : `<span class="tl-time">${n.t ? esc(n.t) : "–"}</span>`}<span class="tl-dot" aria-hidden="true"></span>
           <div class="tl-body"><span class="tl-kind">${KIND[n.k] || "Notiz"}</span><p>${esc(n.x)}</p><span class="tl-meta">${n.by ? esc(n.by) + " · " : ""}${relTime(n.at)}</span></div>
@@ -3945,6 +4060,12 @@ function renderModal(focusSel){
       riot: card(IC.riot, "Riot-Proxy", badge(!!riotUrl, "verbunden", "nicht eingerichtet"),
           `<p class="small-hint">Lädt unter „Gegner-Picks“ echte Matchdaten: meistgespielte Champions, Winrate, KDA, Rang und den Scouting-Bericht. Der Riot-Key liegt in eurem Cloudflare-Worker (Ordner <code>riot-proxy/</code>), nie im Board.</p>
           <div class="addrow" style="flex-wrap:wrap"><input class="inp" style="min-width:14rem" data-bind="riot" value="${esc(b.riot || "")}" placeholder="https://draftboard-riot.….workers.dev" autocomplete="off"><button class="btn sm" data-action="riot-test">Testen</button><button class="btn sm gold" data-action="riot-save">Speichern</button></div>`)
+        + card(IC.app, "Video-Upload (VOD)", badge(vodCloud.ok, "bereit", vodCloud.checked ? "nicht bereit" : "nicht geprüft"),
+          `<p class="small-hint">Lädt Spielvideos in euren Cloudflare-Speicher (R2, 10 GB kostenlos), damit alle sie im Verlauf ansehen können. Läuft über denselben Worker.</p>
+          ${vodCloud.usage ? `<div class="up-usage"><div class="up-bar"><div class="up-fill" style="width:${Math.min(100, vodCloud.usage.bytes / 1e10 * 100).toFixed(1)}%"></div></div><span>${fmtBytes(vodCloud.usage.bytes)} von 10 GB · ${vodCloud.usage.files} Video${vodCloud.usage.files === 1 ? "" : "s"}</span></div>` : vodCloud.checked && vodCloud.msg ? `<p class="small-hint" style="color:var(--bad)">${esc(vodCloud.msg)}</p>` : ""}
+          <div class="addrow" style="flex-wrap:wrap"><input class="inp" type="password" style="min-width:12rem" data-bind="upkey" value="${esc(b.upkey ?? upKey())}" placeholder="Upload-Passwort" autocomplete="off"><button class="btn sm gold" data-action="up-check">Speichern &amp; prüfen</button></div>
+          <p class="small-hint" style="margin-top:.5rem">Das Passwort bleibt nur auf diesem Gerät. Wer es nicht hat, kann trotzdem ansehen und „Nur hier abspielen“ nutzen.</p>
+          <ol class="set-steps"><li>Cloudflare: <b>R2 → Bucket erstellen</b>, Name <code>draftboard-vods</code></li><li>Worker → <b>Einstellungen → Bindungen → R2-Bucket</b>, Name <code>VODS</code></li><li>Worker → Variablen: Geheimnis <code>UPLOAD_KEY</code> = euer Upload-Passwort</li><li>Neue <code>worker.js</code> bereitstellen, hier Passwort eintragen, prüfen</li></ol>`)
         + card(IC.box, "So funktioniert's", "", `<ol class="set-steps"><li>Personal API Key bei <b>developer.riotgames.com</b></li><li>Worker bei Cloudflare anlegen, <code>worker.js</code> einfügen, Key als Geheimnis <code>RIOT_API_KEY</code></li><li>Worker-Adresse hier eintragen, <b>Testen</b> muss „API-Key ist gesetzt“ melden</li></ol>`),
       app: card(IC.app, "App", badge(isStandalone(), "läuft als App", installPrompt ? "installierbar" : "im Browser"), appInfoHtml())
         + card(IC.box, "Backup", "",
@@ -4269,7 +4390,8 @@ document.addEventListener("click", async e => {
       break;
     }
     case "riot-settings": openEditor("s"); edit.buf.stab = "riot"; renderModal(); break;
-    case "s-tab": b.stab = a.dataset.v; renderModal(); modal.querySelector(".m-body")?.scrollTo(0, 0); break;
+    case "s-tab": b.stab = a.dataset.v; renderModal(); modal.querySelector(".m-body")?.scrollTo(0, 0);
+      if (b.stab === "riot" && riotUrl && upKey() && !vodCloud.checked) vodCloudCheck().then(() => edit && renderModal()); break;
     case "riot-all": if (viewId) riotLoadAll(viewId); break;
     case "riot-role": if (viewId) riotLoadRole(viewId, a.dataset.role).then(ok => ok && toast("Matchdaten geladen.")); break;
     case "riot-take": if (viewId){ riotTake(viewId, a.dataset.role); toast("Als Top-Picks eingetragen."); } break;
@@ -4427,7 +4549,12 @@ document.addEventListener("click", async e => {
     case "vod-save": { const hid = a.dataset.id, inp = document.getElementById("vod-" + hid), url = (inp && inp.value || "").trim();
       if (!parseVod(url)) return toast("Bitte einen YouTube- oder Twitch-VOD-Link einfügen.");
       setHist(hid, { vod: url, vodStart: 0 }); toast("VOD gespeichert – „▶ Im Board ansehen“ startet das Video."); break; }
-    case "vod-remove": { if (!armed(a, "Sicher?")) return; const hid = a.dataset.id; if (vod && vod.hid === hid) vodClose(); setHist(hid, { vod: "", vodStart: 0 }); break; }
+    case "vod-remove": { if (!armed(a, "Sicher?")) return; const hid = a.dataset.id, h = history.find(x => x.id === hid), v = h && parseVod(h.vod);
+      if (vod && vod.hid === hid) vodClose();
+      if (v && v.cloud && upKey()) vodApi(new URL(v.id).pathname, { method: "DELETE" }).then(() => { vodCloud.checked = false; }).catch(e => toast("Datei konnte nicht gelöscht werden: " + e.message));
+      setHist(hid, { vod: "", vodStart: 0, vodName: "", vodSize: 0 }); break; }
+    case "vod-up-cancel": { const u = uploads[a.dataset.id]; if (u){ u.stop = true; u.xhrs.forEach(x => x.abort()); } break; }
+    case "up-check": { const k = (b.upkey ?? upKey()).trim(); try { localStorage.setItem(UPKEY, k); } catch(e){} toast("Prüfe …"); await vodCloudCheck(k); toast(vodCloud.ok ? "Video-Upload bereit." : vodCloud.msg); renderModal(); break; }
     case "vod-open": vodOpen(a.dataset.id); render(); break;
     case "vod-close": vodClose(); render(); break;
     case "vod-play": vodToggle(); break;
@@ -4619,6 +4746,11 @@ document.addEventListener("input", e => {
     clearTimeout(renderScout.t); renderScout.t = setTimeout(renderScout, 700); return; }
   const k = e.target.dataset && e.target.dataset.cbind; if (!k) return;
   const c = compose[e.target.dataset.id] || (compose[e.target.dataset.id] = { kind:"good", t:"", x:"" }); c[k] = e.target.value;
+});
+document.addEventListener("change", e => {
+  const t = e.target, f = t.files && t.files[0]; if (!f) return;
+  if (t.dataset.upload){ vodUpload(t.dataset.upload, f); t.value = ""; }
+  else if (t.dataset.local){ const hid = t.dataset.local; t.value = ""; vodOpen(hid, null, { url: URL.createObjectURL(f), name: f.name }).then(render); toast("Spielt nur auf diesem Gerät – zum Teilen „Hochladen“ nutzen."); }
 });
 document.addEventListener("change", e => { if (e.target.id !== "vodStart" || !vod) return; const sec = parseSec(e.target.value); if (sec == null) return toast("Zeit bitte als m:ss angeben, z. B. 1:45."); setHist(vod.hid, { vodStart: sec }); vodBar(); });
 document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.id && e.target.id.startsWith("vod-") && e.target.classList.contains("vod-in")){ e.preventDefault(); document.querySelector(`[data-action="vod-save"][data-id="${e.target.id.slice(4)}"]`)?.click(); } });

@@ -6,3 +6,10 @@ compatibility_date = "2026-09-01"
 # Nur diese Seiten dürfen den Proxy nutzen. "*" = alle.
 # Beispiel: ALLOWED_ORIGINS = "https://deinname.github.io,https://league-41c88.web.app"
 ALLOWED_ORIGINS = "*"
+
+# Optional: Video-Upload für die VOD-Review (siehe README, Abschnitt „Video-Upload“).
+# Erst den Bucket anlegen (`wrangler r2 bucket create draftboard-vods`), dann die Zeilen aktivieren
+# und `wrangler secret put UPLOAD_KEY` ausführen.
+# [[r2_buckets]]
+# binding = "VODS"
+# bucket_name = "draftboard-vods"
