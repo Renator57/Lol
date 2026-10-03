@@ -143,7 +143,25 @@ main{padding:1.6rem 0 3rem}
 .empty-state{color:var(--muted);padding:1.2rem 0;text-align:center}
 
 /* Bans row */
-.bans{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.9rem;min-height:2.2rem}
+.bans{display:flex;align-items:flex-start;gap:.6rem 1.4rem;flex-wrap:wrap;margin-bottom:.9rem;min-height:2.2rem}
+.ban-grp{display:flex;flex-direction:column;gap:.3rem}
+.ban-grp .lbl em{font-style:normal;font-weight:800;color:var(--text);opacity:.7;margin-left:.2rem}
+.ban-grp.us .lbl{color:var(--gold-hi)}
+.ban-row{display:flex;gap:.3rem}
+.ban-empty{width:34px;height:34px;border-radius:8px;border:1.5px dashed rgba(255,255,255,.12)}
+.ban-grp.us .ban-chip{border-color:rgba(215,180,106,.75)}
+.ban-head{display:flex;align-items:center;gap:.5rem 1rem;flex-wrap:wrap;margin-bottom:.6rem}
+.ban-side button em{font-style:normal;opacity:.7;margin-left:.25rem;font-size:.8em}
+.ban-side button[data-banside="us"][aria-pressed="true"]{background:rgba(215,180,106,.2);color:var(--gold-hi)}
+.ban-side button[data-banside="them"][aria-pressed="true"]{background:rgba(255,106,92,.18);color:#ffb3aa}
+.ban-pool .tiles{grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:.45rem}
+.ban-pool .tile .nm{font-size:.74rem}
+.ban-pool .tile .owner{font-size:.64rem}
+@media (max-width:640px){.ban-pool .tiles{grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:.35rem}.ban-pool .tile{padding:.3rem .15rem}.ban-pool .tile .nm{font-size:.66rem}}
+.ban-tile .owner{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.ban-tile.banned.us .portrait{box-shadow:0 0 0 2px var(--gold)}
+.ban-tile.banned.us .owner{color:var(--gold-hi)}
+.ban-tile.banned.them .owner{color:#ffb3aa}
 .bans .lbl{font-size:.82rem;font-weight:700;color:var(--muted);margin-right:.2rem}
 .ban-chip{position:relative;width:34px;height:34px;border-radius:8px;overflow:hidden;border:1px solid rgba(255,106,92,.5);background:var(--panel-3);padding:0;display:grid;place-items:center;font-size:.7rem;font-weight:700;color:var(--muted)}
 .ban-chip img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:grayscale(1) brightness(.6)}
@@ -1994,7 +2012,12 @@ async function loadDD(){
 
 // ---------- State ----------
 let fs = null, db = null, canWrite = true, conn = "connecting", offlineMsg = "";
-let players = [], combos = [], pairs = new Set(), draft = { picks:{}, bans:[], enemy:[], enemyBy:{}, lineup:{} };
+let players = [], combos = [], pairs = new Set(), draft = { picks:{}, bans:[], banBy:{}, enemy:[], enemyBy:{}, lineup:{} };
+let banSide = "us"; // wer gerade bannt: "us" oder "them"
+const BAN_MAX = 5;
+const banOf = c => (draft.banBy || {})[c] || "";
+// banBy aufräumen: nur Einträge, die noch gebannt sind
+const cleanBanBy = (bans, by) => Object.fromEntries(Object.entries(by || {}).filter(([c]) => bans.includes(c)));
 const byOrder = list => { const o = {}; (list || []).slice(0, 5).forEach((c, i) => o[ROLES[i]] = c); return o; };
 let counters = {}, history = [], access = null, accessLoaded = false, unlocked = false;
 const LS_PASS = "draftboard-pass", LS_ME = "draftboard-me", LS_READ = "draftboard-chat-read";
@@ -2286,9 +2309,10 @@ function renderDraft(picks, types, rec){
   $("#modeSeg").hidden = !canEdit();
 
   // Bans
-  $("#bans").innerHTML = `<span class="lbl">Banns</span>` + (draft.bans.length
-    ? draft.bans.map(c => `<button class="ban-chip" data-unban="${esc(c)}" title="${esc(c)} – tippen zum Entbannen" aria-label="${esc(c)} entbannen">${initials(c)}${img(iconUrl(c))}</button>`).join("")
-    : `<span class="hint" style="margin:0">Noch nichts gebannt</span>`);
+  const chip = c => `<button class="ban-chip" data-unban="${esc(c)}" title="${esc(c)} – tippen zum Entbannen" aria-label="${esc(c)} entbannen" ${canEdit() ? "" : "disabled"}>${initials(c)}${img(iconUrl(c))}</button>`;
+  const grp = (k, l) => { const cs = draft.bans.filter(c => (banOf(c) || "them") === k && (k !== "them" || banOf(c) !== "us")); const empty = Array.from({ length: Math.max(0, BAN_MAX - cs.length) }, () => `<span class="ban-empty"></span>`).join("");
+    return `<div class="ban-grp ${k}"><span class="lbl">${l} <em>${cs.length}/${BAN_MAX}</em></span><div class="ban-row">${cs.map(chip).join("")}${empty}</div></div>`; };
+  $("#bans").innerHTML = grp("us", "Unsere Banns") + grp("them", "Gegner-Banns");
 
   // Pool
   const q = norm(query);
@@ -2296,12 +2320,7 @@ function renderDraft(picks, types, rec){
   let html = "";
   if (!players.length){ $("#pool").innerHTML = ""; }
   else if (mode === "ban"){
-    const all = [];
-    lp.forEach(p => champsOf(p).forEach(c => { if (!all.find(x => x.c === c)) all.push({ c, p }); }));
-    const list = all.filter(x => match(x.c)).sort((a, b) => a.c.localeCompare(b.c, "de"));
-    html = `<div class="pool-head"><h2>Was hat der Gegner gebannt?</h2></div><p class="hint">Tippe alle Champions aus euren Pools an, die weg sind.</p>
-      <div class="tiles">${list.map(({ c, p }) => tile(c, p, picks, types, {}, true)).join("") || `<p class="empty-state">Kein Treffer</p>`}</div>`;
-    $("#pool").innerHTML = html;
+    $("#pool").innerHTML = banPoolHtml(lp, picks, match);
   } else {
     const p = players.find(x => x.id === active);
     if (p){
@@ -2349,6 +2368,44 @@ function renderDraft(picks, types, rec){
     ${canEdit() && total ? `<button class="btn gold" style="width:100%;justify-content:center;margin-top:.8rem" data-action="save-draft">Draft im Verlauf speichern</button>` : ""}`;
 }
 
+// Bann-Modus: alle Champions, oben Vorschläge passend zur Seite
+function banIdeas(lp){
+  const out = [], add = (c, why) => { c = officialName(c); if (c && !out.some(x => x.c === c)) out.push({ c, why }); };
+  if (banSide === "us"){
+    const t = at();
+    if (t){
+      (t.banPlan || []).forEach(c => add(c, "Bann-Plan"));
+      riotBanIdeas(t, true).forEach(x => add(x.c, `${x.r} · ${x.g} Sp. · ${Math.round(x.w / x.g * 100)} %`));
+      ROLES.forEach(r => roleOf(t, r).champs.filter(x => x.danger).forEach(x => add(x.c, "gefährlich · " + r)));
+      ROLES.forEach(r => roleOf(t, r).champs.slice(0, 2).forEach(x => add(x.c, "Top-Pick · " + r)));
+    }
+  } else {
+    // was der Gegner gegen euch bannen dürfte: eure stärksten und meistgespielten Champions
+    const sc = {}; lp.forEach(p => champsOf(p).forEach(c => { const t = (p.tiers || {})[c]; sc[c] = Math.max(sc[c] || 0, t === "S" ? 4 : t === "A" ? 3 : t === "B" ? 2 : 1); if (!sc["_" + c]) sc["_" + c] = p.name; }));
+    Object.keys(sc).filter(k => k[0] !== "_").sort((a, b) => sc[b] - sc[a]).slice(0, 10).forEach(c => add(c, "euer Pool · " + sc["_" + c]));
+  }
+  return out.filter(x => !Object.values(draft.enemyBy || {}).includes(x.c)).slice(0, 10);
+}
+function banTile(c, why){
+  const b = draft.bans.includes(c), who = banOf(c), ours = Object.values(draft.picks || {}).includes(c), theirs = Object.values(draft.enemyBy || {}).includes(c);
+  const lbl = b ? (who === "us" ? "unser Bann" : who === "them" ? "Gegner-Bann" : "gebannt") : ours ? "euer Pick" : theirs ? "Gegner-Pick" : why || "";
+  return `<button class="tile ban-tile ${b ? "banned " + (who || "them") : ""} ${theirs && !b ? "taken" : ""}" data-champ="${esc(c)}" aria-pressed="${b}" ${canEdit() && !(theirs && !b) ? "" : "disabled"} title="${esc(c)}${lbl ? " – " + esc(lbl) : ""}">
+    <span class="portrait">${initials(c)}${img(iconUrl(c))}</span><span class="nm">${esc(c)}</span>${lbl ? `<span class="owner">${esc(lbl)}</span>` : ""}</button>`;
+}
+function banPoolHtml(lp, picks, match){
+  const nUs = draft.bans.filter(c => banOf(c) === "us").length, nThem = draft.bans.length - nUs;
+  const all = (DD.names.length ? DD.names : uniq(players.flatMap(champsOf)).sort((a, b) => a.localeCompare(b, "de"))).filter(match);
+  const ideas = banIdeas(lp).filter(x => match(x.c));
+  const t = at();
+  return `<div class="ban-pool"><div class="ban-head"><div class="seg ban-side" role="group" aria-label="Wer bannt?">
+      <button data-banside="us" aria-pressed="${banSide === "us"}">Wir bannen <em>${nUs}/${BAN_MAX}</em></button>
+      <button data-banside="them" aria-pressed="${banSide === "them"}">Gegner bannt <em>${nThem}/${BAN_MAX}</em></button></div>
+    <p class="hint" style="margin:0">${banSide === "us" ? "Tippe Champions an, die ihr bannt." : "Tippe an, was der Gegner gebannt hat."} Nochmal tippen entbannt.</p></div>
+    ${ideas.length ? `<div class="gl"><span class="dot" style="background:${banSide === "us" ? "var(--bad)" : "var(--gold)"}"></span>${banSide === "us" ? `Vorschläge${t ? " gegen " + esc(t.tag || t.name || "den Gegner") : ""}` : "Wird wahrscheinlich gegen euch gebannt"}</div><div class="tiles">${ideas.map(x => banTile(x.c, x.why)).join("")}</div>`
+      : banSide === "us" && !t ? `<p class="hint">Tipp: Oben ein Gegner-Team wählen, dann erscheinen hier Bann-Vorschläge aus Scouting und Bann-Plan.</p>` : ""}
+    <div class="gl"><span class="dot"></span>Alle Champions</div>
+    <div class="tiles">${all.map(c => banTile(c)).join("") || `<p class="empty-state">Kein Treffer</p>`}</div></div>`;
+}
 function tile(c, p, picks, types, rec, banMode){
   const t = (p.tiers||{})[c];
   const flex = (render.mains || new Set()).has(p.id) && (render.flex || {})[c] > 1; // nur Stammspieler
@@ -2942,7 +2999,8 @@ function shareDraft(){
   const our = ROLES.map(r => { const p = lm[r], c = p && picks[p.id]; return `${ROLE_EMO[r]} ${c ? "**" + c + "**" : "–"}${p ? " · " + p.name : ""}`; }).join("\n");
   const their = ROLES.map(r => `${ROLE_EMO[r]} ${eb[r] ? "**" + eb[r] + "**" : "–"}`).join("\n");
   const fields = [{ name: `${sideSq(side)} Wir`, value: our, inline: true }, { name: `${sideSq(otherSide(side))} Gegner${ot ? " · " + (ot.tag || ot.name) : ""}`, value: their, inline: true }];
-  if (draft.bans.length) fields.push({ name: "🚫 Banns", value: draft.bans.join(" · ") });
+  if (draft.bans.length){ const us = draft.bans.filter(c => banOf(c) === "us"), them = draft.bans.filter(c => banOf(c) !== "us");
+    fields.push({ name: "🚫 Banns", value: [us.length ? "**Wir:** " + us.join(" · ") : "", them.length ? "**Gegner:** " + them.join(" · ") : ""].filter(Boolean).join("\n") }); }
   const locked = render.locked || new Set(); if (locked.size) fields.push({ name: "🔒 Fearless gesperrt", value: [...locked].join(" · ") });
   return withCard(embed({ title: `⚔️ Draft${ot ? " vs " + (ot.tag || ot.name) : ""}`, color: side === "blue" ? DC.blue : side === "red" ? DC.red : DC.gold,
     description: [draft.mode === "ranked" ? "Ranked" : "Turnier", side ? (side === "blue" ? "Blaue Seite" : "Rote Seite") : "", `${Object.keys(picks).length}/5 Picks`].filter(Boolean).join(" · "),
@@ -4276,7 +4334,7 @@ function addChampTo(listArr, raw){
 function setDraft(next, opts = {}){
   if (next.enemyBy) next.enemy = ROLES.map(r => next.enemyBy[r]).filter(Boolean);
   else if (next.enemy) next.enemyBy = byOrder(next.enemy);
-  const prev = { picks: { ...draft.picks }, bans: [...draft.bans], enemyBy: { ...(draft.enemyBy || {}) } };
+  const prev = { picks: { ...draft.picks }, bans: [...draft.bans], banBy: { ...(draft.banBy || {}) }, enemyBy: { ...(draft.enemyBy || {}) } };
   draft = { ...draft, ...next };
   if (liveOn() && !next.live){
     let lv = { ...draft.live };
@@ -4287,7 +4345,8 @@ function setDraft(next, opts = {}){
     draft.live = lv;
   }
   render();
-  queueSet("draft/current", { picks: draft.picks, bans: draft.bans, enemy: draft.enemy || [], enemyBy: draft.enemyBy || {}, lineup: draft.lineup || {}, side: draft.side || "", mode: draft.mode || "", live: draft.live || null });
+  draft.banBy = cleanBanBy(draft.bans, draft.banBy);
+  queueSet("draft/current", { picks: draft.picks, bans: draft.bans, banBy: draft.banBy, enemy: draft.enemy || [], enemyBy: draft.enemyBy || {}, lineup: draft.lineup || {}, side: draft.side || "", mode: draft.mode || "", live: draft.live || null });
 }
 // ---------- Live-Draft: gemeinsam Schritt für Schritt mit Timer ----------
 const liveOn = () => !!(draft.live && draft.live.on);
@@ -4333,7 +4392,7 @@ function liveApply(c){
   if (tk) return toast(tk.label === "Fearless" ? `${c} ist durch Fearless gesperrt.` : `${c} ist schon vergeben (${tk.label}).`);
   if (next.t === "ban"){
     const picks = { ...draft.picks }; Object.keys(picks).forEach(k => { if (picks[k] === c) delete picks[k]; });
-    return setDraft({ bans: [...draft.bans, c], picks });
+    return setDraft({ bans: [...draft.bans, c], banBy: { ...(draft.banBy || {}), [c]: next.us ? "us" : "them" }, picks });
   }
   if (next.us){
     const lp = lineupPlayers(), picks = livePicks();
@@ -4399,14 +4458,21 @@ document.addEventListener("click", async e => {
   const modeBtn = t.closest("#modeSeg button"); if (modeBtn){ mode = modeBtn.dataset.mode; render(); return; }
   const slot = t.closest("[data-slot]"); if (slot){ active = slot.dataset.slot; mode = "pick"; render(); return; }
   const ub = t.closest("[data-unban]"); if (ub && canEdit()){ setDraft({ picks: draft.picks, bans: draft.bans.filter(c => c !== ub.dataset.unban) }); return; }
+  const bsd = t.closest("[data-banside]"); if (bsd){ banSide = bsd.dataset.banside; render(); return; }
   const tl = t.closest(".tile[data-champ]");
   if (tl && canEdit()){
     const champ = tl.dataset.champ;
     const picks = { ...draft.picks }; let bans = [...draft.bans];
     if (mode === "ban"){
-      if (bans.includes(champ)) bans = bans.filter(c => c !== champ);
-      else { bans.push(champ); Object.keys(picks).forEach(k => { if (picks[k] === champ) delete picks[k]; }); }
-      return setDraft({ picks, bans });
+      const by = { ...(draft.banBy || {}) };
+      if (bans.includes(champ)){ bans = bans.filter(c => c !== champ); delete by[champ]; }
+      else {
+        const n = bans.filter(c => by[c] === banSide).length;
+        if (n >= BAN_MAX) return toast(`${banSide === "us" ? "Ihr habt" : "Der Gegner hat"} schon ${BAN_MAX} Banns.`);
+        if (Object.values(draft.enemyBy || {}).includes(champ)) return toast(`${champ} ist schon beim Gegner gepickt.`);
+        bans.push(champ); by[champ] = banSide; Object.keys(picks).forEach(k => { if (picks[k] === champ) delete picks[k]; });
+      }
+      return setDraft({ picks, bans, banBy: by });
     }
     if (bans.includes(champ)) return toast(`${champ} ist gebannt.`);
     const tk = (render.taken || {})[champ];
@@ -4436,7 +4502,7 @@ document.addEventListener("click", async e => {
       if (draft.bans.includes(c0)) return toast(`${c0} ist im Draft gebannt.`);
       if (Object.values(livePicks()).includes(c0)) return toast(`${c0} habt ihr schon gepickt.`);
       if (viewId !== activeId) setActive(viewId); const r = a.dataset.role, c = a.dataset.c, eb = { ...(draft.enemyBy || {}) }; if (eb[r] === c) delete eb[r]; else { ROLES.forEach(x => { if (eb[x] === c) delete eb[x]; }); eb[r] = c; } setDraft({ enemyBy: eb }); break; }
-    case "plan-apply": { const t = vt(); if (!t) break; if (viewId !== activeId) setActive(viewId); const add = t.banPlan.filter(c => !draft.bans.includes(c)); const picks = { ...draft.picks }; Object.keys(picks).forEach(k => { if (add.includes(picks[k])) delete picks[k]; }); setDraft({ bans: [...draft.bans, ...add], picks }); toast(add.length ? `${add.length} Banns übernommen.` : "Schon alle im Draft."); break; }
+    case "plan-apply": { const t = vt(); if (!t) break; if (viewId !== activeId) setActive(viewId); const add = t.banPlan.filter(c => !draft.bans.includes(c)); const picks = { ...draft.picks }; Object.keys(picks).forEach(k => { if (add.includes(picks[k])) delete picks[k]; }); setDraft({ bans: [...draft.bans, ...add], banBy: { ...(draft.banBy || {}), ...Object.fromEntries(add.map(c => [c, "us"])) }, picks }); toast(add.length ? `${add.length} Banns übernommen.` : "Schon alle im Draft."); break; }
     case "plan-expect": { const t = vt(); if (!t) break; if (viewId !== activeId) setActive(viewId); const eb = {}; const used = new Set(Object.values(livePicks()).concat(draft.bans)); ROLES.forEach(r => { const top = roleOf(t, r).champs.find(x => !used.has(x.c) && !Object.values(eb).includes(x.c)); if (top) eb[r] = top.c; }); setDraft({ enemyBy: eb }); tab = "draft"; render(); window.scrollTo({ top: 0 }); toast("Gegnerteam aus den Top-Picks eingetragen."); break; }
     case "team-view": viewId = a.dataset.id; if (a.dataset.go) { tab = a.dataset.go; window.scrollTo({ top: 0 }); } render(); break;
     case "copy-ids": { const txt = riotIds(vt()).join(", ");
@@ -4614,7 +4680,7 @@ document.addEventListener("click", async e => {
     case "live-undo": { const lv = draft.live; if (!lv || !(lv.hist || []).length) break;
       const prev = lv.hist[lv.hist.length - 1];
       draft.live = { ...lv, hist: lv.hist.slice(0, -1) };
-      setDraft({ picks: prev.picks || {}, bans: prev.bans || [], enemyBy: prev.enemyBy || {} }, { noHist: true }); toast("Letzter Schritt zurückgenommen."); break; }
+      setDraft({ picks: prev.picks || {}, bans: prev.bans || [], banBy: prev.banBy || {}, enemyBy: prev.enemyBy || {} }, { noHist: true }); toast("Letzter Schritt zurückgenommen."); break; }
     case "live-pick": openEditor("live"); break;
     case "live-suggest": openEditor("live", "suggest"); break;
     case "live-how": b.how = a.dataset.v; renderModal(); break;
@@ -4665,7 +4731,7 @@ document.addEventListener("click", async e => {
       if (b.type !== "liga") lsSet("draftboard-htype", b.type);
       const clear = b.clear; closeEditor();
       openHist.add(entry.id); tab = "history";
-      if (clear) setDraft({ picks:{}, bans:[], enemy:[], lineup:{}, live: null }); else render();
+      if (clear) setDraft({ picks:{}, bans:[], banBy:{}, enemy:[], lineup:{}, live: null }); else render();
       window.scrollTo({ top: 0 }); setTimeout(() => document.getElementById("cx-" + entry.id)?.focus(), 50);
       if (discordAuto && discordUrl && (entry.result === "win" || entry.result === "loss")) sendDiscord(shareGame(entry)).then(() => toast("Gespeichert und an Discord gesendet.")).catch(() => toast("Gespeichert – Discord-Senden fehlgeschlagen."));
       else toast("Draft gespeichert – jetzt Notizen eintragen."); break;
@@ -5019,7 +5085,7 @@ loadDD();
   db.collection("combos").onSnapshot(s => { combos = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)); scheduleRender(); }, onErr);
   db.doc("config/pairs").onSnapshot(s => { pairs = new Set(s.exists ? (s.data().list || []) : []); scheduleRender(); }, onErr);
   db.doc("draft/current").onSnapshot(s => { const d = s.exists ? s.data() : {}; const eb = d.enemyBy && Object.keys(d.enemyBy).length ? { ...d.enemyBy } : byOrder(d.enemy);
-    draft = { side: d.side || "", mode: d.mode === "ranked" ? "ranked" : "", live: d.live && typeof d.live === "object" ? d.live : null, picks: { ...(d.picks || {}) }, bans: [...(d.bans || [])], enemyBy: eb, enemy: ROLES.map(r => eb[r]).filter(Boolean), lineup: { ...(d.lineup || {}) } }; render(); }, onErr);
+    draft = { side: d.side || "", mode: d.mode === "ranked" ? "ranked" : "", live: d.live && typeof d.live === "object" ? d.live : null, picks: { ...(d.picks || {}) }, bans: [...(d.bans || [])], banBy: { ...(d.banBy || {}) }, enemyBy: eb, enemy: ROLES.map(r => eb[r]).filter(Boolean), lineup: { ...(d.lineup || {}) } }; render(); }, onErr);
   db.doc("config/counters").onSnapshot(s => { counters = s.exists ? { ...(s.data().map || {}) } : {}; scheduleRender(); }, onErr);
   db.doc("config/scouting").onSnapshot(s => {
     const d = s.exists ? s.data() : {};
