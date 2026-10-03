@@ -1328,6 +1328,7 @@ dialog{border-radius:26px;background:linear-gradient(180deg,rgba(21,31,51,.97),r
 
 /* Toast */
 .toast{border-radius:18px;background:rgba(17,26,44,.95)}
+@media (max-width:520px){.toast.has-action{flex-wrap:wrap;width:calc(100vw - 2rem);max-width:none}.toast.has-action .toast-msg{flex:1;min-width:0}.toast.has-action .toast-btn{margin-left:auto}}
 
 .footer{opacity:.45}
 @media (max-width:720px){
@@ -1587,6 +1588,55 @@ dialog{border-radius:26px;background:linear-gradient(180deg,rgba(21,31,51,.97),r
 .duo-kpi{grid-template-columns:1fr}
 .duo-kpi .sh-cell:first-child{border-left:0}
 .sh-cell b.sm{font-size:1.05rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.duo-layout{display:grid;grid-template-columns:minmax(280px,.85fr) minmax(0,1.4fr);gap:1rem;align-items:start}
+@media (max-width:900px){.duo-layout{grid-template-columns:1fr}}
+.duo-list{padding:.9rem .7rem}
+.duo-list h3{font-size:.98rem;color:var(--gold-hi);margin:0 .35rem .5rem;display:flex;align-items:baseline;gap:.5rem}
+.duo-list h3 small{font-family:var(--fb);font-size:.72rem;color:var(--muted)}
+.dl-row{width:100%;display:grid;grid-template-columns:auto minmax(0,1fr) 5.2rem;align-items:center;gap:.65rem;padding:.55rem .45rem;border:0;border-radius:12px;background:none;color:inherit;text-align:left;cursor:pointer;font:inherit}
+.dl-row:hover{background:rgba(255,255,255,.04)}
+.dl-row.on{background:rgba(215,180,106,.1);box-shadow:inset 3px 0 0 var(--gold)}
+.dl-avs{display:flex}
+.dl-avs .ch-av{width:32px;height:32px;border:2px solid var(--panel)}
+.dl-avs .ch-av+.ch-av{margin-left:-9px}
+.dl-name{display:flex;flex-direction:column;min-width:0;line-height:1.25}
+.dl-name b{font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dl-name small{font-size:.72rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dl-wr{display:flex;flex-direction:column;align-items:flex-end;gap:.25rem}
+.dl-wr b{font-family:var(--fd);font-size:.95rem}
+.dl-wr .wr-bar{width:100%}
+.duo-detail{padding:1.05rem 1.15rem;position:sticky;top:84px}
+@media (max-width:900px){.duo-detail{position:static}}
+.dd-top{display:flex;align-items:center;gap:.8rem}
+.dd-top .dl-avs .ch-av{width:44px;height:44px}
+.dd-name{flex:1;display:flex;flex-direction:column;min-width:0}
+.dd-name b{font-size:1.1rem}.dd-name small{font-size:.78rem;color:var(--muted)}
+.dd-wr{display:flex;flex-direction:column;align-items:flex-end}
+.dd-wr b{font-family:var(--fd);font-size:1.7rem;line-height:1}.dd-wr b.w{color:var(--good)}.dd-wr b.l{color:var(--bad)}
+.dd-wr small{font-size:.75rem;color:var(--muted)}
+.dd-form,.dd-sec{display:flex;flex-direction:column;gap:.4rem;margin-top:.9rem;padding-top:.8rem;border-top:1px solid rgba(255,255,255,.05)}
+.dd-form>small,.dd-sec>small{font-size:.66rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.dd-players{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.5rem;margin-top:.9rem}
+.ddp{display:flex;align-items:center;gap:.55rem;padding:.5rem .6rem;border-radius:12px;background:rgba(255,255,255,.03)}
+.ddp-n{display:flex;flex-direction:column;min-width:0;flex:1}
+.ddp-n b{font-size:.88rem}.ddp-n small{font-size:.72rem;color:var(--muted)}
+.ddp-c{display:flex;gap:.3rem}
+.ddp-c>span{position:relative}
+.ddp-c .mini{width:30px;height:30px}
+.ddp-c em{position:absolute;right:-3px;bottom:-4px;font-style:normal;font-size:.58rem;font-weight:900;background:rgba(5,10,20,.9);border-radius:5px;padding:0 .2rem;color:var(--text)}
+.dd-combos{display:flex;flex-wrap:wrap;gap:.4rem .9rem}
+.dd-games{display:grid}
+.dgx{display:grid;grid-template-columns:1.8rem minmax(0,1fr) auto;align-items:center;gap:.7rem;padding:.45rem .1rem;border-bottom:1px solid rgba(255,255,255,.05)}
+.dgx:last-child{border-bottom:0}
+.dgx .dg-res{width:1.8rem;height:1.8rem;display:grid;place-items:center;padding:0;border-radius:7px}
+.dgx.w .dg-res{background:rgba(63,209,127,.14);color:var(--good)}.dgx.l .dg-res{background:rgba(255,106,92,.13);color:var(--bad)}
+.dgx-cs{display:grid;grid-template-columns:repeat(auto-fit,minmax(8rem,1fr));gap:.4rem .8rem;min-width:0}
+.dgx-c{display:flex;align-items:center;gap:.45rem;min-width:0}
+.dgx-c .mini{width:28px;height:28px;flex:none}
+.dgx-c>span{display:flex;flex-direction:column;min-width:0;line-height:1.2}
+.dgx-c b{font-size:.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dgx-c small{font-size:.72rem;color:var(--muted);font-variant-numeric:tabular-nums}
+@media (max-width:640px){.dgx{grid-template-columns:1.8rem minmax(0,1fr)}.dgx .dg-meta{grid-column:2;text-align:left;margin-top:-.25rem}.dd-wr b{font-size:1.4rem}}
 .duo-grid{columns:2;column-gap:1rem}
 .duo-grid>.duo-card{break-inside:avoid;display:block;margin:0 0 1rem}
 @media (max-width:900px){.duo-grid{columns:1}}
@@ -3571,22 +3621,29 @@ async function duoLoad(force){
     pending = next;
     if (pending.length && round < RIOT_MAX_ROUNDS){ duoWaitUntil = Date.now() + wait * 1000; render(); await sleep(wait * 1000); duoWaitUntil = 0; }
   }
-  duoBusy = null; render();
-  const n = duoPairs().reduce((a, x) => a + x.games.length, 0);
+  duoBusy = null; if (Object.values(duoCfg.data).some(d => (d.m || []).length)) duoSetup = false; render();
+  const n = duoPairs().reduce((a, x) => a + x.games.length, 0); // jedes Spiel einmal
   if (oldProxy){ riotVerAt = 0; riotCheckVer(); }
   toast(n ? `${n} Duo-Spiele gefunden.` : "Keine gemeinsamen Spiele in den letzten Spielen gefunden.");
 }
-// Gemeinsame Spiele: gleiche Match-ID und gleiches Ergebnis = im selben Team
+// Gemeinsame Spiele: gleiche Match-ID und gleiches Ergebnis = im selben Team.
+// Jedes Spiel zählt genau einmal – bei der Gruppe, die wirklich zusammen gespielt hat (Duo, Trio, …)
 function duoPairs(){
   const ps = teamOrder().filter(p => ((duoCfg.data[p.id] || {}).m || []).length);
-  const out = [];
-  for (let i = 0; i < ps.length; i++) for (let j = i + 1; j < ps.length; j++){
-    const A = ps[i], B = ps[j], am = {}; (duoCfg.data[A.id].m || []).forEach(x => am[x.i] = x);
-    const games = (duoCfg.data[B.id].m || []).filter(x => am[x.i] && am[x.i].w === x.w).map(x => ({ i: x.i, w: x.w, t: x.t || am[x.i].t, s: x.s || am[x.i].s, q: x.q || am[x.i].q, a: am[x.i], b: x })).sort((x, y) => y.t - x.t);
-    if (games.length) out.push({ A, B, games });
-  }
-  return out.sort((x, y) => y.games.length - x.games.length);
+  const byMatch = {};
+  ps.forEach(p => (duoCfg.data[p.id].m || []).forEach(x => { (byMatch[x.i + "|" + x.w] || (byMatch[x.i + "|" + x.w] = [])).push({ p, x }); }));
+  const groups = {};
+  Object.values(byMatch).forEach(list => {
+    if (list.length < 2) return;
+    list.sort((a, b) => ps.indexOf(a.p) - ps.indexOf(b.p));
+    const key = list.map(e => e.p.id).join("|"), f = list[0].x;
+    const g = groups[key] || (groups[key] = { key, ps: list.map(e => e.p), games: [] });
+    g.games.push({ i: f.i, w: f.w, t: Math.max(...list.map(e => N(e.x.t))), s: Math.max(...list.map(e => N(e.x.s))), q: list.map(e => e.x.q).find(Boolean) || 0, by: list.map(e => e.x) });
+  });
+  return Object.values(groups).map(g => ({ ...g, games: g.games.sort((x, y) => y.t - x.t || (y.i > x.i ? 1 : -1)) }))
+    .sort((x, y) => y.games.length - x.games.length || x.ps.length - y.ps.length);
 }
+let duoSel = "";
 const kdaTxt = x => x.k == null ? "" : `${x.k}/${x.d}/${x.a}`;
 const kdaRatio = arr => { const s = arr.reduce((o, x) => x.k == null ? o : { k: o.k + x.k, d: o.d + x.d, a: o.a + x.a, n: o.n + 1 }, { k: 0, d: 0, a: 0, n: 0 }); return s.n ? ((s.k + s.a) / Math.max(1, s.d)).toFixed(1).replace(".", ",") : ""; };
 function renderDuo(){
@@ -3615,35 +3672,47 @@ function renderDuo(){
       return `<label class="duo-id">${av(p)}<b>${esc(p.name)}</b><input class="inp" data-duo-id="${esc(p.id)}" value="${esc(duoCfg.ids[p.id] || "")}" placeholder="Name#EUW" autocomplete="off" ${ed ? "" : "disabled"}>
         <small class="${d.err ? "err" : ""}">${d.err ? esc(d.err) : d.m ? `${d.m.length} Spiele${d.rank ? " · " + esc(d.rank) : ""}` : ""}</small></label>`; }).join("")}</div>
     <div class="addrow" style="margin-top:.6rem"><select class="inp" id="duoRegion" ${ed ? "" : "disabled"} aria-label="Region" style="max-width:8rem">${Object.entries({ euw: "EUW", eune: "EUNE", tr: "TR", na: "NA", kr: "KR" }).map(([v, l]) => `<option value="${v}" ${duoCfg.region === v ? "selected" : ""}>${l}</option>`).join("")}</select><span class="small-hint" style="margin:0">Änderungen werden sofort gespeichert.</span></div></section>` : "";
-  const pairs = duoPairs();
-  if (!pairs.length) return head + setup + `<p class="loading">${Object.keys(duoCfg.data).length ? "In den geladenen Spielen hat noch niemand zusammen gespielt. Mehr Spiele laden oder anderen Modus wählen." : "Riot-IDs eintragen und „Duo-Spiele laden“ drücken."}</p>`;
-  const total = pairs.reduce((a, x) => a + x.games.length, 0), tw = pairs.reduce((a, x) => a + x.games.filter(g => g.w).length, 0);
-  const best = pairs.filter(x => x.games.length >= 3).sort((a, b) => pct(b.games.filter(g => g.w).length, b.games.length) - pct(a.games.filter(g => g.w).length, a.games.length))[0];
+  const groups = duoPairs();
+  if (!groups.length) return head + setup + `<p class="loading">${Object.keys(duoCfg.data).length ? "In den geladenen Spielen hat noch niemand zusammen gespielt. Mehr Spiele laden oder anderen Modus wählen." : "Riot-IDs eintragen und „Duo-Spiele laden“ drücken."}</p>`;
+  const wins = g => g.games.filter(x => x.w).length;
+  const total = groups.reduce((a, g) => a + g.games.length, 0), tw = groups.reduce((a, g) => a + wins(g), 0);
+  const names = g => g.ps.map(p => esc(p.name)).join(" + ");
+  const label = g => g.ps.length === 2 ? "Duo" : g.ps.length === 3 ? "Trio" : g.ps.length + "er";
+  const best = groups.filter(g => g.games.length >= 3).sort((a, b) => pct(wins(b), b.games.length) - pct(wins(a), a.games.length))[0];
+  const wrCol = p => p >= 55 ? "var(--good)" : p >= 45 ? "var(--gold)" : "var(--bad)";
   const kpi = `<section class="panel st-hero duo-kpi"><div class="sh-cells">
-    <div class="sh-cell"><span>Duo-Spiele</span><b>${total}</b><small>${pairs.length} Duo${pairs.length === 1 ? "" : "s"}</small></div>
+    <div class="sh-cell"><span>Gemeinsame Spiele</span><b>${total}</b><small>${groups.length} Gruppe${groups.length === 1 ? "" : "n"}</small></div>
     <div class="sh-cell"><span>Winrate</span><b class="${pct(tw, total) >= 50 ? "w" : "l"}">${pct(tw, total)} %</b><small>${tw} S · ${total - tw} N</small></div>
-    <div class="sh-cell"><span>Bestes Duo</span><b class="sm">${best ? esc(best.A.name) + " + " + esc(best.B.name) : "–"}</b><small>${best ? pct(best.games.filter(g => g.w).length, best.games.length) + " % in " + best.games.length + " Spielen" : "ab 3 gemeinsamen Spielen"}</small></div>
-    <div class="sh-cell"><span>Am meisten zusammen</span><b class="sm">${esc(pairs[0].A.name)} + ${esc(pairs[0].B.name)}</b><small>${pairs[0].games.length} Spiele</small></div>
+    <div class="sh-cell"><span>Beste Gruppe</span><b class="sm">${best ? names(best) : "–"}</b><small>${best ? pct(wins(best), best.games.length) + " % in " + best.games.length + " Spielen" : "ab 3 gemeinsamen Spielen"}</small></div>
+    <div class="sh-cell"><span>Am meisten zusammen</span><b class="sm">${names(groups[0])}</b><small>${groups[0].games.length} Spiele</small></div>
   </div></section>`;
-  const cards = pairs.map(({ A, B, games }) => {
-    const key = A.id + "|" + B.id, w = games.filter(g => g.w).length, p = pct(w, games.length), open = duoOpen.has(key);
-    const combos = {}; games.forEach(g => { const k = g.a.c + "|" + g.b.c; const c = combos[k] || (combos[k] = { a: g.a.c, b: g.b.c, n: 0, w: 0 }); c.n++; c.w += g.w; });
-    const topC = Object.values(combos).sort((x, y) => y.n - x.n || y.w - x.w).slice(0, 3);
-    const form = games.slice(0, 10).reverse();
-    const shown = open ? games : games.slice(0, 5);
-    return `<section class="panel duo-card">
-      <div class="dc-top"><div class="dc-who">${av(A)}${av(B)}<span><b>${esc(A.name)} + ${esc(B.name)}</b><small>${games.length} Spiele · ${w} S · ${games.length - w} N</small></span></div>
-        <div class="dc-wr"><b class="${p >= 50 ? "w" : "l"}">${p} %</b><span class="wr-bar"><i style="width:${p}%;background:${p >= 55 ? "var(--good)" : p >= 45 ? "var(--gold)" : "var(--bad)"}"></i></span></div></div>
-      <div class="dc-meta"><span><small>Form</small><span class="form-row sm">${form.map(g => `<i class="${g.w ? "w" : "l"}">${g.w ? "S" : "N"}</i>`).join("")}</span></span>
-        ${kdaRatio(games.map(g => g.a)) ? `<span><small>KDA ${esc(A.name)}</small><b>${kdaRatio(games.map(g => g.a))}</b></span><span><small>KDA ${esc(B.name)}</small><b>${kdaRatio(games.map(g => g.b))}</b></span>` : ""}
-        <span class="dc-combos"><small>Häufigste Kombis</small><span>${topC.map(c => `<span class="dc-combo" title="${esc(c.a)} + ${esc(c.b)}: ${c.w} von ${c.n} gewonnen">${cIcon(c.a)}${cIcon(c.b)}<em>${c.n}× · ${pct(c.w, c.n)} %</em></span>`).join("")}</span></span></div>
-      <div class="dc-games">${shown.map(g => `<div class="dg-row ${g.w ? "w" : "l"}"><span class="dg-res">${g.w ? "Sieg" : "Niederl."}</span>
-          <span class="dg-p">${cIcon(g.a.c)}<span><b>${esc(g.a.c)}</b><small>${kdaTxt(g.a)}</small></span></span>
-          <span class="dg-p">${cIcon(g.b.c)}<span><b>${esc(g.b.c)}</b><small>${kdaTxt(g.b)}</small></span></span>
-          <span class="dg-meta">${g.t ? esc(fmtDate(g.t)) : ""}${g.s ? ` · ${Math.round(g.s / 60)} Min.` : ""}${g.q && QUEUE_NAME[g.q] ? ` · ${QUEUE_NAME[g.q]}` : ""}</span></div>`).join("")}</div>
-      ${games.length > 5 ? `<button class="btn sm ghost" data-action="duo-more" data-v="${esc(key)}">${open ? "Weniger" : `Alle ${games.length} Spiele`}</button>` : ""}
-    </section>`; }).join("");
-  return head + setup + kpi + `<div class="duo-grid">${cards}</div>`;
+  const sel = groups.find(g => g.key === duoSel) || groups[0];
+  const avs = g => `<span class="dl-avs">${g.ps.map(av).join("")}</span>`;
+  const list = `<section class="panel duo-list"><h3>Gruppen <small>nach Spielen</small></h3>${groups.map(g => { const w = wins(g), p = pct(w, g.games.length);
+    return `<button class="dl-row ${g === sel ? "on" : ""}" data-action="duo-sel" data-v="${esc(g.key)}">${avs(g)}<span class="dl-name"><b>${names(g)}</b><small>${label(g)} · ${g.games.length} Spiele · ${w} S – ${g.games.length - w} N</small></span>
+      <span class="dl-wr"><b>${p} %</b><span class="wr-bar"><i style="width:${p}%;background:${wrCol(p)}"></i></span></span></button>`; }).join("")}</section>`;
+  // Detail der gewählten Gruppe
+  const g = sel, w = wins(g), p = pct(w, g.games.length), open = duoOpen.has(g.key);
+  const hasKda = g.games.some(x => x.by.some(e => e.k != null));
+  const durs = g.games.map(x => x.s).filter(Boolean), avgD = durs.length ? Math.round(durs.reduce((a, b) => a + b, 0) / durs.length / 60) : 0;
+  const perP = g.ps.map((pl, k) => { const cs = {}; g.games.forEach(x => { const e = x.by[k]; const c = cs[e.c] || (cs[e.c] = { c: e.c, n: 0, w: 0 }); c.n++; c.w += x.w; });
+    return { pl, kda: kdaRatio(g.games.map(x => x.by[k])), top: Object.values(cs).sort((a, b) => b.n - a.n || b.w - a.w).slice(0, 3) }; });
+  const combos = {}; g.games.forEach(x => { const k = x.by.map(e => e.c).join("|"); const c = combos[k] || (combos[k] = { cs: x.by.map(e => e.c), n: 0, w: 0 }); c.n++; c.w += x.w; });
+  const topCombos = Object.values(combos).filter(c => c.n >= 2).sort((a, b) => b.n - a.n || b.w - a.w).slice(0, 4);
+  const shown = open ? g.games : g.games.slice(0, 8);
+  const detail = `<section class="panel duo-detail">
+    <div class="dd-top">${avs(g)}<span class="dd-name"><b>${names(g)}</b><small>${label(g)} · ${g.games.length} gemeinsame Spiele${avgD ? " · Ø " + avgD + " Min." : ""}</small></span>
+      <span class="dd-wr"><b class="${p >= 50 ? "w" : "l"}">${p} %</b><small>${w} S · ${g.games.length - w} N</small></span></div>
+    <div class="dd-form"><small>Form (neuestes rechts)</small><span class="form-row sm">${g.games.slice(0, 15).reverse().map(x => `<i class="${x.w ? "w" : "l"}">${x.w ? "S" : "N"}</i>`).join("")}</span></div>
+    <div class="dd-players">${perP.map(({ pl, kda, top }) => `<div class="ddp">${av(pl)}<span class="ddp-n"><b>${esc(pl.name)}</b><small>${kda ? "KDA " + kda : "&nbsp;"}</small></span><span class="ddp-c">${top.map(c => `<span title="${esc(c.c)}: ${c.w} von ${c.n} gewonnen">${cIcon(c.c)}<em>${c.n}×</em></span>`).join("")}</span></div>`).join("")}</div>
+    ${topCombos.length ? `<div class="dd-sec"><small>Kombis (mind. 2×)</small><div class="dd-combos">${topCombos.map(c => `<span class="dc-combo">${c.cs.map(cIcon).join("")}<em>${c.n}× · ${pct(c.w, c.n)} %</em></span>`).join("")}</div></div>` : ""}
+    <div class="dd-sec"><small>Spiele</small>
+    <div class="dd-games">${shown.map(x => `<div class="dgx ${x.w ? "w" : "l"}"><span class="dg-res">${x.w ? "S" : "N"}</span>
+      <span class="dgx-cs">${x.by.map((e, k) => `<span class="dgx-c" title="${esc(g.ps[k].name)}: ${esc(e.c)}${kdaTxt(e) ? " · " + kdaTxt(e) : ""}">${cIcon(e.c)}<span><b>${esc(e.c)}</b>${hasKda ? `<small>${kdaTxt(e) || "–"}</small>` : ""}</span></span>`).join("")}</span>
+      <span class="dg-meta">${x.t ? esc(relTime(x.t)) : ""}${x.s ? ` · ${Math.round(x.s / 60)} Min.` : ""}${x.q && QUEUE_NAME[x.q] ? ` · ${QUEUE_NAME[x.q]}` : ""}</span></div>`).join("")}</div>
+    ${g.games.length > 8 ? `<button class="btn sm ghost" style="margin-top:.5rem" data-action="duo-more" data-v="${esc(g.key)}">${open ? "Weniger" : `Alle ${g.games.length} Spiele`}</button>` : ""}</div>
+  </section>`;
+  return head + setup + kpi + `<div class="duo-layout">${list}${detail}</div>`;
 }
 // Tooltip für den Winrate-Verlauf
 function trendHover(e){
@@ -4896,6 +4965,7 @@ document.addEventListener("click", async e => {
     case "stat-range": statRange = a.dataset.v; render(); break;
     case "duo-load": duoLoad(); break;
     case "duo-setup": duoSetup = !duoSetup; render(); break;
+    case "duo-sel": duoSel = a.dataset.v; render(); if (innerWidth < 900) document.querySelector(".duo-detail")?.scrollIntoView({ behavior: "smooth", block: "start" }); break;
     case "duo-more": { const k = a.dataset.v; duoOpen.has(k) ? duoOpen.delete(k) : duoOpen.add(k); render(); break; }
     case "stat-champs": statChampsAll = !statChampsAll; render(); break;
     case "p-main": b.main = a.checked; break;
