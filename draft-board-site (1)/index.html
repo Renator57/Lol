@@ -2629,6 +2629,8 @@ async function riotWaitMany(keys, sec){
   keys.forEach(k => delete riotWait[k]);
 }
 let riotOldWarned = false, riotKeyBad = 0;
+// Countdown „Rest kommt automatisch in … s“ jede Sekunde weiterzählen, ohne alles neu zu zeichnen
+setInterval(() => document.querySelectorAll("[data-riot-until]").forEach(el => { const s = Math.ceil((+el.dataset.riotUntil - Date.now()) / 1000); el.textContent = s > 0 ? s + " s" : "gleich"; }), 1000);
 const RIOT_KEY_MSG = "Riot lehnt den API-Key ab. Aktuellen Key von developer.riotgames.com kopieren und bei Cloudflare → Worker → Variablen als RIOT_API_KEY ersetzen (Development Keys laufen nach 24 Std. ab).";
 // Ein Abruf für einen Spieler. Ergebnis: ok, retry (Sekunden bis zum nächsten Versuch) und Fortschritt.
 async function riotFetchRole(teamId, r){
