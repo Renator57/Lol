@@ -1573,6 +1573,8 @@ dialog{border-radius:26px;background:linear-gradient(180deg,rgba(21,31,51,.97),r
 .dh-main{flex:1;min-width:16rem}.dh-main h2{font-size:1.15rem;margin:0 0 .2rem}
 .dh-ctl{display:flex;gap:.45rem;flex-wrap:wrap;align-items:center}
 .dh-ctl select{width:auto;padding:.35rem .6rem}
+.duo-warn{width:100%;display:grid;gap:.25rem;padding:.65rem .8rem;border-radius:12px;border:1px solid rgba(215,180,106,.45);background:rgba(215,180,106,.08);font-size:.82rem;line-height:1.45}
+.duo-warn b{color:var(--gold-hi)}.duo-warn span{color:var(--muted)}.duo-warn span b{color:var(--text)}
 .duo-prog{width:100%;display:flex;flex-wrap:wrap;gap:.35rem .9rem;font-size:.78rem;color:var(--muted)}
 .duo-prog .ok{color:var(--good)}.duo-prog .err{color:var(--bad)}
 .duo-setup{padding:1rem 1.15rem;margin-bottom:1rem}
@@ -3523,25 +3525,32 @@ function renderStats(listAll){
 // ---------- Duo-Queue: gemeinsame Ranked-Spiele aus den Riot-Daten ----------
 let duoCfg = { ids: {}, data: {}, queue: "solo", count: 20, region: "euw" };
 setInterval(() => { if (duoWaitUntil && histView === "duo" && tab === "history") render(); }, 1000);
+let riotVer = null, riotVerAt = 0; // Version des Workers (aus /health)
+async function riotCheckVer(){ if (!riotUrl || Date.now() - riotVerAt < 60e3) return; riotVerAt = Date.now(); try { const d = await riotFetch("health", {}); riotVer = +d.version || 1; } catch(e){ riotVer = null; } render(); }
 let duoBusy = null, duoWaitUntil = 0, duoOpen = new Set(), duoSetup = false;
 const DUO_QUEUES = [["solo","Solo/Duo"],["flex","Flex"],["ranked","Solo + Flex"],["all","Alle Modi"]];
 const QUEUE_NAME = { 420: "Solo/Duo", 440: "Flex", 400: "Normal", 430: "Normal", 490: "Quickplay", 450: "ARAM", 700: "Clash", 1700: "Arena" };
 function duoCompact(d){
   const solo = (d.rank || []).find(x => x.queue === "RANKED_SOLO_5x5");
-  return { at: d.fetchedAt || Date.now(), id: d.riotId || "", q: d.queue || "", games: N(d.games), wins: N(d.wins),
+  return { at: d.fetchedAt || Date.now(), id: d.riotId || "", q: d.queue || "", qq: duoCfg.queue, n: +duoCfg.count, games: N(d.games), wins: N(d.wins),
     rank: solo ? `${TIER_DE[solo.tier] || solo.tier}${APEX.includes(solo.tier) ? "" : " " + solo.rank} · ${solo.lp} LP` : "",
     part: d.partial && d.requested ? `${N(d.loaded)}/${N(d.requested)}` : "", err: "",
     m: (Array.isArray(d.matches) ? d.matches : []).slice(0, 30).map(x => ({ i: String(x[0]), c: DD.idName[x[1]] || x[1] || "", w: x[2] ? 1 : 0, p: x[3] || "", k: x[4] ?? null, d: x[5] ?? null, a: x[6] ?? null, t: N(x[7]), s: N(x[8]), q: N(x[9]) })) };
 }
 function duoSave(patch){ duoCfg = { ...duoCfg, ...patch, ids: { ...duoCfg.ids, ...(patch.ids || {}) }, data: { ...duoCfg.data, ...(patch.data || {}) } }; db.doc("config/duo").set(patch, { merge: true }).catch(writeError); }
-async function duoLoad(){
+async function duoLoad(force){
   if (!riotUrl) return toast("Erst in den Einstellungen den Riot-Proxy eintragen.");
   if (duoBusy) return;
   const ps = teamOrder().filter(p => parseRiotId(duoCfg.ids[p.id] || "", duoCfg.region));
   if (ps.length < 2) { duoSetup = true; render(); return toast("Mindestens 2 Riot-IDs eintragen."); }
   if (!DD.v) await ddReady;
-  duoBusy = Object.fromEntries(ps.map(p => [p.id, "wartet"]));
-  let pending = ps, oldProxy = false;
+  riotVerAt = 0; await riotCheckVer();
+  // Riot-Limit sparen: Spieler, die vor kurzem vollständig geladen wurden, überspringen
+  const FRESH = 10 * 60e3;
+  const need = ps.filter(p => { const d = duoCfg.data[p.id]; return force || !d || d.part || (riotVer >= 6 && (d.m || []).some(x => x.k == null)) || d.qq !== duoCfg.queue || +d.n !== +duoCfg.count || norm(d.id || "") !== norm(duoCfg.ids[p.id] || "") || Date.now() - N(d.at) > FRESH; });
+  if (!need.length){ const mins = Math.max(1, Math.round((Date.now() - Math.min(...ps.map(p => N(duoCfg.data[p.id].at)))) / 60e3)); return toast(`Schon aktuell (vor ${mins} Min. geladen).`, { label: "Trotzdem neu laden", fn: () => duoLoad(true) }); }
+  duoBusy = Object.fromEntries(ps.map(p => [p.id, need.includes(p) ? "wartet" : "aktuell"]));
+  let pending = need, oldProxy = false;
   for (let round = 1; pending.length && round <= RIOT_MAX_ROUNDS; round++){
     const next = []; let wait = 0;
     for (const p of pending){
@@ -3555,7 +3564,7 @@ async function duoLoad(){
         else duoBusy[p.id] = "fertig";
       } catch(e){
         if (e.retry){ next.push(p); wait = Math.max(wait, e.retry); duoBusy[p.id] = "Riot-Limit"; }
-        else { duoBusy[p.id] = "Fehler"; duoSave({ data: { [p.id]: { ...(duoCfg.data[p.id] || {}), err: e.message, at: Date.now() } } }); }
+        else { duoBusy[p.id] = "Fehler"; duoSave({ data: { [p.id]: { ...(duoCfg.data[p.id] || {}), err: e.message, at: Date.now(), id: duoCfg.ids[p.id], qq: duoCfg.queue, n: +duoCfg.count } } }); }
       }
       render();
     }
@@ -3564,7 +3573,8 @@ async function duoLoad(){
   }
   duoBusy = null; render();
   const n = duoPairs().reduce((a, x) => a + x.games.length, 0);
-  toast((n ? `${n} Duo-Spiele gefunden.` : "Keine gemeinsamen Spiele in den letzten Spielen gefunden.") + (oldProxy ? " Für KDA bitte die neue worker.js bereitstellen." : ""));
+  if (oldProxy){ riotVerAt = 0; riotCheckVer(); }
+  toast(n ? `${n} Duo-Spiele gefunden.` : "Keine gemeinsamen Spiele in den letzten Spielen gefunden.");
 }
 // Gemeinsame Spiele: gleiche Match-ID und gleiches Ergebnis = im selben Team
 function duoPairs(){
@@ -3580,6 +3590,7 @@ function duoPairs(){
 const kdaTxt = x => x.k == null ? "" : `${x.k}/${x.d}/${x.a}`;
 const kdaRatio = arr => { const s = arr.reduce((o, x) => x.k == null ? o : { k: o.k + x.k, d: o.d + x.d, a: o.a + x.a, n: o.n + 1 }, { k: 0, d: 0, a: 0, n: 0 }); return s.n ? ((s.k + s.a) / Math.max(1, s.d)).toFixed(1).replace(".", ",") : ""; };
 function renderDuo(){
+  if (riotUrl && riotVer == null && Date.now() - riotVerAt > 60e3) riotCheckVer();
   const ed = canEdit(), pct = (w, n) => n ? Math.round(w / n * 100) : 0;
   const cIcon = c => `<span class="mini">${initials(c)}${img(iconUrl(c))}</span>`;
   const av = p => `<span class="ch-av" style="--c:${nameColor(p.name)}">${initials(p.name)}${avatarImg(p)}</span>`;
@@ -3588,7 +3599,7 @@ function renderDuo(){
   const lastAt = Math.max(0, ...Object.values(duoCfg.data).map(d => N(d.at)));
   const waitS = duoWaitUntil ? Math.max(0, Math.ceil((duoWaitUntil - Date.now()) / 1000)) : 0;
   const head = `<section class="panel duo-head">
-    <div class="dh-main"><h2>Duo-Queue</h2><p class="small-hint" style="margin:0">Findet automatisch Spiele, in denen zwei von euch zusammen im selben Team waren – aus den letzten ${duoCfg.count} Spielen jedes Spielers.${lastAt ? " Stand: " + esc(relTime(lastAt)) + "." : ""}</p></div>
+    <div class="dh-main"><h2>Duo-Queue</h2><p class="small-hint" style="margin:0">Findet automatisch Spiele, in denen zwei von euch zusammen im selben Team waren – aus den letzten ${duoCfg.count} Spielen jedes Spielers. Wer in den letzten 10 Min. geladen wurde, wird übersprungen (spart Riot-Limit).${lastAt ? " Stand: " + esc(relTime(lastAt)) + "." : ""}</p></div>
     <div class="dh-ctl">
       <select class="inp" id="duoQueue" ${ed ? "" : "disabled"} aria-label="Spielmodus">${DUO_QUEUES.map(([v, l]) => `<option value="${v}" ${duoCfg.queue === v ? "selected" : ""}>${l}</option>`).join("")}</select>
       <select class="inp" id="duoCount" ${ed ? "" : "disabled"} aria-label="Anzahl Spiele">${[10, 20, 30].map(n => `<option value="${n}" ${+duoCfg.count === n ? "selected" : ""}>letzte ${n}</option>`).join("")}</select>
@@ -3596,6 +3607,7 @@ function renderDuo(){
       <button class="btn sm gold" data-action="duo-load" ${duoBusy || !ed ? "disabled" : ""}>${duoBusy ? (waitS ? `Riot-Limit – weiter in ${waitS} s` : "Lädt …") : "Duo-Spiele laden"}</button>
     </div>
     ${!riotUrl ? `<p class="small-hint" style="margin:.6rem 0 0;color:var(--bad)">Erst in den Einstellungen (Zahnrad → Riot) den Riot-Proxy eintragen.</p>` : ""}
+    ${riotUrl && riotVer != null && riotVer < 6 ? `<div class="duo-warn"><b>Worker-Update nötig (läuft: Version ${riotVer}, nötig: 6)</b><span>Duos werden erkannt, aber KDA, Datum und Spieldauer fehlen. Cloudflare → Workers → euer Worker → <b>Code bearbeiten</b> → Inhalt von <code>riot-proxy/worker.js</code> komplett ersetzen → <b>Bereitstellen</b>. Danach hier „Duo-Spiele laden“.</span></div>` : ""}
     ${duoBusy ? `<div class="duo-prog">${Object.entries(duoBusy).map(([id, st]) => { const p = players.find(x => x.id === id); return p ? `<span class="${st === "fertig" ? "ok" : st === "Fehler" ? "err" : ""}">${esc(p.name)}: ${esc(st)}</span>` : ""; }).join("")}</div>` : ""}
   </section>`;
   const setup = showSetup ? `<section class="panel duo-setup"><h3>Riot-IDs eures Teams</h3><p class="small-hint">Name#TAG wie im LoL-Client. Gilt fürs ganze Team.</p>
@@ -4778,7 +4790,7 @@ document.addEventListener("click", async e => {
     case "riot-take": if (viewId){ riotTake(viewId, a.dataset.role); toast("Als Top-Picks eingetragen."); } break;
     case "riot-test": {
       const u = (b.riot || "").trim(); if (!/^https:\/\//.test(u)) return toast("Bitte eine https-Adresse eintragen.");
-      try { const d = await riotFetch("health", {}, u); toast(!d.key ? "Proxy erreichbar, aber RIOT_API_KEY fehlt." : (+d.version || 1) < 2 ? "Proxy läuft, ist aber veraltet – neue worker.js bei Cloudflare bereitstellen." : "Proxy erreichbar, API-Key ist gesetzt."); } catch(err){ toast(err.message); }
+      try { const d = await riotFetch("health", {}, u); toast(!d.key ? "Proxy erreichbar, aber RIOT_API_KEY fehlt." : (+d.version || 1) < 6 ? `Proxy läuft (Version ${+d.version || 1}), aber veraltet – neue worker.js (Version 6) bei Cloudflare bereitstellen.` : `Proxy erreichbar (Version ${d.version}), API-Key ist gesetzt.`); } catch(err){ toast(err.message); }
       break;
     }
     case "riot-save": {
