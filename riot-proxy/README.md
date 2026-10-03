@@ -112,6 +112,15 @@ Darauf ist alles abgestimmt:
 - „API-Key ungültig oder abgelaufen“ heißt meistens, dass noch der 24-Stunden-Development-Key
   eingetragen ist. Dann den Personal Key als `RIOT_API_KEY` eintragen.
 
+## Duo-Queue (Verlauf → Duo)
+
+Das Board findet Ranked-Spiele, in denen zwei aus eurem Team zusammen im selben Team waren.
+Dafür im Board unter **Verlauf → Duo → Riot-IDs** eure eigenen Riot-IDs eintragen und
+**Duo-Spiele laden** drücken. Pro Spieler werden die letzten 10, 20 oder 30 Spiele geladen
+(Solo/Duo, Flex oder beides). Gemeinsame Spiele erkennt das Board an derselben Match-ID mit demselben Ergebnis.
+
+Für KDA, Datum und Spieldauer pro Spiel braucht es die `worker.js` ab **Version 6**.
+
 ## Video-Upload (optional)
 
 Damit ihr Spielvideos direkt im Board hochladen könnt (Verlauf → Spielnotizen → **⬆ Hochladen**),

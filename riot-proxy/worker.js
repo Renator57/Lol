@@ -31,7 +31,7 @@ const QUEUES = {
   tournament: "type=tournament", // Turnier-Codes (z. B. Prime League)
   all:        "",
 };
-const VERSION = 5;           // vom Board geprüft (Einstellungen → Testen)
+const VERSION = 6;           // vom Board geprüft (Einstellungen → Testen)
 const MAX_COUNT = 30;
 // Cloudflare-eigener Standard-Cache (caches.default fehlt in den Browser-Typen)
 const edgeCache = () => /** @type {Cache} */ (/** @type {any} */ (caches).default);
@@ -71,7 +71,7 @@ export default {
     // fertige Antwort aus dem Cache?
     // PUUIDs sind je API-Key verschlüsselt: Cache deshalb pro Key trennen (sonst 400 nach Key-Wechsel)
     const kt = await keyTag(env.RIOT_API_KEY);
-    const cacheKey = new Request(`https://cache.local/v3/${kt}/${region}/${queue}/${count}/${encodeURIComponent(name.toLowerCase() + "#" + tag.toLowerCase())}`);
+    const cacheKey = new Request(`https://cache.local/v4/${kt}/${region}/${queue}/${count}/${encodeURIComponent(name.toLowerCase() + "#" + tag.toLowerCase())}`);
     const hit = await edgeCache().match(cacheKey);
     if (hit) return withCors(hit, cors);
 
@@ -221,7 +221,8 @@ function summarize(acc, puuid, matches, leagues, meta) {
     c.k += p.kills; c.d += p.deaths; c.a += p.assists;
     if (pos) c.pos[pos] = (c.pos[pos] || 0) + 1;
     // kompakte Spieleliste: erkennt im Board gemeinsame Spiele (Duos) der Gegner
-    if (m.metadata && m.metadata.matchId) list.push([m.metadata.matchId, p.championName, p.win ? 1 : 0, pos]);
+    // [id, Champion, Sieg, Position, K, D, A, Start, Dauer (s), Queue] – Board erkennt daraus Duos (eigene und gegnerische)
+    if (m.metadata && m.metadata.matchId) list.push([m.metadata.matchId, p.championName, p.win ? 1 : 0, pos, p.kills, p.deaths, p.assists, info.gameStartTimestamp || info.gameCreation || 0, info.gameDuration || 0, info.queueId || 0]);
     if (recent.length < 10) recent.push({ champ: p.championName, win: !!p.win, k: p.kills, d: p.deaths, a: p.assists, pos, queue: info.queueId, at: info.gameStartTimestamp || info.gameCreation, dur: info.gameDuration });
   }
   return {
