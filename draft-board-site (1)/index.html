@@ -709,6 +709,14 @@ dialog:has(.pe-body){width:min(800px,calc(100vw - 1.5rem))}
 .rr-og[hidden]{display:none}
 .rr-champs{display:flex;gap:.6rem;overflow-x:auto;padding:.15rem .1rem .3rem;scrollbar-width:thin;align-items:flex-start}
 .pick-card{flex:none;width:96px;display:flex;flex-direction:column;gap:.35rem}
+.pick-card[data-i] .pc-art{cursor:grab;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.pick-card.pc-dragging{opacity:.3}
+.pc-ghost{position:fixed;left:0;top:0;z-index:300;pointer-events:none;opacity:.95;filter:drop-shadow(0 18px 30px rgba(0,0,0,.6))}
+.pc-ghost .pc-actions{display:none}
+.sc-dragging,.sc-dragging *{cursor:grabbing!important;user-select:none}
+.pick-card.pc-drop-before{box-shadow:-7px 0 0 -3px var(--gold)}
+.pick-card.pc-drop-after{box-shadow:7px 0 0 -3px var(--gold)}
+.rr-champs.rr-drop{background:rgba(215,180,106,.08);border-radius:14px;box-shadow:inset 0 0 0 1.5px rgba(215,180,106,.45)}
 .pc-art{position:relative;width:96px;height:120px;border-radius:14px;overflow:hidden;background:linear-gradient(160deg,var(--panel-3),var(--bg-2));border:1px solid rgba(255,255,255,.08);box-shadow:0 10px 22px -14px rgba(0,0,0,.9);transition:transform .2s,box-shadow .2s,border-color .2s}
 .pick-card:hover .pc-art{transform:translateY(-2px)}
 .pc-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 18%;z-index:1}
@@ -3771,6 +3779,74 @@ function renderDuo(){
   </section>`;
   return head + setup + kpi + `<div class="duo-layout">${list}${detail}</div>`;
 }
+// ---------- Top-Picks per Ziehen sortieren (auch in eine andere Rolle) ----------
+// Maus: einfach ziehen. Touch: kurz gedrückt halten, dann ziehen (sonst scrollt die Reihe normal).
+let scDrag = null, scDragClick = 0;
+function scDragStart(){
+  const d = scDrag; if (!d || d.on) return;
+  d.on = true; const r = d.card.getBoundingClientRect();
+  d.dx = d.x - r.left; d.dy = d.y - r.top;
+  d.ghost = d.card.cloneNode(true); d.ghost.classList.add("pc-ghost"); d.ghost.style.width = r.width + "px";
+  document.body.appendChild(d.ghost); d.card.classList.add("pc-dragging"); document.body.classList.add("sc-dragging");
+  scDragPos(); navigator.vibrate && navigator.vibrate(12);
+}
+function scDragPos(){ const d = scDrag; if (d && d.ghost){ d.ghost.style.transform = `translate(${d.x - d.dx}px, ${d.y - d.dy}px) rotate(-3deg)`; } }
+function scDragTarget(){
+  const d = scDrag; document.querySelectorAll(".pc-drop-before,.pc-drop-after,.rr-drop").forEach(el => el.classList.remove("pc-drop-before", "pc-drop-after", "rr-drop"));
+  const el = document.elementFromPoint(d.x, d.y);
+  // irgendwo im Bereich einer Rolle loslassen reicht; außerhalb der Reihe → ans Ende
+  const inRow = el && el.closest(".rr-champs[data-role]"), sec = el && el.closest(".roster-row"), row = inRow || (sec && sec.querySelector(".rr-champs[data-role]"));
+  if (!row){ d.to = null; return; }
+  const cards = [...row.querySelectorAll(".pick-card[data-i]")].filter(c => c !== d.card);
+  let idx = inRow ? cards.findIndex(c => { const b = c.getBoundingClientRect(); return d.x < b.left + b.width / 2; }) : -1;
+  if (idx < 0) idx = cards.length;
+  d.to = { role: row.dataset.role, i: idx };
+  row.classList.add("rr-drop");
+  if (cards[idx]) cards[idx].classList.add("pc-drop-before"); else if (cards.length) cards[cards.length - 1].classList.add("pc-drop-after");
+  // am Rand der Reihe automatisch weiterscrollen
+  const rb = row.getBoundingClientRect(); if (d.x < rb.left + 40) row.scrollLeft -= 12; else if (d.x > rb.right - 40) row.scrollLeft += 12;
+}
+function scDragEnd(drop){
+  const d = scDrag; scDrag = null; if (!d) return; clearTimeout(d.t); clearInterval(d.scroll);
+  if (!d.on) return;
+  scDragClick = Date.now();
+  d.ghost && d.ghost.remove(); d.card.classList.remove("pc-dragging"); document.body.classList.remove("sc-dragging");
+  document.querySelectorAll(".pc-drop-before,.pc-drop-after,.rr-drop").forEach(el => el.classList.remove("pc-drop-before", "pc-drop-after", "rr-drop"));
+  const to = drop && d.to; if (!to) return;
+  if (to.role === d.role && to.i === d.i) return;
+  let moved = "";
+  mutTeam(viewId, t => {
+    const src = roleOf(t, d.role), a = [...src.champs], [item] = a.splice(d.i, 1); if (!item) return;
+    if (to.role === d.role){ a.splice(to.i, 0, item); t.roles[d.role] = { ...src, champs: a }; return; }
+    const dst = roleOf(t, to.role); if (dst.champs.some(x => x.c === item.c)){ moved = "dup:" + item.c; return; }
+    const b = [...dst.champs]; b.splice(to.i, 0, item);
+    t.roles[d.role] = { ...src, champs: a }; t.roles[to.role] = { ...dst, champs: b }; moved = item.c;
+  });
+  if (moved.startsWith("dup:")) toast(`${moved.slice(4)} steht bei ${to.role} schon drin.`);
+  else if (moved) toast(`${moved} nach ${to.role} verschoben.`);
+}
+document.addEventListener("pointerdown", e => {
+  const card = e.target.closest && e.target.closest(".pick-card[data-i]");
+  if (!card || e.target.closest("button,a,input") || !canEdit() || (e.pointerType === "mouse" && e.button !== 0)) return;
+  scDrag = { card, role: card.dataset.role, i: +card.dataset.i, x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, id: e.pointerId, touch: e.pointerType !== "mouse", on: false };
+  if (scDrag.touch) scDrag.t = setTimeout(scDragStart, 260);
+});
+document.addEventListener("pointermove", e => {
+  const d = scDrag; if (!d || e.pointerId !== d.id) return;
+  d.x = e.clientX; d.y = e.clientY;
+  if (!d.on){ const dist = Math.hypot(d.x - d.x0, d.y - d.y0); if (d.touch){ if (dist > 10){ clearTimeout(d.t); scDrag = null; } return; } if (dist < 6) return; scDragStart(); }
+  scDragPos(); scDragTarget();
+  // an den Bildschirmrand gezogen → Seite mitscrollen (z. B. in eine Rolle weiter unten)
+  clearInterval(d.scroll); const edge = 70, v = d.y < edge ? -14 : d.y > innerHeight - edge ? 14 : 0;
+  if (v) d.scroll = setInterval(() => { if (!scDrag) return clearInterval(d.scroll); scrollBy(0, v); scDragTarget(); }, 16);
+});
+document.addEventListener("pointerup", e => { if (scDrag && e.pointerId === scDrag.id) scDragEnd(true); });
+document.addEventListener("pointercancel", e => { if (scDrag && e.pointerId === scDrag.id) scDragEnd(false); });
+document.addEventListener("touchmove", e => { if (scDrag && scDrag.on) e.preventDefault(); }, { passive: false });
+document.addEventListener("contextmenu", e => { if (scDrag) e.preventDefault(); });
+document.addEventListener("dragstart", e => { if (e.target.closest && e.target.closest(".pick-card[data-i]")) e.preventDefault(); }); // Browser soll das Bild nicht selbst ziehen
+document.addEventListener("click", e => { if (Date.now() - scDragClick < 350 && e.target.closest && e.target.closest(".pick-card")){ e.stopPropagation(); e.preventDefault(); } }, true);
+document.addEventListener("keydown", e => { if (e.key === "Escape" && scDrag) scDragEnd(false); });
 // Tooltip für den Winrate-Verlauf
 function trendHover(e){
   const box = document.getElementById("trend"); if (!box || !statSeries.length) return;
@@ -4102,7 +4178,8 @@ function renderScout(){
               ban:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/></svg>',
               tgt:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg>',
               up:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m6 15 6-6 6 6"/></svg>',
-              left:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m15 6-6 6 6 6"/></svg>' };
+              left:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m15 6-6 6 6 6"/></svg>',
+              right:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m9 6 6 6-6 6"/></svg>' };
   $("#teamBody").innerHTML = `
     <div class="panel team-head">
       <div class="th-hero">
@@ -4178,9 +4255,9 @@ function renderScout(){
               <a class="rr-og" id="og-${r}" href="${esc(opggPlayer(sr.player, t.region))}" target="_blank" rel="noopener" ${hasId ? "" : "hidden"} title="Champions auf op.gg">op.gg ↗</a>
             </div>
           </div>
-          <div class="rr-champs">
+          <div class="rr-champs" data-role="${r}">
             ${sr.champs.map((x, i) => { const inPlan = plan.includes(x.c), exp = isActive && eb[r] === x.c, k = counters[x.c];
-              return `<div class="pick-card ${x.danger ? "is-danger" : ""} ${inPlan ? "is-ban" : ""} ${exp ? "is-exp" : ""}" title="${esc(x.c)}${k && (k.good || []).length ? " – gut dagegen: " + esc((k.good || []).join(", ")) : ""}">
+              return `<div class="pick-card ${x.danger ? "is-danger" : ""} ${inPlan ? "is-ban" : ""} ${exp ? "is-exp" : ""}" ${ed ? `data-role="${r}" data-i="${i}"` : ""} title="${esc(x.c)}${k && (k.good || []).length ? " – gut dagegen: " + esc((k.good || []).join(", ")) : ""}">
                 <div class="pc-art">${img(artUrl(x.c), "pc-img")}<span class="pc-ini">${initials(x.c)}</span>
                   <span class="pc-rank">${i + 1}</span>
                   ${ed ? `<button class="pc-x" data-action="sc-del" data-role="${r}" data-i="${i}" aria-label="${esc(x.c)} entfernen">×</button>` : ""}
@@ -4192,6 +4269,7 @@ function renderScout(){
                   <button class="${inPlan ? "on-ban" : ""}" data-action="sc-ban" data-c="${esc(x.c)}" aria-pressed="${inPlan}" title="${inPlan ? "Aus Bann-Plan" : "Bannen"}">${I.ban}</button>
                   <button class="${exp ? "on-exp" : ""}" data-action="sc-expect" data-role="${r}" data-c="${esc(x.c)}" aria-pressed="${exp}" title="Im Draft erwartet">${I.tgt}</button>
                   ${i > 0 ? `<button data-action="sc-move" data-role="${r}" data-i="${i}" data-dir="-1" title="Nach vorne">${I.left}</button>` : ""}
+                  ${i < sr.champs.length - 1 ? `<button data-action="sc-move" data-role="${r}" data-i="${i}" data-dir="1" title="Nach hinten">${I.right}</button>` : ""}
                 </div>` : ""}
               </div>`; }).join("")}
             ${ed ? `<button class="pick-add" data-action="sc-add" data-role="${r}" aria-label="Champions für ${r} hinzufügen"><span>+</span>${sr.champs.length ? "" : "Top-Picks"}</button>` : (!sr.champs.length ? `<p class="hint" style="margin:auto 0">Keine Top-Picks.</p>` : "")}
