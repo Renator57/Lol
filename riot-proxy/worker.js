@@ -3,6 +3,7 @@
 //
 //   GET /?id=Name%23TAG&region=euw&queue=ranked&count=20
 //   GET /health
+//   GET /live?ids=Name%23TAG,Name2%23TAG&region=euw   laufendes Spiel (Spectator-V5) des ersten Spielers, der gerade spielt
 //   /vod/...  Video-Upload für die VOD-Review (optional, braucht R2, siehe README.md)
 //
 // Secrets / Variablen (siehe README.md):
@@ -31,7 +32,7 @@ const QUEUES = {
   tournament: "type=tournament", // Turnier-Codes (z. B. Prime League)
   all:        "",
 };
-const VERSION = 6;           // vom Board geprüft (Einstellungen → Testen)
+const VERSION = 7;           // vom Board geprüft (Einstellungen → Testen)
 const MAX_COUNT = 30;
 // Cloudflare-eigener Standard-Cache (caches.default fehlt in den Browser-Typen)
 const edgeCache = () => /** @type {Cache} */ (/** @type {any} */ (caches).default);
@@ -56,6 +57,8 @@ export default {
 
     if (url.pathname === "/health") return json({ ok: true, key: !!env.RIOT_API_KEY, keyOk: /^RGAPI-[0-9a-f-]{36}$/i.test(env.RIOT_API_KEY || ""), version: VERSION, vod: !!env.VODS, vodAuth: !!env.UPLOAD_KEY }, 200, { ...cors, "Cache-Control": "no-store" });
     if (!env.RIOT_API_KEY) return json({ error: "RIOT_API_KEY fehlt im Worker." }, 500, cors);
+
+    if (url.pathname === "/live") return liveGame(url, env, ctx, cors);
 
     // unsichtbare Steuerzeichen (aus dem LoL-Client kopiert) entfernen, sonst antwortet Riot mit 400
     const id = (url.searchParams.get("id") || "").normalize("NFC").replace(/[\p{Cf}\p{Cc}]/gu, "").replace(/\s+/g, " ").trim();
@@ -341,4 +344,51 @@ async function vodGet(req, env, url, cors) {
   }
   headers.set("Content-Length", String(obj.size));
   return new Response(req.method === "HEAD" ? null : obj.body, { status: 200, headers });
+}
+
+// ---------- Laufendes Spiel (Spectator-V5) ----------
+// Prüft die Riot-IDs der Reihe nach (Konten sind 30 Tage gecacht) und liefert das erste laufende Spiel.
+const cleanId = v => String(v || "").normalize("NFC").replace(/[\p{Cf}\p{Cc}]/gu, "").replace(/\s+/g, " ").trim();
+async function liveGame(url, env, ctx, cors) {
+  const region = (url.searchParams.get("region") || "euw").toLowerCase(), reg = REGIONS[region];
+  if (!reg) return json({ error: "Unbekannte Region." }, 400, cors);
+  const ids = (url.searchParams.get("ids") || url.searchParams.get("id") || "").split(",").map(cleanId).filter(Boolean).slice(0, 10);
+  if (!ids.length) return json({ error: "Keine Riot-IDs angegeben." }, 400, cors);
+  const kt = await keyTag(env.RIOT_API_KEY), riot = makeRiot(env, ctx, kt);
+  const api = host => `https://${host}.api.riotgames.com`;
+  const checked = [];
+  try {
+    for (const id of ids) {
+      const h = id.lastIndexOf("#"), name = (h > 0 ? id.slice(0, h) : id).trim(), tag = (h > 0 ? id.slice(h + 1) : region.toUpperCase()).trim();
+      if (!name || !tag) continue;
+      const accUrl = `${api(reg.regional)}/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(name)}/${encodeURIComponent(tag)}`;
+      let acc;
+      try { acc = await riot(accUrl, CACHE_ACCOUNT, "Konto"); }
+      catch (e) { if (e.status === 404 || e.status === 400) { checked.push({ id, err: "nicht gefunden" }); continue; } throw e; }
+      const spec = a => riot(`${api(reg.platform)}/lol/spectator/v5/active-games/by-summoner/${a.puuid}`, 15, "Live-Spiel");
+      let g = null;
+      try { g = await spec(acc); }
+      catch (e) {
+        if (e.status === 404) { checked.push({ id, live: false }); continue; }
+        if (e.status !== 400 && e.status !== 403) throw e;
+        // veraltete PUUID (anderer Key) → Konto frisch holen, einmal neu versuchen
+        acc = await riot(accUrl, CACHE_ACCOUNT, "Konto", true);
+        try { g = await spec(acc); } catch (e2) { if (e2.status === 404) { checked.push({ id, live: false }); continue; } throw e2; }
+      }
+      const me = (g.participants || []).find(p => p.puuid === acc.puuid);
+      return json({
+        live: true, foundBy: `${acc.gameName}#${acc.tagLine}`, myTeam: me ? me.teamId : 100,
+        gameId: g.gameId, queue: g.gameQueueConfigId || 0, mode: g.gameMode || "", type: g.gameType || "",
+        start: g.gameStartTime || 0, length: g.gameLength || 0,
+        players: (g.participants || []).map(p => ({ team: p.teamId, champ: p.championId, riotId: p.riotId || "", s1: p.spell1Id, s2: p.spell2Id })),
+        bans: (g.bannedChampions || []).filter(b => b.championId > 0).map(b => ({ champ: b.championId, team: b.teamId, turn: b.pickTurn })),
+        checked,
+      }, 200, { ...cors, "Cache-Control": "no-store" });
+    }
+    return json({ live: false, checked }, 200, { ...cors, "Cache-Control": "no-store" });
+  } catch (e) {
+    const status = e.status || 502;
+    const msg = status === 429 ? "Riot-Limit erreicht." : status === 401 || status === 403 ? "API-Key ungültig oder abgelaufen." : "Riot-API nicht erreichbar" + (e.step ? ` (${e.step})` : "") + ".";
+    return json({ error: msg, status, ...(status === 429 ? { retryAfter: e.retryAfter || 10 } : {}) }, status === 429 ? 429 : 502, cors);
+  }
 }

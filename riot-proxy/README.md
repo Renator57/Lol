@@ -121,6 +121,17 @@ Dafür im Board unter **Verlauf → Duo → Riot-IDs** eure eigenen Riot-IDs ein
 
 Für KDA, Datum und Spieldauer pro Spiel braucht es die `worker.js` ab **Version 6**.
 
+## Laufendes Spiel (Draft → „Laufendes Spiel“)
+
+Sobald einer von euch im Ladebildschirm ist, holt der Knopf **Laufendes Spiel** im Draft über
+**SPECTATOR-V5** (`/lol/spectator/v5/active-games/by-summoner/{puuid}`) die Champions beider Teams,
+die Banns und eure Seite und trägt alles in den Draft ein. Die Riot-IDs eurer Spieler kommen aus
+**Verlauf → Duo → Riot-IDs**. Gegner-Rollen werden geschätzt (Riot-ID aus dem Scouting, Smite,
+Scouting-Picks, typische Bot-/Support-Champions) – kurz prüfen.
+
+Die laufende Championauswahl selbst gibt Riot nicht über die API heraus, nur das gestartete Spiel.
+Braucht die `worker.js` ab **Version 7**.
+
 ## Video-Upload (optional)
 
 Damit ihr Spielvideos direkt im Board hochladen könnt (Verlauf → Spielnotizen → **⬆ Hochladen**),

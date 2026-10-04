@@ -1583,6 +1583,10 @@ dialog{border-radius:26px;background:linear-gradient(180deg,rgba(21,31,51,.97),r
 .dh-main{flex:1;min-width:16rem}.dh-main h2{font-size:1.15rem;margin:0 0 .2rem}
 .dh-ctl{display:flex;gap:.45rem;flex-wrap:wrap;align-items:center}
 .dh-ctl select{width:auto;padding:.35rem .6rem}
+.live-get{display:inline-flex;align-items:center;gap:.45rem}
+.lg-dot{width:.55rem;height:.55rem;border-radius:50%;background:#ff6a5c;box-shadow:0 0 0 0 rgba(255,106,92,.6);animation:lgpulse 1.6s infinite}
+.live-get.busy .lg-dot{animation-duration:.5s}
+@keyframes lgpulse{0%{box-shadow:0 0 0 0 rgba(255,106,92,.55)}70%{box-shadow:0 0 0 7px rgba(255,106,92,0)}100%{box-shadow:0 0 0 0 rgba(255,106,92,0)}}
 .duo-warn{width:100%;display:grid;gap:.25rem;padding:.65rem .8rem;border-radius:12px;border:1px solid rgba(215,180,106,.45);background:rgba(215,180,106,.08);font-size:.82rem;line-height:1.45}
 .duo-warn b{color:var(--gold-hi)}.duo-warn span{color:var(--muted)}.duo-warn span b{color:var(--text)}
 .duo-prog{width:100%;display:flex;flex-wrap:wrap;gap:.35rem .9rem;font-size:.78rem;color:var(--muted)}
@@ -1933,6 +1937,7 @@ dialog:has(.set-body){width:min(880px,calc(100vw - 1.5rem))}
             <button data-mode="ban" aria-pressed="false">Bannen</button>
           </div>
           <label class="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" id="q" placeholder="Champion suchen" aria-label="Champion suchen"></label>
+          <button class="btn sm live-get" id="liveGameBtn" data-action="live-game" hidden title="Picks und Banns aus dem laufenden Spiel holen (ab Ladebildschirm)"><span class="lg-dot"></span>Laufendes Spiel</button>
           <button class="btn sm ghost" id="reset">Draft leeren</button>
         </div>
         <div class="bans" id="bans"></div>
@@ -2419,6 +2424,7 @@ function renderDraft(picks, types, rec){
           ${c ? `<button class="eslot-note ${counters[c] ? "has" : ""}" data-action="counter-for" data-c="${esc(c)}">${counters[c] ? "Counter-Notiz ansehen" : "+ Counter-Notiz"}</button>` : ""}</span>
       </div>`; }).join("")}</div>`;
 
+  $("#liveGameBtn").hidden = !riotUrl || !canEdit();
   // Mode buttons
   document.querySelectorAll("#modeSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.mode === mode));
   $("#modeSeg").hidden = !canEdit();
@@ -3849,6 +3855,54 @@ document.addEventListener("contextmenu", e => { if (scDrag) e.preventDefault(); 
 document.addEventListener("dragstart", e => { if (e.target.closest && e.target.closest(".pick-card[data-i]")) e.preventDefault(); }); // Browser soll das Bild nicht selbst ziehen
 document.addEventListener("click", e => { if (Date.now() - scDragClick < 350 && e.target.closest && e.target.closest(".pick-card")){ e.stopPropagation(); e.preventDefault(); } }, true);
 document.addEventListener("keydown", e => { if (e.key === "Escape" && scDrag) scDragEnd(false); });
+// ---------- Laufendes Spiel (Spectator) → Draft ausfüllen ----------
+const LG_SUP = new Set(["Janna","Lulu","Nami","Soraka","Sona","Yuumi","Karma","Leona","Nautilus","Thresh","Rakan","Braum","Alistar","Taric","Blitzcrank","Pyke","Bard","Milio","Renata Glasc","Rell","Zilean","Senna","Zyra","Morgana","Seraphine"]);
+const LG_ADC = new Set(["Jinx","Caitlyn","Ashe","Ezreal","Kai'Sa","Jhin","Xayah","Vayne","Lucian","Miss Fortune","Samira","Tristana","Twitch","Draven","Aphelios","Zeri","Smolder","Sivir","Kalista","Kog'Maw","Varus","Nilah","Yunara","Corki"]);
+// Rollen der Gegner schätzen: Riot-ID im Scouting > Smite > Scouting-Picks > typische Bot/Support-Champs > Rest der Reihe nach
+function lgGuessRoles(list, t){
+  const out = {}, free = new Set(ROLES), left = [...list];
+  const take = (x, r) => { if (!free.has(r)) return false; out[r] = x.c; free.delete(r); left.splice(left.indexOf(x), 1); return true; };
+  if (t) [...left].forEach(x => { const r = ROLES.find(r => { const pid = parseRiotId(roleOf(t, r).player, t.region); return pid && x.riotId && norm(pid.name + "#" + pid.tag) === norm(x.riotId); }); if (r) take(x, r); });
+  [...left].forEach(x => { if (x.s1 === 11 || x.s2 === 11) take(x, "Jungle"); });
+  if (t) [...left].forEach(x => { const r = ROLES.find(r => free.has(r) && (roleOf(t, r).champs.some(k => k.c === x.c) || ((riotView(roleOf(t, r).riot) || {}).champs || []).some(k => k.c === x.c))); if (r) take(x, r); });
+  [...left].forEach(x => { if (LG_SUP.has(x.c)) take(x, "Support"); else if (LG_ADC.has(x.c)) take(x, "Bot"); });
+  [...left].forEach(x => { const r = ROLES.find(r => free.has(r)); if (r) take(x, r); });
+  return out;
+}
+let lgBusy = false;
+async function liveGameFetch(){
+  if (lgBusy) return;
+  if (!riotUrl) return toast("Erst in den Einstellungen den Riot-Proxy eintragen.");
+  const mine = teamOrder().map(p => ({ p, id: cleanRiotId(duoCfg.ids[p.id] || "") })).filter(x => parseRiotId(x.id));
+  if (!mine.length) return toast("Erst die Riot-IDs eurer Spieler eintragen (Verlauf → Duo → Riot-IDs).", { label: "Jetzt eintragen", fn: () => { tab = "history"; histView = "duo"; duoSetup = true; render(); window.scrollTo({ top: 0 }); } });
+  if (!DD.v) await ddReady;
+  lgBusy = true; const btn = $("#liveGameBtn"); btn.classList.add("busy"); btn.disabled = true;
+  riotVerAt = 0; await riotCheckVer();
+  if (riotVer != null && riotVer < 7){ lgBusy = false; btn.classList.remove("busy"); btn.disabled = false; return toast(`Der Riot-Proxy (Version ${riotVer}) kennt „Laufendes Spiel“ noch nicht – neue worker.js (Version 7) bei Cloudflare bereitstellen.`); }
+  let d;
+  try { d = await riotFetch("live", { ids: mine.map(x => x.id).join(","), region: duoCfg.region || "euw" }); }
+  catch(e){ lgBusy = false; btn.classList.remove("busy"); btn.disabled = false; return toast(e.auth ? RIOT_KEY_MSG : /Unbekannt|404/.test(e.message) ? "Der Riot-Proxy kennt „Laufendes Spiel“ noch nicht – neue worker.js (Version 7) bereitstellen." : e.message); }
+  lgBusy = false; btn.classList.remove("busy"); btn.disabled = false;
+  if (d.live == null) return toast("Der Riot-Proxy kennt „Laufendes Spiel“ noch nicht – neue worker.js (Version 7) bereitstellen.");
+  if (!d.live) return toast("Gerade ist keiner von euch im Spiel. Erst ab dem Ladebildschirm verfügbar.");
+  const name = k => DD.byKey[k] || DD.byKey[String(k)] || "";
+  const ours = d.players.filter(x => x.team === d.myTeam).map(x => ({ ...x, c: name(x.champ) }));
+  const theirs = d.players.filter(x => x.team !== d.myTeam).map(x => ({ ...x, c: name(x.champ) }));
+  // eigene Picks: über die Riot-IDs den Spielern zuordnen
+  const picks = {}, lineup = { ...(draft.lineup || {}) }, unknown = [];
+  ours.forEach(x => { const m = mine.find(y => norm(y.id) === norm(x.riotId)); if (m && x.c){ picks[m.p.id] = x.c; if (!Object.values(lineup).includes(m.p.id) && m.p.role && ROLES.includes(m.p.role)) lineup[m.p.role] = m.p.id; } else if (x.c) unknown.push(x.c); });
+  // übrige eigene Champions den Stammspielern ohne Pick geben (Rolle geschätzt)
+  if (unknown.length){ const lp = lineupPlayers().filter(p => !picks[p.id]); const g = lgGuessRoles(ours.filter(x => unknown.includes(x.c)), null);
+    Object.entries(g).forEach(([r, c]) => { const p = lp.find(p => (lineupMap()[r] || {}).id === p.id) || null; if (p){ picks[p.id] = c; unknown.splice(unknown.indexOf(c), 1); } }); }
+  const enemyBy = lgGuessRoles(theirs, at());
+  const bans = [], banBy = {}; d.bans.forEach(b => { const c = name(b.champ); if (c && !bans.includes(c)){ bans.push(c); banBy[c] = b.team === d.myTeam ? "us" : "them"; } });
+  const side = d.myTeam === 100 ? "blue" : "red", mode = [420, 440, 400, 430, 490].includes(+d.queue) ? "ranked" : "";
+  setDraft({ picks, bans, banBy, enemyBy, lineup, side, mode });
+  tab = "draft"; render();
+  const qn = QUEUE_NAME[d.queue] || (d.queue ? "Queue " + d.queue : "Custom/Turnier");
+  toast(`Spiel geladen (${qn}, ${side === "blue" ? "Blau" : "Rot"}): ${Object.keys(picks).length} eigene Picks, 5 Gegner, ${bans.length} Banns.${unknown.length ? " Nicht zugeordnet: " + unknown.join(", ") + "." : ""} Gegner-Rollen bitte kurz prüfen.`,
+    { label: "Im Verlauf speichern", fn: () => document.querySelector('[data-action="save-draft"]')?.click() });
+}
 // Tooltip für den Winrate-Verlauf
 function trendHover(e){
   const box = document.getElementById("trend"); if (!box || !statSeries.length) return;
@@ -5110,6 +5164,7 @@ document.addEventListener("click", async e => {
     case "hist-view": histView = a.dataset.v; render(); break;
     case "stat-range": statRange = a.dataset.v; render(); break;
     case "duo-load": duoLoad(); break;
+    case "live-game": liveGameFetch(); break;
     case "duo-setup": duoSetup = !duoSetup; render(); break;
     case "duo-sel": duoSel = a.dataset.v; render(); if (innerWidth < 900) document.querySelector(".duo-detail")?.scrollIntoView({ behavior: "smooth", block: "start" }); break;
     case "duo-more": { const k = a.dataset.v; duoOpen.has(k) ? duoOpen.delete(k) : duoOpen.add(k); render(); break; }
