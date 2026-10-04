@@ -711,6 +711,7 @@ dialog:has(.pe-body){width:min(800px,calc(100vw - 1.5rem))}
 .pick-card{flex:none;width:96px;display:flex;flex-direction:column;gap:.35rem}
 .pick-card[data-i] .pc-art{cursor:grab;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .pick-card.pc-dragging{opacity:.3}
+.pick-card.pc-moved .pc-art{box-shadow:0 0 0 2px var(--gold),0 0 18px rgba(215,180,106,.45);transition:box-shadow .3s}
 .pc-ghost{position:fixed;left:0;top:0;z-index:300;pointer-events:none;opacity:.95;filter:drop-shadow(0 18px 30px rgba(0,0,0,.6))}
 .pc-ghost .pc-actions{display:none}
 .sc-dragging,.sc-dragging *{cursor:grabbing!important;user-select:none}
@@ -3781,7 +3782,7 @@ function renderDuo(){
 }
 // ---------- Top-Picks per Ziehen sortieren (auch in eine andere Rolle) ----------
 // Maus: einfach ziehen. Touch: kurz gedrückt halten, dann ziehen (sonst scrollt die Reihe normal).
-let scDrag = null, scDragClick = 0;
+let scDrag = null, scDragClick = 0, scFocus = null;
 function scDragStart(){
   const d = scDrag; if (!d || d.on) return;
   d.on = true; const r = d.card.getBoundingClientRect();
@@ -3817,6 +3818,7 @@ function scDragEnd(drop){
   let moved = "";
   mutTeam(viewId, t => {
     const src = roleOf(t, d.role), a = [...src.champs], [item] = a.splice(d.i, 1); if (!item) return;
+    scFocus = { role: to.role, i: to.i, until: Date.now() + 1500 };
     if (to.role === d.role){ a.splice(to.i, 0, item); t.roles[d.role] = { ...src, champs: a }; return; }
     const dst = roleOf(t, to.role); if (dst.champs.some(x => x.c === item.c)){ moved = "dup:" + item.c; return; }
     const b = [...dst.champs]; b.splice(to.i, 0, item);
@@ -4180,6 +4182,15 @@ function renderScout(){
               up:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m6 15 6-6 6 6"/></svg>',
               left:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m15 6-6 6 6 6"/></svg>',
               right:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m9 6 6 6-6 6"/></svg>' };
+  // horizontale Scroll-Position der Champion-Reihen über das Neuzeichnen retten
+  const keep = {}; document.querySelectorAll("#teamBody .rr-champs[data-role]").forEach(el => keep[el.dataset.role] = el.scrollLeft);
+  queueMicrotask(() => {
+    document.querySelectorAll("#teamBody .rr-champs[data-role]").forEach(el => { if (keep[el.dataset.role] != null) el.scrollLeft = keep[el.dataset.role]; });
+    if (scFocus && Date.now() > scFocus.until) scFocus = null;
+    if (scFocus){ const f = scFocus, first = !f.done; f.done = true; const card = document.querySelector(`#teamBody .pick-card[data-role="${f.role}"][data-i="${f.i}"]`);
+      if (card){ if (first){ card.scrollIntoView({ block: "nearest", inline: "nearest" }); card.classList.add("pc-moved"); setTimeout(() => card.classList.remove("pc-moved"), 700); }
+        if (f.dir){ const btn = card.querySelector(`[data-action="sc-move"][data-dir="${f.dir}"]`) || card.querySelector('[data-action="sc-move"]'); btn && btn.focus({ preventScroll: true }); } } }
+  });
   $("#teamBody").innerHTML = `
     <div class="panel team-head">
       <div class="th-hero">
@@ -4879,7 +4890,7 @@ document.addEventListener("click", async e => {
     case "sc-add": openEditor("e", a.dataset.role + ":scout"); break;
     case "sc-del": { const r = a.dataset.role; mutTeam(viewId, t => { const sr = roleOf(t, r); t.roles[r] = { ...sr, champs: sr.champs.filter((_, i) => i !== +a.dataset.i) }; }); break; }
     case "sc-danger": { const r = a.dataset.role; mutTeam(viewId, t => { const sr = roleOf(t, r); t.roles[r] = { ...sr, champs: sr.champs.map((x, i) => i === +a.dataset.i ? { ...x, danger: !x.danger } : x) }; }); break; }
-    case "sc-move": { const r = a.dataset.role, i = +a.dataset.i, j = i + (+a.dataset.dir); mutTeam(viewId, t => { const sr = roleOf(t, r); if (j < 0 || j >= sr.champs.length) return; const arr = [...sr.champs]; [arr[i], arr[j]] = [arr[j], arr[i]]; t.roles[r] = { ...sr, champs: arr }; }); break; }
+    case "sc-move": { const r = a.dataset.role, i = +a.dataset.i, j = i + (+a.dataset.dir); scFocus = { role: r, i: j, dir: a.dataset.dir, until: Date.now() + 1500 }; mutTeam(viewId, t => { const sr = roleOf(t, r); if (j < 0 || j >= sr.champs.length) return; const arr = [...sr.champs]; [arr[i], arr[j]] = [arr[j], arr[i]]; t.roles[r] = { ...sr, champs: arr }; }); break; }
     case "sc-ban": { const c = a.dataset.c; mutTeam(viewId, t => { t.banPlan = t.banPlan.includes(c) ? t.banPlan.filter(x => x !== c) : [...t.banPlan, c]; }); break; }
     case "plan-move": { const i = +a.dataset.i, j = i + (+a.dataset.dir); mutTeam(viewId, t => { if (j < 0 || j >= t.banPlan.length) return; [t.banPlan[i], t.banPlan[j]] = [t.banPlan[j], t.banPlan[i]]; }); break; }
     case "sc-expect": { const c0 = a.dataset.c;
