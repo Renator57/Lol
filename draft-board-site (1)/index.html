@@ -3958,7 +3958,10 @@ async function liveGameFetch(){
     const other = (d.checked || []).filter(x => x.live && x.mode);
     const MODE = { ARAM: "ARAM", CHERRY: "Arena", URF: "URF", ONEFORALL: "One for All", NEXUSBLITZ: "Nexus Blitz", ULTBOOK: "Ultimate Spellbook", TUTORIAL: "Tutorial", PRACTICETOOL: "Übungstool", SWARM: "Swarm", STRAWBERRY: "Swarm" };
     if (other.length) return toast(`${other.map(x => `${(x.id || "").split("#")[0]} spielt ${MODE[x.mode] || x.mode}`).join(", ")} – wird nicht übernommen, nur Spiele auf Summoner's Rift.`);
-    return toast("Gerade ist keiner von euch im Spiel. Erst ab dem Ladebildschirm verfügbar.");
+    // genau sagen, was Riot pro Spieler geantwortet hat
+    const per = (d.checked || []).map(x => `${(x.id || "").split("#")[0]}: ${x.err ? "Riot-ID nicht gefunden" : "nicht im Spiel"}`);
+    const miss = mine.filter(m => !(d.checked || []).some(x => norm(x.id) === norm(m.id))).map(m => m.p.name);
+    return toast(`Kein laufendes Spiel gefunden (erst ab Ladebildschirm). ${per.join(" · ")}${miss.length ? " · nicht geprüft: " + miss.join(", ") : ""}${(d.checked || []).some(x => x.err) ? ". Riot-ID bitte unter Verlauf → Duo prüfen (Name#TAG, Region " + (duoCfg.region || "euw").toUpperCase() + ")." : ""}`);
   }
   const name = k => DD.byKey[k] || DD.byKey[String(k)] || "";
   const ours = d.players.filter(x => x.team === d.myTeam).map(x => ({ ...x, c: name(x.champ) }));

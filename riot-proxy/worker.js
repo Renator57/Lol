@@ -390,7 +390,9 @@ async function liveGame(url, env, ctx, cors) {
     return json({ live: false, checked }, 200, { ...cors, "Cache-Control": "no-store" });
   } catch (e) {
     const status = e.status || 502;
-    const msg = status === 429 ? "Riot-Limit erreicht." : status === 401 || status === 403 ? "API-Key ungültig oder abgelaufen." : "Riot-API nicht erreichbar" + (e.step ? ` (${e.step})` : "") + ".";
-    return json({ error: msg, status, ...(status === 429 ? { retryAfter: e.retryAfter || 10 } : {}) }, status === 429 ? 429 : 502, cors);
+    const msg = status === 429 ? "Riot-Limit erreicht." : status === 401 ? "API-Key ungültig oder abgelaufen."
+      : status === 403 ? `Riot verweigert den Zugriff${e.step ? " (" + e.step + ")" : ""} – Key abgelaufen oder für diese Schnittstelle nicht freigeschaltet.`
+      : `Riot-Fehler ${status}${e.step ? " bei " + e.step : ""}${e.msg ? ": " + e.msg : ""}.`;
+    return json({ error: msg, status, step: e.step || "", checked, ...(status === 429 ? { retryAfter: e.retryAfter || 10 } : {}) }, status === 429 ? 429 : 502, cors);
   }
 }
