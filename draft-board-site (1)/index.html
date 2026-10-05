@@ -1608,6 +1608,10 @@ dialog{border-radius:26px;background:linear-gradient(180deg,rgba(21,31,51,.97),r
 .he-chip.us{border-color:rgba(215,180,106,.55)}.he-chip.them{border-color:rgba(255,106,92,.45)}
 .he-chip .mini{width:22px;height:22px;border-radius:50%}
 .he-chip button{border:0;background:none;color:var(--muted);cursor:pointer;font-size:1rem;line-height:1;padding:0 .2rem}
+.he-chip .he-swap{display:inline-flex;align-items:center;gap:.35rem;color:var(--text);font:inherit;font-weight:700;padding:0}
+.he-swap i{font-style:normal;font-size:.75rem;color:var(--muted);opacity:.6}
+.he-swap:hover i{opacity:1;color:var(--gold-hi)}
+.he-bans .flabel em.over{color:var(--bad);opacity:1}
 .he-chip button:hover{color:var(--bad)}
 .he-ban-add{display:inline-flex;gap:.25rem}.he-ban-add .inp{width:8.5rem;padding:.3rem .5rem}
 .duo-warn{width:100%;display:grid;gap:.25rem;padding:.65rem .8rem;border-radius:12px;border:1px solid rgba(215,180,106,.45);background:rgba(215,180,106,.08);font-size:.82rem;line-height:1.45}
@@ -4542,7 +4546,7 @@ function renderModal(focusSel){
   if (edit.kind === "he"){
     const tAll = Object.values(teams).sort((x, y) => (y.date || "").localeCompare(x.date || ""));
     const champIn = (bind, v, ph, lbl) => `<span class="he-champ">${v && champId(v) ? `<span class="mini">${initials(v)}${img(iconUrl(v))}</span>` : `<span class="mini he-empty">?</span>`}<input class="inp" list="champList" data-bind="${bind}" value="${esc(v)}" placeholder="${ph}" autocomplete="off" aria-label="${esc(lbl)}"></span>`;
-    const banChips = (k, arr) => `<div class="he-bans"><span class="flabel">${k === "us" ? "Unsere Banns" : "Gegner-Banns"} <em>${arr.length}/5</em></span><div class="he-chips">${arr.map((c, i) => `<span class="he-chip ${k}"><span class="mini">${initials(c)}${img(iconUrl(c))}</span>${esc(c)}<button data-action="he-ban-del" data-k="${k}" data-i="${i}" aria-label="${esc(c)} entfernen">×</button></span>`).join("")}
+    const banChips = (k, arr) => `<div class="he-bans"><span class="flabel">${k === "us" ? "Unsere Banns" : "Gegner-Banns"} <em class="${arr.length > 5 ? "over" : ""}">${arr.length}/5</em></span><div class="he-chips">${arr.map((c, i) => `<span class="he-chip ${k}"><button class="he-swap" data-action="he-ban-swap" data-k="${k}" data-i="${i}" title="Auf die ${k === "us" ? "Gegner" : "eigene"}-Seite schieben"><span class="mini">${initials(c)}${img(iconUrl(c))}</span>${esc(c)}<i>⇄</i></button><button data-action="he-ban-del" data-k="${k}" data-i="${i}" aria-label="${esc(c)} entfernen">×</button></span>`).join("")}
       ${arr.length < 5 ? `<span class="he-ban-add"><input class="inp" list="champList" data-bind="banAdd.${k}" data-he-ban="${k}" value="${esc(b.banAdd[k])}" placeholder="+ Champion" autocomplete="off" aria-label="Bann hinzufügen"><button class="btn sm" data-action="he-ban-add" data-k="${k}">+</button></span>` : ""}</div></div>`;
     modal.innerHTML = `
       <div class="m-head"><h2 id="mTitle">Spiel bearbeiten</h2><button class="x" data-action="close" aria-label="Schließen">×</button></div>
@@ -4567,6 +4571,7 @@ function renderModal(focusSel){
             ${champIn(`team.${i}.champ`, b.team[i].champ, "Champion", "Champion " + r)}</div>`).join("")}</div>
           <div><span class="flabel">Gegner</span>${ROLES.map((r, i) => `<div class="he-line"><span class="he-role">${r}</span>${champIn(`enemy.${i}`, b.enemy[i], "Champion", "Gegner " + r)}</div>`).join("")}</div>
         </div>
+        ${b.bansUs.length + b.bansThem.length ? `<p class="small-hint" style="margin:0 0 .4rem">Tipp auf einen Bann schiebt ihn auf die andere Seite.</p>` : ""}
         <div class="he-banrow">${banChips("us", b.bansUs)}${banChips("them", b.bansThem)}</div>
       </div>
       <div class="m-foot"><button class="btn gold" data-action="he-save">Speichern</button><button class="btn" data-action="close">Abbrechen</button></div>`;
@@ -5077,6 +5082,9 @@ document.addEventListener("click", async e => {
     case "he-side": b.side = a.dataset.v; renderModal(); break;
     case "he-res": b.result = a.dataset.v; renderModal(); break;
     case "he-game": b.game = +a.dataset.v; renderModal(); break;
+    case "he-ban-swap": { const from = a.dataset.k === "us" ? b.bansUs : b.bansThem, to = a.dataset.k === "us" ? b.bansThem : b.bansUs;
+      if (to.length >= 5) return toast(`${a.dataset.k === "us" ? "Gegner" : "Ihr"} hat schon 5 Banns.`.replace("Ihr hat", "Ihr habt"));
+      to.push(...from.splice(+a.dataset.i, 1)); renderModal(); break; }
     case "he-ban-del": { const arr = a.dataset.k === "us" ? b.bansUs : b.bansThem; arr.splice(+a.dataset.i, 1); renderModal(); break; }
     case "he-ban-add": { const k = a.dataset.k, c = officialName(b.banAdd[k] || ""); if (!c) break; if (!champId(c)) return toast(`„${c}“ ist kein Champion.`);
       if (b.bansUs.includes(c) || b.bansThem.includes(c)) return toast(`${c} ist schon gebannt.`);
@@ -5092,6 +5100,7 @@ document.addEventListener("click", async e => {
       if (dup) return toast(`${dup} ist doppelt eingetragen.`);
       const t = b.oppId && team && teams[b.oppId] ? teams[b.oppId] : null;
       const at = b.dt ? new Date(b.dt).getTime() : h.at;
+      if (b.bansUs.length > 5 || b.bansThem.length > 5) return toast("Höchstens 5 Banns pro Seite – tippe auf einen Bann, um ihn auf die andere Seite zu schieben.");
       const banBy = Object.fromEntries([...b.bansUs.map(c => [c, "us"]), ...b.bansThem.map(c => [c, "them"])]);
       setHist(h.id, { kind: b.type, side: b.side, result: b.result, dur: String(b.dur || "").replace(/\D/g, "").slice(0, 3), note: (b.note || "").trim(),
         at: isNaN(at) ? h.at : at, team, enemyBy, enemy: ROLES.map(r => enemyBy[r]).filter(Boolean), bans: [...b.bansUs, ...b.bansThem], banBy,
