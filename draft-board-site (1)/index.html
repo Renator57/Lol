@@ -16,7 +16,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://ddragon.leagueoflegends.com">
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://www.gstatic.com">
+<link rel="preconnect" href="https://firestore.googleapis.com">
+<!-- Schriften laden, ohne den ersten Seitenaufbau zu blockieren -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
 <style>
 :root{
   --bg:#050d18; --bg-2:#0a1628; --panel:#0e1b2e; --panel-2:#13243b; --panel-3:#1a2f4b;
@@ -1966,6 +1971,53 @@ dialog:has(.set-body){width:min(880px,calc(100vw - 1.5rem))}
 .tl-seek.tl-time{justify-self:end;display:inline-flex;align-items:center;gap:.28rem;padding:.12rem .45rem .12rem .38rem;margin-top:.05rem;border-radius:999px;border:1px solid rgba(215,180,106,.35);background:rgba(215,180,106,.08);font-size:.78rem;font-variant-numeric:tabular-nums;color:var(--gold-hi)}
 .tl-seek.tl-time::before{content:"";border-left:.4rem solid currentColor;border-top:.25rem solid transparent;border-bottom:.25rem solid transparent}
 .tl-seek.tl-time:hover{background:rgba(215,180,106,.2);border-color:var(--gold);text-decoration:none}
+
+/* ===== Handy-Ansicht (zuletzt, damit es ältere Regeln sicher überschreibt) ===== */
+@media (max-width:760px){
+  /* Draft: alle 5 eigenen Picks und alle 5 Gegner auf einen Blick statt seitlich scrollen */
+  .lineup{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr));gap:.35rem;overflow:visible!important;margin:0 0 .9rem!important;padding:0!important}
+  .lineup .slot{flex:none!important;aspect-ratio:3/4.6!important;border-radius:12px!important;min-width:0}
+  .lineup .slot .info{padding:.3rem .3rem .35rem!important}
+  .lineup .slot .role{font-size:.55rem!important;letter-spacing:.02em}
+  .lineup .slot .cname{font-size:.7rem!important;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+  .lineup .slot .cname .tier{display:none}
+  .lineup .slot .pname{font-size:.62rem!important}
+  .lineup .slot .slot-select{font-size:.58rem!important;padding:.12rem .1rem!important;max-width:100%;border-radius:6px;margin-top:.15rem}
+  .lineup .slot .dmg{top:.25rem!important;right:.25rem!important;font-size:.5rem!important;padding:.05rem .2rem!important}
+  .lineup .slot .empty{font-size:1.6rem}
+  .lineup .slot-face-badge{transform:scale(.7);transform-origin:top left}
+  .eslots{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr));gap:.35rem;overflow:visible!important}
+  .eslot{flex:none!important;aspect-ratio:3/4!important;border-radius:12px!important;min-width:0}
+  .eslot .info{padding:.3rem .3rem .35rem!important}
+  .eslot .role{font-size:.55rem!important}
+  .eslot .cname{font-size:.68rem!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+  .eslot .e-riot,.eslot .eslot-note{display:none}
+  .eslot .eslot-x{width:1.25rem;height:1.25rem;font-size:.8rem;top:.2rem;right:.2rem}
+  .eslot .empty{font-size:1.5rem}
+  /* Combos: Champions kompakt, bis zu 5 in einer Reihe */
+  .cc-lineup{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:.35rem}
+  .cc-art{border-radius:10px}
+  .cc-cname{font-size:.6rem;bottom:3px}
+  .cc-art .tier{transform:scale(.8);transform-origin:top left}
+  .cc-who{font-size:.6rem}.cc-who b{font-size:.55rem}
+  .cc-alts .mini{width:18px;height:18px}
+  .combo-card{padding:.85rem}
+  /* Gegner-Kopf: Kürzel, Datum, Server kompakt nebeneinander */
+  .th-avatar{display:none!important}
+  .th-meta{display:flex!important;flex-wrap:wrap;gap:.35rem}
+  .th-meta .meta-chip{flex:0 1 auto}
+  .th-side{flex-direction:row!important;flex-wrap:wrap;align-items:center;gap:.4rem}
+  /* Team: Wochenübersicht ohne überlappende Datumszahlen */
+  .av-table thead th small{display:none}
+  .av-table thead th:first-child{width:78px}
+  /* allgemein: etwas weniger Innenabstand, größere Tippflächen bei kleinen Knöpfen */
+  .panel{padding:.85rem}
+  .btn.sm{min-height:2.1rem}
+}
+@media (max-width:380px){
+  .lineup .slot .cname{font-size:.62rem!important}
+  .lineup .slot .slot-select{font-size:.52rem!important}
+}
 </style>
 </head>
 <body>
@@ -5752,6 +5804,8 @@ loadDD();
   if (!window.firebase){ conn = "off"; canWrite = false; loaded = true; offlineMsg = "Firebase konnte nicht geladen werden. Prüfe die Internetverbindung und lade neu."; render(); return; }
   const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(FIREBASE_CONFIG);
   fs = app.firestore();
+  // Offline-Speicher: beim nächsten Öffnen sind alle Daten sofort da (aus dem Gerät), Firebase gleicht im Hintergrund ab
+  try { if (fs.enablePersistence) fs.enablePersistence({ synchronizeTabs: true }).catch(() => {}); } catch(e){}
   db = { doc: p => fs.doc(p), collection: p => fs.collection(p) };
   conn = "live";
   const onErr = e => {
