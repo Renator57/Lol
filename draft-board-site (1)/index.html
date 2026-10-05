@@ -1668,6 +1668,22 @@ dialog.wide{width:min(860px,calc(100vw - 1.5rem))}
 .he-swap i{font-style:normal;font-size:.75rem;color:var(--muted);opacity:.6}
 .he-swap:hover i{opacity:1;color:var(--gold-hi)}
 .he-ban-add{display:inline-flex;gap:.25rem}.he-body .he-ban-add .inp{width:7.5rem;padding:.3rem .5rem}
+.presence{position:relative;display:flex;align-items:center}
+.pr-btn{display:flex;align-items:center;border:1px solid var(--line);background:rgba(255,255,255,.03);border-radius:999px;padding:3px 8px 3px 4px;cursor:pointer;gap:0;position:relative}
+.pr-btn:hover{border-color:var(--line-2)}
+.pr-av{width:26px!important;height:26px!important;border:2px solid var(--bg);font-size:.6rem}
+.pr-btn .pr-av+.pr-av{margin-left:-8px}
+.pr-more{margin-left:4px;font-size:.72rem;font-weight:800;color:var(--muted)}
+.pr-dot{width:.5rem;height:.5rem;border-radius:50%;background:var(--good);margin-left:6px;box-shadow:0 0 0 3px rgba(63,209,127,.2)}
+.pr-pop{position:absolute;top:calc(100% + 8px);right:0;z-index:60;min-width:230px;padding:.6rem;border-radius:14px;border:1px solid var(--line-2);background:rgba(12,19,34,.98);box-shadow:0 20px 50px -15px #000;display:grid;gap:.25rem}
+.pr-h{font-size:.7rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:0 .2rem .2rem}
+.pr-row{display:flex;align-items:center;gap:.55rem;padding:.35rem .3rem;border-radius:10px}
+.pr-row:hover{background:rgba(255,255,255,.04)}
+.pr-row .pr-av{width:30px!important;height:30px!important}
+.pr-n{flex:1;display:flex;flex-direction:column;line-height:1.2;min-width:0}
+.pr-n b{font-size:.86rem}.pr-n small{font-size:.72rem;color:var(--muted)}
+@media (max-width:760px){.pr-pop{position:fixed;top:64px;right:.6rem;left:auto}.pr-btn .pr-av:nth-child(n+3){display:none}
+  .presence:not([hidden]) ~ .status{padding:.45rem;gap:0}.presence:not([hidden]) ~ .status>span{display:none}}
 .duo-warn{width:100%;display:grid;gap:.25rem;padding:.65rem .8rem;border-radius:12px;border:1px solid rgba(215,180,106,.45);background:rgba(215,180,106,.08);font-size:.82rem;line-height:1.45}
 .duo-warn b{color:var(--gold-hi)}.duo-warn span{color:var(--muted)}.duo-warn span b{color:var(--text)}
 .duo-prog{width:100%;display:flex;flex-wrap:wrap;gap:.35rem .9rem;font-size:.78rem;color:var(--muted)}
@@ -2042,6 +2058,7 @@ dialog:has(.set-body){width:min(880px,calc(100vw - 1.5rem))}
       <button class="tab" role="tab" data-tab="history" aria-selected="false" title="Verlauf"><svg class="tab-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1M3.5 4v4.5H8"/><path d="M12 8v4.5l3 2"/></svg><span class="tab-l">Verlauf</span><span class="tab-s">Verlauf</span></button>
     </nav>
     <span class="patch-pill" id="patchPill" hidden></span>
+    <div class="presence" id="presence" hidden></div>
     <span class="status" id="status"><i></i><span>Verbinde…</span></span>
     <button class="btn sm gold install-btn" id="installBtn" hidden title="Draft Board als App installieren"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span>App</span></button>
     <button class="icon-btn gear" id="settingsBtn" aria-label="Einstellungen" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
@@ -5133,7 +5150,8 @@ function swapInto(ov, role, pid){
 
 document.addEventListener("click", async e => {
   const t = e.target;
-  const tabBtn = t.closest(".tab"); if (tabBtn){ tab = tabBtn.dataset.tab; lsSet("draftboard-tab", tab); render(); window.scrollTo({ top:0 }); return; }
+  const tabBtn = t.closest(".tab"); if (tabBtn){ tab = tabBtn.dataset.tab; lsSet("draftboard-tab", tab); render(); renderPresence(); presenceSoon(); window.scrollTo({ top:0 }); return; }
+  if (presOpen && !t.closest("#presence")){ presOpen = false; renderPresence(); }
   const modeBtn = t.closest("#modeSeg button"); if (modeBtn){ mode = modeBtn.dataset.mode; render(); return; }
   const slot = t.closest("[data-slot]"); if (slot){ active = slot.dataset.slot; mode = "pick"; render(); return; }
   const ub = t.closest("[data-unban]"); if (ub && canEdit()){ setDraft({ picks: draft.picks, bans: draft.bans.filter(c => c !== ub.dataset.unban) }); return; }
@@ -5425,6 +5443,8 @@ document.addEventListener("click", async e => {
     case "hist-filter": histFilter = a.dataset.v; histLimit = 20; render(); break;
     case "hist-view": histView = a.dataset.v; render(); break;
     case "stat-range": statRange = a.dataset.v; render(); break;
+    case "pres-toggle": presOpen = !presOpen; renderPresence(); break;
+    case "pres-go": tab = a.dataset.v; presOpen = false; lsSet("draftboard-tab", tab); render(); renderPresence(); presenceSoon(); window.scrollTo({ top: 0 }); break;
     case "hist-more": histLimit += 20; render(); break;
     case "duo-load": duoLoad(); break;
     case "live-game": liveGameFetch(); break;
@@ -5758,6 +5778,39 @@ function appInfoHtml(){
   if (isIOS()) return `<p class="small-hint" style="margin:0 0 .6rem">iPhone/iPad: In Safari unten auf <b>Teilen</b> (Quadrat mit Pfeil) tippen, dann <b>„Zum Home-Bildschirm“</b>.</p>`;
   return `<p class="small-hint" style="margin:0 0 .6rem">Im Browser-Menü (⋮) auf <b>„App installieren“</b> bzw. <b>„Zum Startbildschirm hinzufügen“</b> tippen. Am PC in Chrome/Edge rechts in der Adressleiste auf das Installieren-Symbol.</p>`;
 }
+// ---------- Wer ist online (Firestore-Herzschlag, ca. alle 90 s und bei jedem Reiterwechsel) ----------
+let presence = {}, presOpen = false;
+const PRES_ON = 4 * 60e3, TAB_LABEL = { draft: "Draft", scout: "Gegner", pools: "Pools", combos: "Combos", counters: "Matchups", history: "Verlauf", team: "Team" };
+let presLast = "", presT = null;
+function presenceBeat(force){
+  if (!fs || conn !== "live" || !canWrite) return;
+  const me = { n: myName() || "", t: tab, at: Date.now() }, key = me.n + "|" + me.t;
+  if (!force && key === presLast) return;
+  presLast = key;
+  const patch = { [myDev]: me };
+  // uralte Einträge (über 1 Tag) nebenbei aufräumen
+  Object.entries(presence).forEach(([d, x]) => { if (d !== myDev && Date.now() - N(x && x.at) > 864e5) patch[d] = FV().delete(); });
+  fs.doc("config/presence").set({ users: patch }, { merge: true }).catch(() => {});
+}
+const presenceSoon = () => { clearTimeout(presT); presT = setTimeout(() => presenceBeat(), 1200); };
+setInterval(() => { if (!document.hidden) presenceBeat(true); }, 90e3);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) presenceBeat(true); });
+window.addEventListener("pagehide", () => { try { if (fs && canWrite) fs.doc("config/presence").set({ users: { [myDev]: { n: myName() || "", t: tab, at: 0 } } }, { merge: true }); } catch(e){} });
+function renderPresence(){
+  const el = $("#presence"); if (!el) return;
+  const now = Date.now();
+  const others = Object.entries(presence).filter(([d, x]) => d !== myDev && x && now - N(x.at) < PRES_ON)
+    .map(([d, x]) => ({ d, n: x.n || "Gast", t: x.t || "", at: N(x.at), p: players.find(p => p.name === x.n) }))
+    .sort((a, b) => a.n.localeCompare(b.n, "de"));
+  const was = el.hidden; el.hidden = !others.length;
+  if (was !== el.hidden) requestAnimationFrame(fitNav);
+  if (!others.length){ presOpen = false; return; }
+  const av = o => `<span class="ch-av sm pr-av" style="--c:${nameColor(o.n)}" title="${esc(o.n)} · ${esc(TAB_LABEL[o.t] || "")}">${initials(o.n)}${o.p ? avatarImg(o.p) : ""}</span>`;
+  const shown = others.slice(0, 4);
+  el.innerHTML = `<button class="pr-btn" data-action="pres-toggle" aria-expanded="${presOpen}" aria-label="${others.length} weitere online">${shown.map(av).join("")}${others.length > 4 ? `<span class="pr-more">+${others.length - 4}</span>` : ""}<span class="pr-dot" aria-hidden="true"></span></button>
+    ${presOpen ? `<div class="pr-pop" role="dialog" aria-label="Wer ist online"><b class="pr-h">Gerade online</b>${others.map(o => `<div class="pr-row">${av(o)}<span class="pr-n"><b>${esc(o.n)}</b><small>${o.t === tab ? "hier wie du · " : ""}${esc(TAB_LABEL[o.t] || "–")}</small></span>${o.t && o.t !== tab ? `<button class="btn sm ghost" data-action="pres-go" data-v="${esc(o.t)}">Hin</button>` : ""}</div>`).join("")}</div>` : ""}`;
+}
+setInterval(renderPresence, 30e3); // Leute ohne Herzschlag nach ein paar Minuten ausblenden
 function refreshInstallUi(){ $("#installBtn").hidden = !installPrompt || isStandalone(); if (edit && edit.kind === "s") renderModal(); requestAnimationFrame(fitNav); }
 window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installPrompt = e; refreshInstallUi(); });
 window.addEventListener("appinstalled", () => { installPrompt = null; refreshInstallUi(); toast("Draft Board ist jetzt als App installiert."); });
@@ -5855,6 +5908,8 @@ loadDD();
   db.doc("config/meta").onSnapshot(s => { meta = { ...(s.exists ? s.data() : {}), loaded: true }; scheduleRender(); }, onErr);
   db.doc("config/chat").onSnapshot(s => { chat = s.exists ? [...(s.data().items || [])].sort((a, b) => a.at - b.at) : []; chatLoaded = true; renderChat(); }, onErr);
   db.doc("config/discord").onSnapshot(s => { const d = s.exists ? s.data() : {}; discordUrl = d.url || ""; discordAuto = !!d.auto; remindOn = !!d.remind; remindLead = +d.lead || 60; clearTimeout(checkReminders.t); checkReminders.t = setTimeout(checkReminders, 2500); scheduleRender(); }, onErr);
+  db.doc("config/presence").onSnapshot(s => { presence = s.exists ? { ...(s.data().users || {}) } : {}; renderPresence(); }, () => {});
+  setTimeout(() => presenceBeat(true), 2500);
   db.doc("config/duo").onSnapshot(s => { const d = s.exists ? s.data() : {}; duoCfg = { ids: { ...(d.ids || {}) }, data: { ...(d.data || {}) }, queue: DUO_QUEUES.some(x => x[0] === d.queue) ? d.queue : "solo", count: [10, 20, 30].includes(+d.count) ? +d.count : 20, region: d.region || "euw" }; scheduleRender(); }, onErr);
   db.doc("config/riot").onSnapshot(s => { const d = s.exists ? s.data() : {}; riotUrl = d.url || ""; riotQueue = RIOT_QUEUES.some(x => x[0] === d.queue) ? d.queue : "ranked"; riotCount = [10,15,20,30].includes(+d.count) ? +d.count : 15; scheduleRender(); }, onErr);
   db.doc("config/availability").onSnapshot(s => { avail = s.exists ? { ...(s.data().weeks || {}) } : {}; scheduleRender(); }, onErr);
