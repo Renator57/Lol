@@ -2,7 +2,7 @@
 // Seite: immer zuerst aus dem Netz (Updates kommen sofort an), offline aus dem Cache.
 // Champion-Bilder, Schriften und Firebase-Skripte: aus dem Cache, damit die App schnell startet.
 // Live-Daten (Firestore, Riot-Proxy, Discord) gehen nie durch den Cache.
-const VERSION = "db-1";
+const VERSION = "db-2";
 const SHELL = `${VERSION}-shell`, ASSETS = `${VERSION}-assets`, IMAGES = "db-images";
 const SHELL_FILES = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/apple-touch-icon.png"];
 const MAX_IMAGES = 600;
@@ -17,7 +17,8 @@ self.addEventListener("activate", e => {
 async function networkFirst(req){
   const cache = await caches.open(SHELL);
   try {
-    const res = await fetch(req);
+    // „no-cache“: beim Server nachfragen (ETag → meist schnelle 304-Antwort) statt bis zu 10 Min. alte Kopie aus dem Browser-Cache
+    const res = await fetch(req, { cache: "no-cache" });
     if (res.ok) cache.put(req.mode === "navigate" ? "./index.html" : req, res.clone());
     return res;
   } catch(e){

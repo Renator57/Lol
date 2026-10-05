@@ -5699,7 +5699,25 @@ async function installApp(){
   refreshInstallUi();
 }
 $("#installBtn").addEventListener("click", installApp);
-if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) window.addEventListener("load", () => navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(r => r.update()).catch(() => {}));
+// Neue Version auf dem Server? Seite kurz anfragen und mit dem Stand beim Öffnen vergleichen → Hinweis zum Neuladen
+(function updateCheck(){
+  if (!/^https?:$/.test(location.protocol)) return;
+  let base = null, shown = false;
+  const hash = t => { let h = 0; for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) | 0; return h + ":" + t.length; };
+  const check = async () => {
+    if (shown || document.hidden) return;
+    try {
+      const r = await fetch(location.pathname + "?v=" + Date.now(), { cache: "no-store" }); if (!r.ok) return;
+      const h = hash(await r.text());
+      if (base == null) { base = h; return; }
+      if (h !== base) { shown = true; toast("Neue Version des Boards verfügbar.", { label: "Neu laden", fn: () => location.reload() }); setTimeout(() => { shown = false; }, 60e3); }
+    } catch(e){}
+  };
+  setTimeout(check, 4000);                       // Stand beim Öffnen merken
+  setInterval(check, 5 * 60e3);                  // alle 5 Min.
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) check(); }); // beim Zurückkehren in die App
+})();
 if (isStandalone()) document.body.classList.add("standalone");
 
 // ---------- Connect ----------
