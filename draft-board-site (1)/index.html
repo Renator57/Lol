@@ -1987,6 +1987,11 @@ dialog:has(.set-body){width:min(880px,calc(100vw - 1.5rem))}
 .up-fill{height:100%;width:0;border-radius:8px;background:linear-gradient(90deg,var(--gold),var(--gold-hi));transition:width .3s}
 .up-txt{font-size:.8rem;font-weight:700;font-variant-numeric:tabular-nums}
 .vod-up small{color:var(--muted);font-size:.72rem}
+.vod-files{display:grid;gap:.15rem;margin:.2rem 0 .7rem;max-height:240px;overflow:auto}
+.vf-h{font-size:.7rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:.2rem}
+.vf-row{display:flex;align-items:center;gap:.5rem;padding:.35rem 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.vf-n{flex:1;display:flex;flex-direction:column;min-width:0;line-height:1.25}
+.vf-n b{font-size:.84rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.vf-n small{font-size:.72rem;color:var(--muted)}
 .up-usage{display:grid;gap:.3rem;margin:.2rem 0 .6rem}.up-usage span{font-size:.78rem;color:var(--muted)}
 .vd-frame.file video{background:#000;object-fit:contain}
 .vd-frame.file.fresh .vd-cover{background:rgba(4,7,14,.35)}
@@ -4121,7 +4126,8 @@ function fileVideoPlayer(el, src, onReady, onError){
 // ---------- Video-Upload über den Worker (Cloudflare R2) ----------
 const UPKEY = "draftboard-upkey";
 const upKey = () => { try { return localStorage.getItem(UPKEY) || ""; } catch(e){ return ""; } };
-let vodCloud = { checked: false, ok: false, msg: "", usage: null }; // Status aus /health + /vod/usage
+let vodCloud = { checked: false, ok: false, msg: "", usage: null, files: null };
+let vodLimitGB = 10; // Speicher-Grenze fürs Team (10 = kostenlos bleiben, 0 = keine Grenze) // Status aus /health + /vod/usage
 const uploads = {}; // hid → { loaded, total, name, xhrs, abort }
 const fmtBytes = n => !n ? "0 MB" : n >= 1e9 ? (n / 1e9).toFixed(n >= 1e10 ? 0 : 1).replace(".", ",") + " GB" : Math.max(1, Math.round(n / 1e6)) + " MB";
 async function vodApi(path, opts = {}, key = upKey()){
@@ -4138,7 +4144,8 @@ async function vodCloudCheck(key = upKey()){
     if (!hl.vod) vodCloud.msg = (+hl.version || 0) < 5 ? "Worker ist veraltet – neue worker.js bereitstellen." : "Im Worker ist noch kein R2-Bucket (VODS) verbunden.";
     else if (!hl.vodAuth) vodCloud.msg = "Im Worker fehlt das Geheimnis UPLOAD_KEY.";
     else if (!key) vodCloud.msg = "Upload-Passwort eintragen.";
-    else { vodCloud.usage = await vodApi("/vod/usage", {}, key); vodCloud.ok = true; }
+    else { vodCloud.usage = await vodApi("/vod/usage", {}, key); vodCloud.ok = true;
+      if ((+hl.version || 0) >= 9) try { vodCloud.files = (await vodApi("/vod/list", {}, key)).files || []; } catch(e){} }
   } catch(e){ vodCloud.msg = e.message || "Worker nicht erreichbar."; }
   return vodCloud;
 }
@@ -4159,11 +4166,30 @@ function upPut(url, blob, onProg, u){
     x.send(blob);
   });
 }
-async function vodUpload(hid, file){
+// welches Spiel gehört zu einer Datei im Speicher?
+const vodGameOf = key => history.find(h => h.vod && h.vod.includes("/vod/f/" + key));
+// Datei löschen und Verknüpfung am Spiel entfernen (Notizen/Zeitmarken bleiben)
+async function vodDeleteFile(key){
+  await vodApi("/vod/f/" + key, { method: "DELETE" });
+  const h = vodGameOf(key); if (h) setHist(h.id, { vod: "", vodStart: 0, vodName: "", vodSize: 0 });
+}
+async function vodUpload(hid, file, roomOk){
   if (uploads[hid]) return;
   if (!/^video\//.test(file.type) && !/\.(mp4|webm|mov|mkv|m4v)$/i.test(file.name)) return toast("Bitte eine Videodatei wählen (am besten MP4).");
-  const st = vodCloud.checked ? vodCloud : await vodCloudCheck();
+  const st = roomOk ? vodCloud : await vodCloudCheck(); // frisch prüfen: aktueller Speicherstand
   if (!st.ok) return toast("Upload nicht eingerichtet: " + st.msg);
+  // passt das Video noch unter die Grenze? Sonst älteste Videos zum Löschen anbieten
+  if (!roomOk && vodLimitGB && st.usage){
+    const limit = vodLimitGB * 1e9, used = N(st.usage.bytes);
+    if (used + file.size > limit){
+      const files = [...(st.files || [])].sort((a, b) => a.at - b.at), del = []; let free = limit - used;
+      for (const f of files){ if (free >= file.size) break; del.push(f); free += f.size; }
+      if (free < file.size) return toast(`Das Video (${fmtBytes(file.size)}) ist größer als die Speicher-Grenze von ${vodLimitGB} GB. In den Einstellungen (Riot → Video-Upload) die Grenze erhöhen.`);
+      const names = del.map(f => { const h = vodGameOf(f.key); return h ? `${h.oppName ? "vs " + h.oppName : kindLabel(h)} (${fmtDate(h.at).split(",")[0]})` : (f.name || "Video"); });
+      return toast(`Kein Platz mehr (${fmtBytes(used)} von ${vodLimitGB} GB). ${del.length === 1 ? "Das älteste Video" : "Die " + del.length + " ältesten Videos"} löschen (${fmtBytes(del.reduce((a, f) => a + f.size, 0))}): ${names.join(", ")}? Notizen bleiben.`,
+        { label: "Löschen & hochladen", fn: async () => { try { for (const f of del) await vodDeleteFile(f.key); await vodCloudCheck(); vodUpload(hid, file, true); } catch(e){ toast("Löschen fehlgeschlagen: " + e.message); } } });
+    }
+  }
   const PART = 24 * 1024 * 1024, n = Math.ceil(file.size / PART), done = new Array(n).fill(0);
   const u = uploads[hid] = { loaded: 0, total: file.size, name: file.name, xhrs: new Set(), stop: false };
   render();
@@ -4945,7 +4971,10 @@ function renderModal(focusSel){
           <div class="addrow" style="flex-wrap:wrap"><input class="inp" style="min-width:14rem" data-bind="riot" value="${esc(b.riot || "")}" placeholder="https://draftboard-riot.….workers.dev" autocomplete="off"><button class="btn sm" data-action="riot-test">Testen</button><button class="btn sm gold" data-action="riot-save">Speichern</button></div>`)
         + card(IC.app, "Video-Upload (VOD)", badge(vodCloud.ok, "bereit", vodCloud.checked ? "nicht bereit" : "nicht geprüft"),
           `<p class="small-hint">Lädt Spielvideos in euren Cloudflare-Speicher (R2, 10 GB kostenlos), damit alle sie im Verlauf ansehen können. Läuft über denselben Worker.</p>
-          ${vodCloud.usage ? `<div class="up-usage"><div class="up-bar"><div class="up-fill" style="width:${Math.min(100, vodCloud.usage.bytes / 1e10 * 100).toFixed(1)}%"></div></div><span>${fmtBytes(vodCloud.usage.bytes)} von 10 GB · ${vodCloud.usage.files} Video${vodCloud.usage.files === 1 ? "" : "s"}</span></div>` : vodCloud.checked && vodCloud.msg ? `<p class="small-hint" style="color:var(--bad)">${esc(vodCloud.msg)}</p>` : ""}
+          ${vodCloud.usage ? `<div class="up-usage"><div class="up-bar"><div class="up-fill" style="width:${vodLimitGB ? Math.min(100, vodCloud.usage.bytes / (vodLimitGB * 1e9) * 100).toFixed(1) : 0}%"></div></div><span>${fmtBytes(vodCloud.usage.bytes)}${vodLimitGB ? " von " + vodLimitGB + " GB" : ""} · ${vodCloud.usage.files} Video${vodCloud.usage.files === 1 ? "" : "s"}</span></div>
+          <div class="field" style="margin:.2rem 0 .6rem"><label for="vod-limit">Speicher-Grenze</label><select class="inp" id="vod-limit">${[[10, "10 GB – kostenlos bleiben (älteste werden ersetzt)"], [20, "20 GB – ca. 0,15 € / Monat"], [50, "50 GB – ca. 0,60 € / Monat"], [100, "100 GB – ca. 1,35 € / Monat"], [0, "keine Grenze"]].map(([v, l]) => `<option value="${v}" ${vodLimitGB === v ? "selected" : ""}>${l}</option>`).join("")}</select></div>
+          ${vodCloud.files && vodCloud.files.length ? `<div class="vod-files"><b class="vf-h">Hochgeladene Videos</b>${[...vodCloud.files].sort((a, b) => b.at - a.at).map(f => { const h = vodGameOf(f.key);
+            return `<div class="vf-row"><span class="vf-n"><b>${esc(h ? `${h.result === "win" ? "Sieg" : h.result === "loss" ? "Niederlage" : "Spiel"}${h.oppName ? " vs " + h.oppName : ""}` : (f.name || "Video"))}</b><small>${fmtBytes(f.size)} · ${f.at ? esc(fmtDate(f.at)) : ""}${h ? "" : " · keinem Spiel zugeordnet"}</small></span><button class="btn sm ghost danger" data-action="vod-file-del" data-k="${esc(f.key)}">Löschen</button></div>`; }).join("")}</div>` : ""}` : vodCloud.checked && vodCloud.msg ? `<p class="small-hint" style="color:var(--bad)">${esc(vodCloud.msg)}</p>` : ""}
           <div class="addrow" style="flex-wrap:wrap"><input class="inp" type="password" style="min-width:12rem" data-bind="upkey" value="${esc(b.upkey ?? upKey())}" placeholder="Upload-Passwort" autocomplete="off"><button class="btn sm gold" data-action="up-check">Speichern &amp; prüfen</button></div>
           <p class="small-hint" style="margin-top:.5rem">Das Passwort bleibt nur auf diesem Gerät. Wer es nicht hat, kann trotzdem ansehen und „Nur hier abspielen“ nutzen.</p>
           <ol class="set-steps"><li>Cloudflare: <b>R2 → Bucket erstellen</b>, Name <code>draftboard-vods</code></li><li>Worker → <b>Einstellungen → Bindungen → R2-Bucket</b>, Name <code>VODS</code></li><li>Worker → Variablen: Geheimnis <code>UPLOAD_KEY</code> = euer Upload-Passwort</li><li>Neue <code>worker.js</code> bereitstellen, hier Passwort eintragen, prüfen</li></ol>`)
@@ -5506,6 +5535,7 @@ document.addEventListener("click", async e => {
       if (v && v.cloud && upKey()) vodApi(new URL(v.id).pathname, { method: "DELETE" }).then(() => { vodCloud.checked = false; }).catch(e => toast("Datei konnte nicht gelöscht werden: " + e.message));
       setHist(hid, { vod: "", vodStart: 0, vodName: "", vodSize: 0 }); break; }
     case "vod-up-cancel": { const u = uploads[a.dataset.id]; if (u){ u.stop = true; u.xhrs.forEach(x => x.abort()); } break; }
+    case "vod-file-del": { if (!armed(a, "Sicher?")) return; try { await vodDeleteFile(a.dataset.k); await vodCloudCheck(); toast("Video gelöscht."); renderModal(); } catch(e){ toast("Löschen fehlgeschlagen: " + e.message); } break; }
     case "up-check": { const k = (b.upkey ?? upKey()).trim(); try { localStorage.setItem(UPKEY, k); } catch(e){} toast("Prüfe …"); await vodCloudCheck(k); toast(vodCloud.ok ? "Video-Upload bereit." : vodCloud.msg); renderModal(); break; }
     case "vod-open": vodOpen(a.dataset.id); render(); break;
     case "vod-close": vodClose(); render(); break;
@@ -5702,6 +5732,7 @@ document.addEventListener("input", e => {
 document.addEventListener("change", e => {
   const t = e.target;
   if (t.dataset && t.dataset.duoId != null){ const v = cleanRiotId(t.value); if (v && !parseRiotId(v)) return toast("Riot-ID bitte als Name#TAG."); duoSetup = true; duoSave({ ids: { [t.dataset.duoId]: v } }); render(); return; }
+  if (t.id === "vod-limit"){ vodLimitGB = +t.value; db.doc("config/riot").set({ vodLimit: vodLimitGB }, { merge: true }).catch(writeError); if (edit) renderModal(); return; }
   if (t.id === "duoQueue" || t.id === "duoCount" || t.id === "duoRegion"){ duoSave(t.id === "duoQueue" ? { queue: t.value } : t.id === "duoCount" ? { count: +t.value } : { region: t.value }); render(); return; }
 });
 document.addEventListener("change", e => {
@@ -5915,7 +5946,7 @@ loadDD();
   db.doc("config/presence").onSnapshot(s => { presence = s.exists ? { ...(s.data().users || {}) } : {}; renderPresence(); }, () => {});
   setTimeout(() => presenceBeat(true), 2500);
   db.doc("config/duo").onSnapshot(s => { const d = s.exists ? s.data() : {}; duoCfg = { ids: { ...(d.ids || {}) }, data: { ...(d.data || {}) }, queue: DUO_QUEUES.some(x => x[0] === d.queue) ? d.queue : "solo", count: [10, 20, 30].includes(+d.count) ? +d.count : 20, region: d.region || "euw" }; scheduleRender(); }, onErr);
-  db.doc("config/riot").onSnapshot(s => { const d = s.exists ? s.data() : {}; riotUrl = d.url || ""; riotQueue = RIOT_QUEUES.some(x => x[0] === d.queue) ? d.queue : "ranked"; riotCount = [10,15,20,30].includes(+d.count) ? +d.count : 15; scheduleRender(); }, onErr);
+  db.doc("config/riot").onSnapshot(s => { const d = s.exists ? s.data() : {}; riotUrl = d.url || ""; riotQueue = RIOT_QUEUES.some(x => x[0] === d.queue) ? d.queue : "ranked"; riotCount = [10,15,20,30].includes(+d.count) ? +d.count : 15; vodLimitGB = [10, 20, 50, 100, 0].includes(+d.vodLimit) ? +d.vodLimit : 10; scheduleRender(); }, onErr);
   db.doc("config/availability").onSnapshot(s => { avail = s.exists ? { ...(s.data().weeks || {}) } : {}; scheduleRender(); }, onErr);
   db.doc("config/events").onSnapshot(s => { events = s.exists ? [...(s.data().items || [])] : []; scheduleRender(); clearTimeout(checkReminders.t); checkReminders.t = setTimeout(checkReminders, 2500); }, onErr);
   db.doc("config/goals").onSnapshot(s => { goals = s.exists ? [...(s.data().items || [])] : []; scheduleRender(); }, onErr);

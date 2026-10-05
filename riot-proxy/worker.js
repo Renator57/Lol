@@ -32,7 +32,7 @@ const QUEUES = {
   tournament: "type=tournament", // Turnier-Codes (z. B. Prime League)
   all:        "",
 };
-const VERSION = 8;           // vom Board geprüft (Einstellungen → Testen)
+const VERSION = 9;           // vom Board geprüft (Einstellungen → Testen)
 const MAX_COUNT = 30;
 // Cloudflare-eigener Standard-Cache (caches.default fehlt in den Browser-Typen)
 const edgeCache = () => /** @type {Cache} */ (/** @type {any} */ (caches).default);
@@ -285,6 +285,11 @@ async function vodApi(req, env, url, cors) {
       let bytes = 0, files = 0, cursor;
       do { const l = await env.VODS.list({ prefix: "v/", cursor }); for (const o of l.objects) { bytes += o.size; files++; } cursor = l.truncated ? l.cursor : undefined; } while (cursor);
       return json({ bytes, files }, 200, cors);
+    }
+    if (p === "/vod/list" && req.method === "GET") {
+      const files = []; let cursor;
+      do { const l = await env.VODS.list({ prefix: "v/", cursor, include: ["customMetadata"] }); for (const o of l.objects) files.push({ key: o.key, size: o.size, at: o.uploaded ? new Date(o.uploaded).getTime() : 0, name: (o.customMetadata || {}).name || "" }); cursor = l.truncated ? l.cursor : undefined; } while (cursor);
+      return json({ files: files.sort((a, b) => a.at - b.at), url: `${url.origin}/vod/f/` }, 200, cors);
     }
     if (p === "/vod/create" && req.method === "POST") {
       const b = await req.json().catch(() => ({}));

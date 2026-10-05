@@ -156,5 +156,9 @@ Hinweise:
 - Große Dateien werden in Teilen zu je 24 MB hochgeladen. Die Seite muss offen bleiben, bis der Upload fertig ist.
 - **MP4 (H.264)** läuft in jedem Browser. 10 GB reichen für etwa 10 bis 20 Spiele in 720p.
   OBS-Tipp: 720p, 30 fps und etwa 4000 kbit/s ergeben pro Spiel rund 1 GB.
+- **Speicher-Grenze** (Einstellungen → Riot → Video-Upload): Bei „10 GB – kostenlos bleiben“ bietet das Board vor einem Upload,
+  der nicht mehr passt, an, die ältesten Videos zu löschen (Notizen und Zeitmarken der Spiele bleiben). Größere Grenzen kosten
+  bei R2 etwa 1,5 Cent pro GB und Monat; Abspielen ist immer kostenlos. Dort gibt es auch eine Liste aller Videos zum Löschen
+  (braucht `worker.js` ab Version 9).
 - Wenn ihr ein VOD im Board entfernt, wird auch die Datei gelöscht (bei dem, der das Upload-Passwort eingetragen hat).
 - Ohne Einrichtung geht immer **„Nur hier abspielen“**: Die Datei läuft dann nur auf diesem Gerät, ohne Upload.
