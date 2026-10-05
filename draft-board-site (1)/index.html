@@ -313,6 +313,7 @@ body.locked main,body.locked .footer{visibility:hidden}
 .res{font-family:var(--fd);font-weight:700;padding:.1rem .55rem;border-radius:7px;background:var(--panel-3);font-size:.85rem}
 .res.win{background:rgba(63,209,127,.15);color:var(--good)} .res.loss{background:rgba(255,106,92,.15);color:var(--bad)}
 .hist-teams{display:flex;gap:1.5rem;flex-wrap:wrap}
+.hist-more{display:flex;margin:0 auto 1rem;justify-content:center;gap:.4rem}.hist-more span{opacity:.6}
 .hist-bans{display:flex;gap:.4rem 1.5rem;flex-wrap:wrap;margin-top:.6rem}
 .hist-bans .flabel.us{color:var(--gold-hi)}.hist-bans .flabel.them{color:#ffb3aa}
 .hb-row{gap:.3rem}
@@ -502,7 +503,8 @@ body.nav-icons .tab-s{display:none}body.nav-icons .tab{padding:.5rem .6rem}body.
 .tab[aria-selected="true"]::after{display:none}
 .status{background:rgba(255,255,255,.03);border-color:var(--line);font-weight:600}
 /* Panels & cards */
-.panel,.card,.hist,.team-chip,.composer,.egroup,dialog,.gate-box{backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+/* Weichzeichner nur bei wenigen, schwebenden Flächen – bei den vielen fast deckenden Karten kostet er nur Leistung */
+dialog,.gate-box,.composer{backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 .panel,.card{background:linear-gradient(180deg,rgba(24,34,54,.78),rgba(14,21,35,.78));border:1px solid var(--line);box-shadow:var(--shadow)}
 .card{transition:border-color .2s,transform .2s}
 .card:hover{border-color:var(--line-2)}
@@ -704,7 +706,7 @@ dialog:has(.pe-body){width:min(800px,calc(100vw - 1.5rem))}
 .team-chip .tc-meta b{color:#ff8b7f;font-weight:700}
 .scout-grid{grid-template-columns:minmax(0,1fr) 300px;gap:1.1rem}
 .roster{display:flex;flex-direction:column;gap:.7rem}
-.roster-row{display:grid;grid-template-columns:230px minmax(0,1fr);gap:1rem;align-items:stretch;padding:.8rem;border-radius:20px;background:linear-gradient(180deg,rgba(24,34,54,.7),rgba(14,21,35,.7));border:1px solid var(--line);box-shadow:var(--shadow);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.roster-row{display:grid;grid-template-columns:230px minmax(0,1fr);gap:1rem;align-items:stretch;padding:.8rem;border-radius:20px;background:linear-gradient(180deg,rgba(24,34,54,.7),rgba(14,21,35,.7));border:1px solid var(--line);box-shadow:var(--shadow);}
 .rr-side{display:flex;flex-direction:column;justify-content:center;gap:.5rem;padding:.3rem .2rem .3rem .3rem;border-right:1px solid var(--line)}
 .rr-role{font-family:var(--fd);font-weight:800;font-size:1.05rem;letter-spacing:.02em;color:#ffb3aa}
 .rr-id{display:flex;flex-direction:column;gap:.35rem}
@@ -799,7 +801,7 @@ dialog:has(.pe-body){width:min(800px,calc(100vw - 1.5rem))}
 .cf-chip.on{color:#0b0f18;background:var(--c,var(--gold));border-color:transparent}
 .combo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:1rem}
 @media (max-width:520px){.combo-grid{grid-template-columns:1fr}}
-.combo-card{position:relative;display:flex;flex-direction:column;gap:.8rem;padding:1.1rem;border-radius:20px;background:linear-gradient(180deg,rgba(24,34,54,.8),rgba(14,21,35,.8));border:1px solid var(--line);box-shadow:var(--shadow);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);overflow:hidden}
+.combo-card{position:relative;display:flex;flex-direction:column;gap:.8rem;padding:1.1rem;border-radius:20px;background:linear-gradient(180deg,rgba(24,34,54,.8),rgba(14,21,35,.8));border:1px solid var(--line);box-shadow:var(--shadow);overflow:hidden}
 .combo-card::before{content:"";position:absolute;inset:0 0 auto;height:3px;background:linear-gradient(90deg,var(--c),transparent 85%)}
 .combo-card::after{content:"";position:absolute;right:-60px;top:-60px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--c) 22%,transparent),transparent 70%);pointer-events:none}
 .combo-card.full{border-color:rgba(63,209,127,.5);box-shadow:0 0 0 1px rgba(63,209,127,.35),var(--shadow)}
@@ -2137,12 +2139,12 @@ const champId = n => DD.byNorm[norm(n)];
 const iconUrl = n => { const id = champId(n); return id && DD.v ? `https://ddragon.leagueoflegends.com/cdn/${DD.v}/img/champion/${id}.png` : ""; };
 const artUrl = n => { const id = champId(n); return id ? `https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${id}_0.jpg` : ""; };
 const img = (url, cls = "") => url ? `<img src="${esc(url)}" alt="" loading="lazy" class="${cls}" onerror="this.remove()">` : "";
-const officialName = n => { const id = champId(n); if (!id) return n.trim(); const hit = DD.names.find(x => DD.byNorm[norm(x)] === id); return hit || n.trim(); };
+const officialName = n => { const id = champId(n); return (id && DD.offById && DD.offById[id]) || String(n || "").trim(); }; // schnell: Verzeichnis statt Suche
 // Champion-Liste wird pro Patch im Browser zwischengespeichert: spart bei jedem Aufruf ~150 KB
 let ddDone; const ddReady = Promise.race([new Promise(r => ddDone = r), new Promise(r => setTimeout(r, 6000))]);
 function applyDD(v, list){
-  DD.byNorm = {}; DD.byKey = {}; DD.idName = {};
-  list.forEach(([id, key, name]) => { DD.byNorm[norm(name)] = id; DD.byNorm[norm(id)] = id; DD.byKey[key] = name; DD.idName[id] = name; });
+  DD.byNorm = {}; DD.byKey = {}; DD.idName = {}; DD.offById = {};
+  list.forEach(([id, key, name]) => { DD.byNorm[norm(name)] = id; DD.byNorm[norm(id)] = id; DD.byKey[key] = name; DD.idName[id] = name; DD.offById[id] = name; });
   DD.names = list.map(x => x[2]).sort((a, b) => a.localeCompare(b, "de"));
   DD.v = v;
   $("#champList").innerHTML = DD.names.map(n => `<option value="${esc(n)}">`).join("");
@@ -2231,7 +2233,8 @@ function teamsSorted(){
   const past = list.filter(x => x.date && x.date < t).sort((a, b) => b.date.localeCompare(a.date));
   return { up, past };
 }
-const fmtDay = d => { if (!d) return ""; try { return new Date(d + "T12:00:00").toLocaleDateString("de-DE", { weekday:"short", day:"2-digit", month:"2-digit" }); } catch(e){ return d; } };
+const DTF_DAY = new Intl.DateTimeFormat("de-DE", { weekday:"short", day:"2-digit", month:"2-digit" });
+const fmtDay = d => { if (!d) return ""; try { return DTF_DAY.format(new Date(d + "T12:00:00")); } catch(e){ return d; } };
 const pendingTeams = new Set();
 function saveTeam(id, now){
   pendingTeams.add(id); clearTimeout(saveTeam.t);
@@ -2601,7 +2604,7 @@ function renderPools(){
 const STYLES = { teamfight:["Teamfight","#9d86ff"], pick:["Pick","#ff8b7f"], scaling:["Scaling","#4cd9c4"], poke:["Poke","#7fb2ff"], dive:["Dive","#f0a85a"], split:["Splitpush","#c7e36b"], early:["Early","#ffcf5c"], protect:["Protect","#f28ad8"] };
 const guessStyle = n => { const x = norm(n || ""); return x.includes("team") ? "teamfight" : x.includes("pick") ? "pick" : x.includes("scal") || x.includes("late") ? "scaling" : x.includes("poke") ? "poke" : x.includes("dive") ? "dive" : x.includes("split") ? "split" : x.includes("early") ? "early" : x.includes("protect") ? "protect" : ""; };
 const comboStyle = cb => STYLES[cb.style] ? cb.style : guessStyle(cb.name);
-let comboFilter = "all", histFilter = "all", histView = "games";
+let comboFilter = "all", histFilter = "all", histView = "games", histLimit = 20;
 // ---- Team: Verfügbarkeit, Termine, Ziele ----
 let avail = {}, events = [], goals = [], weekOffset = 0, showPastEv = false;
 const DAYS = ["Mo","Di","Mi","Do","Fr","Sa","So"];
@@ -3374,7 +3377,8 @@ function renderCounters(){
       ${canEdit() ? `<div class="card-foot"><button class="btn sm gold" data-action="counter-for" data-c="${esc(k)}">Bearbeiten</button></div>` : ""}
     </article>`; }).join("") || `<p class="loading">Noch keine Counter-Notizen. Leg eine an oder tippe im Draft auf einen Gegner-Champion.</p>`;
 }
-function fmtDate(ts){ try { return new Date(ts).toLocaleString("de-DE", { day:"2-digit", month:"2-digit", year:"2-digit", hour:"2-digit", minute:"2-digit" }); } catch(e){ return ""; } }
+const DTF_DATE = new Intl.DateTimeFormat("de-DE", { day:"2-digit", month:"2-digit", year:"2-digit", hour:"2-digit", minute:"2-digit" }); // einmal anlegen statt pro Aufruf
+function fmtDate(ts){ try { return DTF_DATE.format(new Date(ts)); } catch(e){ return ""; } }
 function renderTeam(){
   const ed = canEdit(), info = weekInfo(weekOffset), me = myName() || "", lp = lineupPlayers();
   const today = ymd(new Date());
@@ -4208,7 +4212,8 @@ function renderHistory(){
   const selS = focusId && ae.selectionStart, selE = focusId && ae.selectionEnd;
   const me = myName() || "";
   const names = uniq(players.map(p => p.name));
-  $("#history").innerHTML = history_.map(h => {
+  const histMore = Math.max(0, history_.length - histLimit);
+  $("#history").innerHTML = history_.slice(0, histLimit).map(h => {
     const notes = [...(notesById[h.id] || [])].sort((a, b) => timeKey(a.t) - timeKey(b.t) || a.at - b.at);
     const good = notes.filter(n => n.k === "good").length, bad = notes.filter(n => n.k === "bad").length;
     const open = openHist.has(h.id);
@@ -4249,7 +4254,7 @@ function renderHistory(){
         <div class="c-me">${myName() ? `Du schreibst als <b style="color:${nameColor(myName())}">${esc(myName())}</b>` : `<button class="linkbtn" data-action="open-chat-pick">Namen wählen</button>, damit andere sehen, von wem die Notiz ist.`}</div>
       </div>` : ""}
     </div>` : ""}
-  </article>`; }).join("") || `<p class="loading">Noch keine gespeicherten Drafts. Nach einem Spiel im Draft auf „Draft im Verlauf speichern“ tippen.</p>`;
+  </article>`; }).join("") + (histMore ? `<button class="btn hist-more" data-action="hist-more">Ältere Spiele anzeigen <span>(noch ${histMore})</span></button>` : "") || `<p class="loading">Noch keine gespeicherten Drafts. Nach einem Spiel im Draft auf „Draft im Verlauf speichern“ tippen.</p>`;
   if (focusId){ const el = document.getElementById(focusId); if (el){ el.focus(); try { el.setSelectionRange(selS, selE); } catch(e){} } }
 }
 function renderScout(){
@@ -5289,9 +5294,10 @@ document.addEventListener("click", async e => {
       mutTeam(tid, t => { t.plans = (t.plans || []).filter(x => x.id !== id); });
       toast("Plan gelöscht.", { label: "Rückgängig", fn: () => mutTeam(tid, t => { t.plans = prev; }) }); break;
     }
-    case "hist-filter": histFilter = a.dataset.v; render(); break;
+    case "hist-filter": histFilter = a.dataset.v; histLimit = 20; render(); break;
     case "hist-view": histView = a.dataset.v; render(); break;
     case "stat-range": statRange = a.dataset.v; render(); break;
+    case "hist-more": histLimit += 20; render(); break;
     case "duo-load": duoLoad(); break;
     case "live-game": liveGameFetch(); break;
     case "duo-setup": duoSetup = !duoSetup; render(); break;
@@ -5673,7 +5679,7 @@ loadDD();
   db.collection("combos").onSnapshot(s => { combos = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)); scheduleRender(); }, onErr);
   db.doc("config/pairs").onSnapshot(s => { pairs = new Set(s.exists ? (s.data().list || []) : []); scheduleRender(); }, onErr);
   db.doc("draft/current").onSnapshot(s => { const d = s.exists ? s.data() : {}; const eb = d.enemyBy && Object.keys(d.enemyBy).length ? { ...d.enemyBy } : byOrder(d.enemy);
-    draft = { side: d.side || "", mode: d.mode === "ranked" ? "ranked" : "", live: d.live && typeof d.live === "object" ? d.live : null, picks: { ...(d.picks || {}) }, bans: [...(d.bans || [])], banBy: { ...(d.banBy || {}) }, enemyBy: eb, enemy: ROLES.map(r => eb[r]).filter(Boolean), lineup: { ...(d.lineup || {}) } }; render(); }, onErr);
+    draft = { side: d.side || "", mode: d.mode === "ranked" ? "ranked" : "", live: d.live && typeof d.live === "object" ? d.live : null, picks: { ...(d.picks || {}) }, bans: [...(d.bans || [])], banBy: { ...(d.banBy || {}) }, enemyBy: eb, enemy: ROLES.map(r => eb[r]).filter(Boolean), lineup: { ...(d.lineup || {}) } }; scheduleRender(); }, onErr);
   db.doc("config/counters").onSnapshot(s => { counters = s.exists ? { ...(s.data().map || {}) } : {}; scheduleRender(); }, onErr);
   db.doc("config/scouting").onSnapshot(s => {
     const d = s.exists ? s.data() : {};
