@@ -313,6 +313,12 @@ body.locked main,body.locked .footer{visibility:hidden}
 .res{font-family:var(--fd);font-weight:700;padding:.1rem .55rem;border-radius:7px;background:var(--panel-3);font-size:.85rem}
 .res.win{background:rgba(63,209,127,.15);color:var(--good)} .res.loss{background:rgba(255,106,92,.15);color:var(--bad)}
 .hist-teams{display:flex;gap:1.5rem;flex-wrap:wrap}
+.hist-bans{display:flex;gap:.4rem 1.5rem;flex-wrap:wrap;margin-top:.6rem}
+.hist-bans .flabel.us{color:var(--gold-hi)}.hist-bans .flabel.them{color:#ffb3aa}
+.hb-row{gap:.3rem}
+.hb-row .mini{width:28px;height:28px;position:relative}
+.hb-row .mini img{filter:grayscale(.85) brightness(.6)}
+.hb-row .mini::after{content:"";position:absolute;left:-10%;right:-10%;top:50%;height:2px;background:rgba(255,106,92,.9);transform:rotate(-45deg)}
 .hist .note{margin:.6rem 0 0;color:var(--muted);font-style:italic;font-size:.9rem}
 .seg button{cursor:pointer}
 
@@ -4176,6 +4182,15 @@ function vodBar(){
 }
 const vodGameSec = () => { const h = vod && history.find(x => x.id === vod.hid); return h ? Math.max(0, vodTime() - N(h.vodStart)) : 0; };
 function setHist(hid, patch){ history = history.map(x => x.id === hid ? { ...x, ...patch } : x); queueSet("config/history", { items: history }); render(); }
+// Banns eines Spiels: getrennt, wenn die Seite bekannt ist (ältere Spiele: eine Reihe)
+function histBans(h){
+  const bans = h.bans || []; if (!bans.length) return "";
+  const by = h.banBy || {}, known = bans.some(c => by[c]);
+  const row = list => `<div class="opts-row hb-row">${list.map(c => `<span class="mini banned" title="${esc(c)} gebannt">${initials(c)}${img(iconUrl(c))}</span>`).join("")}</div>`;
+  if (!known) return `<div class="hist-bans"><div><span class="flabel">Banns</span>${row(bans)}</div></div>`;
+  const us = bans.filter(c => by[c] === "us"), them = bans.filter(c => by[c] !== "us");
+  return `<div class="hist-bans">${us.length ? `<div><span class="flabel us">Unsere Banns</span>${row(us)}</div>` : ""}${them.length ? `<div><span class="flabel them">Gegner-Banns</span>${row(them)}</div>` : ""}</div>`;
+}
 function renderHistory(){
   const all = history;
   const listF = all.filter(h => histFilter === "all" || kindOf(h) === histFilter);
@@ -4208,6 +4223,7 @@ function renderHistory(){
       ${canEdit() ? `<span class="spacer"></span><button class="btn sm ghost" data-action="share-game" data-id="${esc(h.id)}">${discordUrl ? "An Discord" : "Discord"}</button><button class="btn sm" data-action="hist-edit" data-id="${esc(h.id)}">Bearbeiten</button><button class="btn sm" data-action="hist-load" data-id="${esc(h.id)}">Wieder laden</button><button class="btn sm danger" data-action="hist-del" data-id="${esc(h.id)}">Löschen</button>` : ""}</div>
     <div class="hist-teams"><div><span class="flabel">Wir</span><div class="opts-row">${(h.team || []).map(x => `<span class="mini" title="${esc(x.player)}: ${esc(x.champ)}">${initials(x.champ)}${img(iconUrl(x.champ))}</span>`).join("")}</div></div>
       ${(h.enemy || []).length ? `<div><span class="flabel">Gegner</span><div class="opts-row">${miniRow(h.enemy)}</div></div>` : ""}</div>
+    ${histBans(h)}
     ${h.note ? `<p class="note">${esc(h.note)}</p>` : ""}
     <button class="notes-toggle" data-action="hist-toggle" data-id="${esc(h.id)}" aria-expanded="${open}">
       <span>Spielnotizen</span>${notes.length ? `<span class="cnt good">${good} gut</span><span class="cnt bad">${bad} schlecht</span>` : `<span class="cnt">noch keine</span>`}<span class="chev">${open ? "▴" : "▾"}</span></button>
