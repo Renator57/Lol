@@ -1587,6 +1587,29 @@ dialog{border-radius:26px;background:linear-gradient(180deg,rgba(21,31,51,.97),r
 .lg-dot{width:.55rem;height:.55rem;border-radius:50%;background:#ff6a5c;box-shadow:0 0 0 0 rgba(255,106,92,.6);animation:lgpulse 1.6s infinite}
 .live-get.busy .lg-dot{animation-duration:.5s}
 @keyframes lgpulse{0%{box-shadow:0 0 0 0 rgba(255,106,92,.55)}70%{box-shadow:0 0 0 7px rgba(255,106,92,0)}100%{box-shadow:0 0 0 0 rgba(255,106,92,0)}}
+.he-body .row2{gap:.8rem}
+.he-row3{grid-template-columns:1fr 8rem}
+.he-teams{display:grid;grid-template-columns:1fr;gap:.9rem;margin:.4rem 0 .8rem}
+@media (max-width:640px){.he-body .row2,.he-row3{grid-template-columns:1fr!important}.he-body .seg{flex-wrap:wrap}}
+.he-line{display:grid;grid-template-columns:4.6rem 9rem minmax(0,1fr);align-items:center;gap:.45rem;margin-bottom:.35rem}
+.he-teams>div:last-child .he-line{grid-template-columns:4.6rem minmax(0,1fr)}
+@media (max-width:640px){.he-line{grid-template-columns:3.9rem 6.6rem minmax(0,1fr)}.he-teams>div:last-child .he-line{grid-template-columns:3.9rem minmax(0,1fr)}}
+.he-role{font-size:.72rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.he-pl{width:100%;padding:.35rem .4rem}
+.he-champ{display:flex;align-items:center;gap:.4rem;min-width:0}
+.he-champ .mini{width:30px;height:30px;flex:none}
+.he-champ .inp{padding:.35rem .5rem;min-width:0}
+.mini.he-empty{color:var(--muted);font-weight:800}
+.he-banrow{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media (max-width:640px){.he-banrow{grid-template-columns:1fr}}
+.he-bans .flabel em{font-style:normal;opacity:.7}
+.he-chips{display:flex;flex-wrap:wrap;gap:.35rem;align-items:center}
+.he-chip{display:inline-flex;align-items:center;gap:.35rem;padding:.2rem .3rem .2rem .25rem;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.03);font-size:.8rem;font-weight:700}
+.he-chip.us{border-color:rgba(215,180,106,.55)}.he-chip.them{border-color:rgba(255,106,92,.45)}
+.he-chip .mini{width:22px;height:22px;border-radius:50%}
+.he-chip button{border:0;background:none;color:var(--muted);cursor:pointer;font-size:1rem;line-height:1;padding:0 .2rem}
+.he-chip button:hover{color:var(--bad)}
+.he-ban-add{display:inline-flex;gap:.25rem}.he-ban-add .inp{width:8.5rem;padding:.3rem .5rem}
 .duo-warn{width:100%;display:grid;gap:.25rem;padding:.65rem .8rem;border-radius:12px;border:1px solid rgba(215,180,106,.45);background:rgba(215,180,106,.08);font-size:.82rem;line-height:1.45}
 .duo-warn b{color:var(--gold-hi)}.duo-warn span{color:var(--muted)}.duo-warn span b{color:var(--text)}
 .duo-prog{width:100%;display:flex;flex-wrap:wrap;gap:.35rem .9rem;font-size:.78rem;color:var(--muted)}
@@ -4178,7 +4201,7 @@ function renderHistory(){
       <span class="h-badges"><span class="hb ${cl(kindOf(h))}">${kindLabel(h)}${kindOf(h) === "liga" && h.game ? " · Spiel " + h.game : ""}</span>${h.side ? `<span class="side-dot ${cl(h.side)}">${h.side === "blue" ? "Blau" : "Rot"}</span>` : ""}</span>
       <span class="hint" style="margin:0">${h.oppName ? `<b class="vs">vs ${esc(h.oppName)}</b> · ` : ""}${fmtDate(h.at)}${h.dur ? ` · ${esc(h.dur)} Min. Spielzeit` : ""}</span>
       ${h.vod && parseVod(h.vod) ? `<button class="btn sm vod-btn ${vod && vod.hid === h.id ? "on" : ""}" data-action="vod-open" data-id="${esc(h.id)}" title="VOD im Board ansehen">▶ VOD</button>` : ""}
-      ${canEdit() ? `<span class="spacer"></span><button class="btn sm ghost" data-action="share-game" data-id="${esc(h.id)}">${discordUrl ? "An Discord" : "Discord"}</button><button class="btn sm" data-action="hist-load" data-id="${esc(h.id)}">Wieder laden</button><button class="btn sm danger" data-action="hist-del" data-id="${esc(h.id)}">Löschen</button>` : ""}</div>
+      ${canEdit() ? `<span class="spacer"></span><button class="btn sm ghost" data-action="share-game" data-id="${esc(h.id)}">${discordUrl ? "An Discord" : "Discord"}</button><button class="btn sm" data-action="hist-edit" data-id="${esc(h.id)}">Bearbeiten</button><button class="btn sm" data-action="hist-load" data-id="${esc(h.id)}">Wieder laden</button><button class="btn sm danger" data-action="hist-del" data-id="${esc(h.id)}">Löschen</button>` : ""}</div>
     <div class="hist-teams"><div><span class="flabel">Wir</span><div class="opts-row">${(h.team || []).map(x => `<span class="mini" title="${esc(x.player)}: ${esc(x.champ)}">${initials(x.champ)}${img(iconUrl(x.champ))}</span>`).join("")}</div></div>
       ${(h.enemy || []).length ? `<div><span class="flabel">Gegner</span><div class="opts-row">${miniRow(h.enemy)}</div></div>` : ""}</div>
     ${h.note ? `<p class="note">${esc(h.note)}</p>` : ""}
@@ -4459,6 +4482,18 @@ function download(name, text){
 // ---------- Editor (Modal) ----------
 const modal = $("#modal");
 function openEditor(kind, id){
+  if (kind === "he"){
+    const h = history.find(x => x.id === id); if (!h) return;
+    const d = new Date(h.at || Date.now()), pad = n => String(n).padStart(2, "0");
+    const eb = h.enemyBy && Object.keys(h.enemyBy).length ? h.enemyBy : byOrder(h.enemy || []);
+    const by = h.banBy || {};
+    edit = { kind, isNew: false, buf: { id: h.id, type: kindOf(h), game: h.game || 1, oppId: h.oppId || "", oppName: h.oppName || "", side: h.side || "", result: h.result || "",
+      dt: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`, dur: h.dur || "", note: h.note || "",
+      team: ROLES.map(r => { const x = (h.team || []).find(t => t.role === r) || {}; return { player: x.player || (lineupMap()[r] || {}).name || "", champ: x.champ || "" }; }),
+      enemy: ROLES.map(r => eb[r] || ""),
+      bansUs: (h.bans || []).filter(c => by[c] === "us"), bansThem: (h.bans || []).filter(c => by[c] !== "us"), banAdd: { us: "", them: "" } } };
+    modal.showModal(); renderModal(); return;
+  }
   if (kind === "p"){
     const p = players.find(x => x.id === id);
     edit = { kind, isNew: !p, buf: p ? JSON.parse(JSON.stringify({ id:p.id, name:p.name, role:p.role || "Top", main: !!p.main || (mainFor(p.role) || {}).id === p.id, note:p.note || "", tiers:p.tiers || {}, groups:p.groups || [], avatar: safeImg(p.avatar) })) : { id:"", name:"", role:"Top", main:false, note:"", tiers:{}, groups:[{ label:"AD", type:"AD", champs:[] }], avatar:"" } };
@@ -4504,6 +4539,40 @@ modal.addEventListener("close", () => { edit = null; });
 function renderModal(focusSel){
   if (!edit) return;
   const b = edit.buf;
+  if (edit.kind === "he"){
+    const tAll = Object.values(teams).sort((x, y) => (y.date || "").localeCompare(x.date || ""));
+    const champIn = (bind, v, ph, lbl) => `<span class="he-champ">${v && champId(v) ? `<span class="mini">${initials(v)}${img(iconUrl(v))}</span>` : `<span class="mini he-empty">?</span>`}<input class="inp" list="champList" data-bind="${bind}" value="${esc(v)}" placeholder="${ph}" autocomplete="off" aria-label="${esc(lbl)}"></span>`;
+    const banChips = (k, arr) => `<div class="he-bans"><span class="flabel">${k === "us" ? "Unsere Banns" : "Gegner-Banns"} <em>${arr.length}/5</em></span><div class="he-chips">${arr.map((c, i) => `<span class="he-chip ${k}"><span class="mini">${initials(c)}${img(iconUrl(c))}</span>${esc(c)}<button data-action="he-ban-del" data-k="${k}" data-i="${i}" aria-label="${esc(c)} entfernen">×</button></span>`).join("")}
+      ${arr.length < 5 ? `<span class="he-ban-add"><input class="inp" list="champList" data-bind="banAdd.${k}" data-he-ban="${k}" value="${esc(b.banAdd[k])}" placeholder="+ Champion" autocomplete="off" aria-label="Bann hinzufügen"><button class="btn sm" data-action="he-ban-add" data-k="${k}">+</button></span>` : ""}</div></div>`;
+    modal.innerHTML = `
+      <div class="m-head"><h2 id="mTitle">Spiel bearbeiten</h2><button class="x" data-action="close" aria-label="Schließen">×</button></div>
+      <div class="m-body he-body">
+        <div class="row2" style="margin-bottom:.8rem">
+          <div><span class="flabel">Art</span><div class="seg">${KINDS.map(([v, l]) => `<button data-action="he-type" data-v="${v}" aria-pressed="${b.type === v}">${l}</button>`).join("")}</div></div>
+          <div><span class="flabel">Seite</span><div class="seg">${[["blue","Blau"],["red","Rot"],["","–"]].map(([v, l]) => `<button data-action="he-side" data-v="${v}" aria-pressed="${b.side === v}">${l}</button>`).join("")}</div></div>
+        </div>
+        ${b.type === "liga" ? `<div class="row2" style="margin-bottom:.8rem"><div class="field" style="margin:0"><label for="he-opp">Gegner-Team</label><select class="inp" id="he-opp" data-bind="oppId"><option value="">– kein Team –</option>${tAll.map(t => `<option value="${esc(t.id)}" ${t.id === b.oppId ? "selected" : ""}>${esc(t.tag ? t.tag + " · " : "")}${esc(t.name || "Unbenannt")}</option>`).join("")}</select></div>
+            <div><span class="flabel">Spiel im Bo3</span><div class="seg">${[1,2,3].map(n => `<button data-action="he-game" data-v="${n}" aria-pressed="${+b.game === n}">Spiel ${n}</button>`).join("")}</div></div></div>`
+          : b.type === "scrim" ? `<div class="field"><label for="he-oppn">Scrim-Gegner</label><input class="inp" id="he-oppn" data-bind="oppName" value="${esc(b.oppName)}" maxlength="60" placeholder="Teamname"></div>` : ""}
+        <span class="flabel">Ergebnis</span>
+        <div class="seg" style="margin-bottom:.9rem">${[["win","Sieg"],["loss","Niederlage"],["","Offen"]].map(([v, l]) => `<button data-action="he-res" data-v="${v}" aria-pressed="${b.result === v}">${l}</button>`).join("")}</div>
+        <div class="row2 he-row3">
+          <div class="field"><label for="he-dt">Datum & Uhrzeit</label><input class="inp" type="datetime-local" id="he-dt" data-bind="dt" value="${esc(b.dt)}"></div>
+          <div class="field"><label for="he-dur">Spielzeit (Min.)</label><input class="inp" id="he-dur" data-bind="dur" value="${esc(b.dur)}" inputmode="numeric" maxlength="3"></div>
+        </div>
+        <div class="field"><label for="he-note">Kurzes Fazit</label><input class="inp" id="he-note" data-bind="note" value="${esc(b.note)}" maxlength="200"></div>
+        <div class="he-teams">
+          <div><span class="flabel">Wir</span>${ROLES.map((r, i) => `<div class="he-line"><span class="he-role">${r}</span>
+            <select class="inp he-pl" data-bind="team.${i}.player" aria-label="Spieler ${r}"><option value="">–</option>${uniq([...players.map(p => p.name), b.team[i].player].filter(Boolean)).map(n => `<option ${n === b.team[i].player ? "selected" : ""}>${esc(n)}</option>`).join("")}</select>
+            ${champIn(`team.${i}.champ`, b.team[i].champ, "Champion", "Champion " + r)}</div>`).join("")}</div>
+          <div><span class="flabel">Gegner</span>${ROLES.map((r, i) => `<div class="he-line"><span class="he-role">${r}</span>${champIn(`enemy.${i}`, b.enemy[i], "Champion", "Gegner " + r)}</div>`).join("")}</div>
+        </div>
+        <div class="he-banrow">${banChips("us", b.bansUs)}${banChips("them", b.bansThem)}</div>
+      </div>
+      <div class="m-foot"><button class="btn gold" data-action="he-save">Speichern</button><button class="btn" data-action="close">Abbrechen</button></div>`;
+    if (focusSel) modal.querySelector(focusSel)?.focus();
+    return;
+  }
   if (edit.kind === "p"){
     const allC = b.groups.flatMap(g => g.champs), best = [...allC].sort((x, y) => tierRank(b.tiers[x]) - tierRank(b.tiers[y]))[0];
     modal.innerHTML = `
@@ -4767,6 +4836,13 @@ function renderModal(focusSel){
   }
   if (focusSel){ const el = modal.querySelector(focusSel); el && el.focus(); }
 }
+modal.addEventListener("keydown", e => { const k = e.target.dataset && e.target.dataset.heBan; if (k && e.key === "Enter"){ e.preventDefault(); modal.querySelector(`[data-action="he-ban-add"][data-k="${k}"]`)?.click(); } });
+// Champion-Bild im Bearbeiten-Dialog sofort aktualisieren, wenn ein gültiger Name drinsteht
+modal.addEventListener("input", e => {
+  if (!edit || edit.kind !== "he" || e.target.getAttribute("list") !== "champList" || e.target.dataset.heBan) return;
+  const v = e.target.value.trim(), ok = v && champId(v), m = e.target.previousElementSibling; if (!m) return;
+  m.className = "mini" + (ok ? "" : " he-empty"); m.innerHTML = ok ? initials(officialName(v)) + img(iconUrl(v)) : "?";
+});
 modal.addEventListener("input", e => {
   const k = e.target.dataset.bind; if (!k || !edit) return;
   const parts = k.split("."); let o = edit.buf;
@@ -4996,6 +5072,34 @@ document.addEventListener("click", async e => {
       const map = { ...counters }; delete map[edit.orig]; counters = map; closeEditor(); render(); queueSet("config/counters", { map }); toast("Gelöscht."); break;
     }
     case "save-draft": openEditor("h"); break;
+    case "hist-edit": openEditor("he", a.dataset.id); break;
+    case "he-type": b.type = a.dataset.v; renderModal(); break;
+    case "he-side": b.side = a.dataset.v; renderModal(); break;
+    case "he-res": b.result = a.dataset.v; renderModal(); break;
+    case "he-game": b.game = +a.dataset.v; renderModal(); break;
+    case "he-ban-del": { const arr = a.dataset.k === "us" ? b.bansUs : b.bansThem; arr.splice(+a.dataset.i, 1); renderModal(); break; }
+    case "he-ban-add": { const k = a.dataset.k, c = officialName(b.banAdd[k] || ""); if (!c) break; if (!champId(c)) return toast(`„${c}“ ist kein Champion.`);
+      if (b.bansUs.includes(c) || b.bansThem.includes(c)) return toast(`${c} ist schon gebannt.`);
+      (k === "us" ? b.bansUs : b.bansThem).push(c); b.banAdd[k] = ""; renderModal(`[data-he-ban="${k}"]`); break; }
+    case "he-save": {
+      const h = history.find(x => x.id === b.id); if (!h) { closeEditor(); break; }
+      const fix = c => { c = (c || "").trim(); return c ? officialName(c) : ""; };
+      const bad = [...b.team.map(x => x.champ), ...b.enemy].map(fix).filter(c => c && !champId(c));
+      if (bad.length) return toast(`Unbekannter Champion: ${bad.join(", ")}`);
+      const team = ROLES.map((r, i) => ({ player: b.team[i].player, role: r, champ: fix(b.team[i].champ) })).filter(x => x.champ);
+      const enemyBy = {}; ROLES.forEach((r, i) => { const c = fix(b.enemy[i]); if (c) enemyBy[r] = c; });
+      const all = [...team.map(x => x.champ), ...Object.values(enemyBy)], dup = all.find((c, i) => all.indexOf(c) !== i);
+      if (dup) return toast(`${dup} ist doppelt eingetragen.`);
+      const t = b.oppId && team && teams[b.oppId] ? teams[b.oppId] : null;
+      const at = b.dt ? new Date(b.dt).getTime() : h.at;
+      const banBy = Object.fromEntries([...b.bansUs.map(c => [c, "us"]), ...b.bansThem.map(c => [c, "them"])]);
+      setHist(h.id, { kind: b.type, side: b.side, result: b.result, dur: String(b.dur || "").replace(/\D/g, "").slice(0, 3), note: (b.note || "").trim(),
+        at: isNaN(at) ? h.at : at, team, enemyBy, enemy: ROLES.map(r => enemyBy[r]).filter(Boolean), bans: [...b.bansUs, ...b.bansThem], banBy,
+        game: b.type === "liga" ? +b.game || 1 : 0,
+        oppId: b.type === "liga" ? b.oppId : b.type === "scrim" ? "" : "",
+        oppName: b.type === "liga" ? (t ? (t.tag || t.name || "") : h.oppName || "") : b.type === "scrim" ? (b.oppName || "").trim() : "" });
+      history.sort((x, y) => (y.at || 0) - (x.at || 0)); queueSet("config/history", { items: history });
+      closeEditor(); toast("Spiel aktualisiert."); break; }
     case "h-res": b.result = a.dataset.v; renderModal(); break;
     case "h-clear": b.clear = a.checked; break;
     case "h-type": b.type = a.dataset.v; renderModal(); break;
@@ -5176,7 +5280,7 @@ document.addEventListener("click", async e => {
       const picks = livePicks();
       const entry = { id: "h" + Date.now().toString(36), at: Date.now(), result: b.result, note: (b.note || "").trim(), dur: String(b.dur || "").replace(/\D/g, "").slice(0, 3),
         team: ROLES.map(r => ({ r, p: lineupMap()[r] })).filter(x => x.p && picks[x.p.id]).map(x => ({ player: x.p.name, role: x.r, champ: picks[x.p.id] })),
-        enemy: [...(draft.enemy || [])], enemyBy: { ...(draft.enemyBy || {}) }, bans: [...draft.bans],
+        enemy: [...(draft.enemy || [])], enemyBy: { ...(draft.enemyBy || {}) }, bans: [...draft.bans], banBy: cleanBanBy(draft.bans, draft.banBy),
         oppId: b.type === "ranked" ? "" : b.type === "liga" ? (activeId || "") : (activeId && !b.scrimName.trim() ? activeId : ""),
         oppName: b.type === "ranked" ? "" : b.type === "scrim" && b.scrimName.trim() ? b.scrimName.trim() : (at() ? (at().tag || at().name || "") : ""),
         kind: b.type, side: b.side || "", game: b.type === "liga" ? b.game : 0 };
@@ -5193,7 +5297,7 @@ document.addEventListener("click", async e => {
     case "hist-load": {
       const h = history.find(x => x.id === a.dataset.id); if (!h) return;
       const picks = {}, lineup = {}; (h.team || []).forEach(x => { const p = players.find(pp => pp.name === x.player); if (p){ picks[p.id] = x.champ; lineup[ROLES.includes(x.role) ? x.role : p.role] = p.id; } });
-      tab = "draft"; setDraft({ picks, bans: [...(h.bans || [])], ...(h.enemyBy ? { enemyBy: { ...h.enemyBy } } : { enemy: [...(h.enemy || [])] }), lineup, side: h.side || "", mode: kindOf(h) === "ranked" ? "ranked" : "" }); toast("Draft geladen."); break;
+      tab = "draft"; setDraft({ picks, bans: [...(h.bans || [])], banBy: { ...(h.banBy || {}) }, ...(h.enemyBy ? { enemyBy: { ...h.enemyBy } } : { enemy: [...(h.enemy || [])] }), lineup, side: h.side || "", mode: kindOf(h) === "ranked" ? "ranked" : "" }); toast("Draft geladen."); break;
     }
     case "hist-del": {
       if (!armed(a, "Nochmal tippen")) return;
