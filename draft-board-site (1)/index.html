@@ -5780,21 +5780,25 @@ function appInfoHtml(){
 }
 // ---------- Wer ist online (Firestore-Herzschlag, ca. alle 90 s und bei jedem Reiterwechsel) ----------
 let presence = {}, presOpen = false;
-const PRES_ON = 4 * 60e3, TAB_LABEL = { draft: "Draft", scout: "Gegner", pools: "Pools", combos: "Combos", counters: "Matchups", history: "Verlauf", team: "Team" };
-let presLast = "", presT = null;
+const PRES_ON = 7 * 60e3, TAB_LABEL = { draft: "Draft", scout: "Gegner", pools: "Pools", combos: "Combos", counters: "Matchups", history: "Verlauf", team: "Team" };
+let presLast = "", presT = null, presAt = 0;
+// so wenig Schreibvorgänge wie möglich: nur bei Änderung (Name/Reiter) oder als seltener Herzschlag, nie im Hintergrund
 function presenceBeat(force){
-  if (!fs || conn !== "live" || !canWrite) return;
+  if (!fs || conn !== "live" || !canWrite || document.hidden) return;
   const me = { n: myName() || "", t: tab, at: Date.now() }, key = me.n + "|" + me.t;
   if (!force && key === presLast) return;
-  presLast = key;
+  presLast = key; presAt = Date.now();
   const patch = { [myDev]: me };
   // uralte Einträge (über 1 Tag) nebenbei aufräumen
   Object.entries(presence).forEach(([d, x]) => { if (d !== myDev && Date.now() - N(x && x.at) > 864e5) patch[d] = FV().delete(); });
   fs.doc("config/presence").set({ users: patch }, { merge: true }).catch(() => {});
 }
-const presenceSoon = () => { clearTimeout(presT); presT = setTimeout(() => presenceBeat(), 1200); };
-setInterval(() => { if (!document.hidden) presenceBeat(true); }, 90e3);
-document.addEventListener("visibilitychange", () => { if (!document.hidden) presenceBeat(true); });
+const presenceSoon = () => { clearTimeout(presT); presT = setTimeout(() => presenceBeat(), 5000); }; // schnelles Durchklicken = 1 Schreibvorgang
+const presOthers = () => Object.entries(presence).some(([d, x]) => d !== myDev && x && Date.now() - N(x.at) < PRES_ON);
+// Herzschlag: alle 3 Min., wenn andere online sind – sonst alle 5 Min.
+setInterval(() => { if (Date.now() - presAt >= (presOthers() ? 3 : 5) * 60e3 - 5e3) presenceBeat(true); }, 60e3);
+// zurück in der App: nur melden, wenn die letzte Meldung schon älter ist
+document.addEventListener("visibilitychange", () => { if (!document.hidden && Date.now() - presAt > 2 * 60e3) presenceBeat(true); });
 window.addEventListener("pagehide", () => { try { if (fs && canWrite) fs.doc("config/presence").set({ users: { [myDev]: { n: myName() || "", t: tab, at: 0 } } }, { merge: true }); } catch(e){} });
 function renderPresence(){
   const el = $("#presence"); if (!el) return;
