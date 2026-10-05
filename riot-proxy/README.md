@@ -130,7 +130,8 @@ die Banns und eure Seite und trägt alles in den Draft ein. Die Riot-IDs eurer S
 Scouting-Picks, typische Bot-/Support-Champions) – kurz prüfen.
 
 Die laufende Championauswahl selbst gibt Riot nicht über die API heraus, nur das gestartete Spiel.
-Braucht die `worker.js` ab **Version 7**.
+Übernommen werden nur Spiele auf Summoner's Rift (Ranked, Normal, Flex, Clash, Turnier, Custom) – ARAM, Arena, URF usw. werden übersprungen.
+Braucht die `worker.js` ab **Version 8**.
 
 ## Video-Upload (optional)
 

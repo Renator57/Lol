@@ -3948,13 +3948,18 @@ async function liveGameFetch(){
   if (!DD.v) await ddReady;
   lgBusy = true; const btn = $("#liveGameBtn"); btn.classList.add("busy"); btn.disabled = true;
   riotVerAt = 0; await riotCheckVer();
-  if (riotVer != null && riotVer < 7){ lgBusy = false; btn.classList.remove("busy"); btn.disabled = false; return toast(`Der Riot-Proxy (Version ${riotVer}) kennt „Laufendes Spiel“ noch nicht – neue worker.js (Version 7) bei Cloudflare bereitstellen.`); }
+  if (riotVer != null && riotVer < 8){ lgBusy = false; btn.classList.remove("busy"); btn.disabled = false; return toast(riotVer < 7 ? `Der Riot-Proxy (Version ${riotVer}) kennt „Laufendes Spiel“ noch nicht – neue worker.js (Version 8) bei Cloudflare bereitstellen.` : `Bitte die neue worker.js (Version 8) bei Cloudflare bereitstellen – sonst würden auch ARAM/Arena-Spiele übernommen.`); }
   let d;
   try { d = await riotFetch("live", { ids: mine.map(x => x.id).join(","), region: duoCfg.region || "euw" }); }
   catch(e){ lgBusy = false; btn.classList.remove("busy"); btn.disabled = false; return toast(e.auth ? RIOT_KEY_MSG : /Unbekannt|404/.test(e.message) ? "Der Riot-Proxy kennt „Laufendes Spiel“ noch nicht – neue worker.js (Version 7) bereitstellen." : e.message); }
   lgBusy = false; btn.classList.remove("busy"); btn.disabled = false;
   if (d.live == null) return toast("Der Riot-Proxy kennt „Laufendes Spiel“ noch nicht – neue worker.js (Version 7) bereitstellen.");
-  if (!d.live) return toast("Gerade ist keiner von euch im Spiel. Erst ab dem Ladebildschirm verfügbar.");
+  if (!d.live){
+    const other = (d.checked || []).filter(x => x.live && x.mode);
+    const MODE = { ARAM: "ARAM", CHERRY: "Arena", URF: "URF", ONEFORALL: "One for All", NEXUSBLITZ: "Nexus Blitz", ULTBOOK: "Ultimate Spellbook", TUTORIAL: "Tutorial", PRACTICETOOL: "Übungstool", SWARM: "Swarm", STRAWBERRY: "Swarm" };
+    if (other.length) return toast(`${other.map(x => `${(x.id || "").split("#")[0]} spielt ${MODE[x.mode] || x.mode}`).join(", ")} – wird nicht übernommen, nur Spiele auf Summoner's Rift.`);
+    return toast("Gerade ist keiner von euch im Spiel. Erst ab dem Ladebildschirm verfügbar.");
+  }
   const name = k => DD.byKey[k] || DD.byKey[String(k)] || "";
   const ours = d.players.filter(x => x.team === d.myTeam).map(x => ({ ...x, c: name(x.champ) }));
   const theirs = d.players.filter(x => x.team !== d.myTeam).map(x => ({ ...x, c: name(x.champ) }));

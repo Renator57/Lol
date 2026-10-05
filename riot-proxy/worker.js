@@ -32,7 +32,7 @@ const QUEUES = {
   tournament: "type=tournament", // Turnier-Codes (z. B. Prime League)
   all:        "",
 };
-const VERSION = 7;           // vom Board geprüft (Einstellungen → Testen)
+const VERSION = 8;           // vom Board geprüft (Einstellungen → Testen)
 const MAX_COUNT = 30;
 // Cloudflare-eigener Standard-Cache (caches.default fehlt in den Browser-Typen)
 const edgeCache = () => /** @type {Cache} */ (/** @type {any} */ (caches).default);
@@ -375,6 +375,8 @@ async function liveGame(url, env, ctx, cors) {
         acc = await riot(accUrl, CACHE_ACCOUNT, "Konto", true);
         try { g = await spec(acc); } catch (e2) { if (e2.status === 404) { checked.push({ id, live: false }); continue; } throw e2; }
       }
+      // nur Summoner's Rift (Ranked, Normal, Flex, Clash, Turnier, Custom) – ARAM, Arena, URF usw. überspringen
+      if (g.gameMode !== "CLASSIC" || (g.mapId && g.mapId !== 11)) { checked.push({ id, live: true, mode: g.gameMode || "", queue: g.gameQueueConfigId || 0 }); continue; }
       const me = (g.participants || []).find(p => p.puuid === acc.puuid);
       return json({
         live: true, foundBy: `${acc.gameName}#${acc.tagLine}`, myTeam: me ? me.teamId : 100,
