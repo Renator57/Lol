@@ -874,7 +874,15 @@ dialog:has(.ce-body){width:min(860px,calc(100vw - 1.5rem))}
 [hidden]{display:none!important}
 /* ===== Draft-Ablauf ===== */
 .panel.flow{margin-bottom:1rem;padding:.8rem 1rem}
-.flow-top{display:flex;align-items:center;gap:.9rem;flex-wrap:wrap}
+.flow-top{display:flex;align-items:center;gap:.6rem .9rem;flex-wrap:wrap}
+.flow-top .plan-pick{margin-left:auto}
+.flow-next{display:flex;align-items:center;gap:.75rem;margin-top:.75rem;padding:.6rem .75rem;border-radius:14px;border:1px solid var(--line);background:rgba(6,10,18,.35)}
+.flow-next.side-blue{border-color:rgba(74,139,255,.35);background:linear-gradient(90deg,rgba(74,139,255,.1),rgba(6,10,18,.3) 60%)}
+.flow-next.side-red{border-color:rgba(255,106,92,.35);background:linear-gradient(90deg,rgba(255,106,92,.1),rgba(6,10,18,.3) 60%)}
+.fn-ic{flex:none;width:2rem;height:2rem;border-radius:50%;display:grid;place-items:center;font-size:.8rem;font-weight:900;background:rgba(255,255,255,.07);color:var(--muted)}
+.flow-next.side-blue .fn-ic{background:rgba(74,139,255,.2);color:#9cc0ff}.flow-next.side-red .fn-ic{background:rgba(255,106,92,.2);color:#ffb3aa}
+.flow-next .flow-toggle{margin:0 0 0 auto;flex:none;white-space:nowrap}
+@media (max-width:560px){.flow-next{flex-wrap:wrap;align-items:flex-start}.flow-next .flow-info{flex:1 1 0}.flow-next .flow-toggle{width:100%;text-align:right;margin:-.2rem 0 0}.fn-ic{width:1.7rem;height:1.7rem}.flow-top .plan-pick{margin-left:0}}
 .side-pick{display:inline-flex;gap:4px;padding:4px;border-radius:12px;background:rgba(6,10,18,.5);border:1px solid var(--line)}
 .side-pick button{border:0;background:none;border-radius:9px;padding:.45rem .85rem;font-weight:800;font-size:.85rem;color:var(--muted)}
 .side-pick .sb-blue[aria-pressed="true"]{background:rgba(70,130,255,.22);color:#a9c6ff;box-shadow:inset 0 0 0 1px rgba(70,130,255,.5)}
@@ -2520,14 +2528,16 @@ function renderDraft(picks, types, rec){
         <button class="sb-blue" data-action="set-side" data-v="blue" aria-pressed="${draft.side === "blue"}" ${canEdit() ? "" : "disabled"}>Blaue Seite</button>
         <button class="sb-red" data-action="set-side" data-v="red" aria-pressed="${draft.side === "red"}" ${canEdit() ? "" : "disabled"}>Rote Seite</button>
       </div>
-      <div class="flow-info"><b>${esc(draft.side ? nextTxt : "Seite wählen")}</b><span>${esc(tip)}</span></div>
       ${ot ? `<div class="plan-pick"><span class="flabel" style="margin:0">Pläne gg. ${esc(ot.tag || ot.name || "Gegner")}</span>
         ${plans.map(pl => `<button class="btn sm" data-action="plan-load" data-id="${esc(pl.id)}" ${canEdit() ? "" : "disabled"} title="${esc(pl.note || "")}">${esc(pl.name)}</button>`).join("")}
         ${canEdit() && Object.keys(livePicks()).length ? `<button class="btn sm ghost" data-action="plan-save">+ Als Plan speichern</button>` : ""}</div>` : ""}
-      ${canEdit() && !liveOn() ? `<button class="btn sm gold live-start" data-action="live-start" title="Gemeinsam Schritt für Schritt mit Timer draften">▶ Live-Draft</button>` : ""}
+    </div>
+    <div class="flow-next ${draft.side ? "side-" + draft.side : "no-side"}">
+      <span class="fn-ic" aria-hidden="true">${!draft.side ? "?" : !next ? "✓" : next.t === "ban" ? "✕" : "▶"}</span>
+      <div class="flow-info"><b>${esc(draft.side ? nextTxt : "Seite wählen")}</b><span>${esc(tip)}</span></div>
+      ${draft.side ? `<button class="flow-toggle" data-action="toggle-order" aria-expanded="${!!render.showOrder}">${render.showOrder ? "Reihenfolge ▴" : "Reihenfolge ▾"}</button>` : ""}
     </div>
     ${render.locked && render.locked.size ? `<div class="fearless-bar"><span class="flabel" style="margin:0">Fearless · gesperrt</span><div class="opts-row">${miniRow([...render.locked])}</div></div>` : ""}
-    ${draft.side ? `<button class="flow-toggle" data-action="toggle-order" aria-expanded="${!!render.showOrder}">${render.showOrder ? "Reihenfolge ausblenden ▴" : "Pick-Reihenfolge anzeigen ▾"}</button>` : ""}
     ${draft.side && render.showOrder ? `<div class="flow-strip">${steps.map((x, k) => `${(ranked ? k === 10 : k === 6 || k === 12 || k === 16) ? `<span class="fs-sep"></span>` : ""}<span class="fs ${x.t} ${x.s === "B" ? "blue" : "red"} ${x.us ? "us" : ""} ${x.done ? "done" : ""} ${next && next.i === x.i ? "now" : ""}" title="${x.t === "ban" ? "Bann" : "Pick"} ${x.s === "B" ? "Blau" : "Rot"} ${x.n}${x.us ? " (ihr)" : ""}">${x.t === "ban" ? "✕" : x.n}</span>`).join("")}</div>
       <div class="fs-legend"><span><i class="fs pick blue us"></i>eure Picks</span><span><i class="fs pick red"></i>Gegner</span><span><i class="fs ban blue"></i>Bann</span></div>` : ""}`;
 
