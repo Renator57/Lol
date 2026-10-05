@@ -1595,33 +1595,66 @@ dialog{border-radius:26px;background:linear-gradient(180deg,rgba(21,31,51,.97),r
 .lg-dot{width:.55rem;height:.55rem;border-radius:50%;background:#ff6a5c;box-shadow:0 0 0 0 rgba(255,106,92,.6);animation:lgpulse 1.6s infinite}
 .live-get.busy .lg-dot{animation-duration:.5s}
 @keyframes lgpulse{0%{box-shadow:0 0 0 0 rgba(255,106,92,.55)}70%{box-shadow:0 0 0 7px rgba(255,106,92,0)}100%{box-shadow:0 0 0 0 rgba(255,106,92,0)}}
-.he-body .row2{gap:.8rem}
-.he-row3{grid-template-columns:1fr 8rem}
-.he-teams{display:grid;grid-template-columns:1fr;gap:.9rem;margin:.4rem 0 .8rem}
-@media (max-width:640px){.he-body .row2,.he-row3{grid-template-columns:1fr!important}.he-body .seg{flex-wrap:wrap}}
-.he-line{display:grid;grid-template-columns:4.6rem 9rem minmax(0,1fr);align-items:center;gap:.45rem;margin-bottom:.35rem}
-.he-teams>div:last-child .he-line{grid-template-columns:4.6rem minmax(0,1fr)}
-@media (max-width:640px){.he-line{grid-template-columns:3.9rem 6.6rem minmax(0,1fr)}.he-teams>div:last-child .he-line{grid-template-columns:3.9rem minmax(0,1fr)}}
-.he-role{font-size:.72rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
-.he-pl{width:100%;padding:.35rem .4rem}
-.he-champ{display:flex;align-items:center;gap:.4rem;min-width:0}
-.he-champ .mini{width:30px;height:30px;flex:none}
-.he-champ .inp{padding:.35rem .5rem;min-width:0}
-.mini.he-empty{color:var(--muted);font-weight:800}
-.he-banrow{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
-@media (max-width:640px){.he-banrow{grid-template-columns:1fr}}
-.he-bans .flabel em{font-style:normal;opacity:.7}
+dialog.wide{width:min(860px,calc(100vw - 1.5rem))}
+.he-body{display:grid;grid-template-columns:minmax(0,1fr);gap:1rem}
+.he-body *{min-width:0}
+.he-body .inp{width:100%;max-width:100%}
+.he-sum{display:flex;align-items:center;gap:.9rem;padding:.8rem 1rem;border-radius:16px;border:1px solid var(--line);background:linear-gradient(100deg,rgba(255,255,255,.05),rgba(255,255,255,.01))}
+.he-sum.win{border-color:rgba(63,209,127,.45);background:linear-gradient(100deg,rgba(63,209,127,.14),rgba(255,255,255,.01) 70%)}
+.he-sum.loss{border-color:rgba(255,106,92,.45);background:linear-gradient(100deg,rgba(255,106,92,.14),rgba(255,255,255,.01) 70%)}
+.hs-res{font-family:var(--fd);font-weight:800;font-size:.78rem;letter-spacing:.08em;padding:.3rem .6rem;border-radius:8px;background:rgba(255,255,255,.08);color:var(--muted)}
+.he-sum.win .hs-res{background:rgba(63,209,127,.2);color:var(--good)}.he-sum.loss .hs-res{background:rgba(255,106,92,.2);color:var(--bad)}
+.hs-txt{flex:1;display:flex;flex-direction:column;min-width:0}
+.hs-txt b{font-family:var(--fd);font-size:1.05rem}.hs-txt small{font-size:.76rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hs-picks{display:flex;gap:3px}.hs-picks .mini{width:30px;height:30px}
+@media (max-width:640px){.hs-picks{display:none}}
+.he-sec{padding:.9rem 1rem 1rem;border-radius:16px;border:1px solid var(--line);background:rgba(6,10,18,.35)}
+.he-sec>h4{margin:0 0 .75rem;font-size:.74rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-hi);display:flex;align-items:baseline;gap:.6rem;flex-wrap:wrap}
+.he-sec>h4 small{font-size:.72rem;letter-spacing:0;text-transform:none;font-weight:600;color:var(--muted)}
+.he-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:.8rem 1rem;align-items:end}
+.he-grid .field{margin:0}
+.he-full{grid-column:1/-1}
+.he-dd{display:grid;grid-template-columns:minmax(0,1fr) 5rem;gap:.6rem}
+@media (max-width:640px){.he-grid{grid-template-columns:minmax(0,1fr)}.he-body .seg{flex-wrap:wrap}.he-sec{padding:.75rem .7rem .8rem}}
+.he-res button.r-win[aria-pressed="true"]{background:rgba(63,209,127,.2);color:var(--good)}
+.he-res button.r-loss[aria-pressed="true"]{background:rgba(255,106,92,.2);color:var(--bad)}
+.he-side button.s-blue[aria-pressed="true"]{background:rgba(74,139,255,.22);color:#9cc0ff}
+.he-side button.s-red[aria-pressed="true"]{background:rgba(255,106,92,.2);color:#ffb3aa}
+.he-teams{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:.8rem}
+@media (max-width:700px){.he-teams{grid-template-columns:minmax(0,1fr)}}
+.he-team{padding:.7rem;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.02)}
+.he-team.blue{border-color:rgba(74,139,255,.4);background:linear-gradient(180deg,rgba(74,139,255,.09),rgba(255,255,255,.01) 40%)}
+.he-team.red{border-color:rgba(255,106,92,.4);background:linear-gradient(180deg,rgba(255,106,92,.09),rgba(255,255,255,.01) 40%)}
+.het-h{display:flex;align-items:center;justify-content:space-between;margin:0 .1rem .55rem;font-family:var(--fd);font-weight:800;font-size:.9rem}
+.het-h em{font-style:normal;font-size:.68rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:.15rem .5rem;border-radius:999px;background:rgba(255,255,255,.08);color:var(--muted)}
+.he-team.blue .het-h em{background:rgba(74,139,255,.2);color:#9cc0ff}.he-team.red .het-h em{background:rgba(255,106,92,.2);color:#ffb3aa}
+.he-line{display:grid;grid-template-columns:3.6rem minmax(0,1fr) 7rem;align-items:center;gap:.45rem;padding:.3rem 0;border-top:1px solid rgba(255,255,255,.05)}
+.he-line:first-of-type{border-top:0}
+.he-team.them .he-line{grid-template-columns:3.6rem minmax(0,1fr)}
+.he-role{font-size:.66rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.he-pl{width:100%;padding:.32rem .4rem;font-size:.82rem}
+.he-champ{display:flex;align-items:center;gap:.45rem;min-width:0}
+.he-champ .mini{width:34px;height:34px;flex:none;border-radius:9px}
+.he-champ .inp{padding:.38rem .55rem;min-width:0;font-weight:700}
+.mini.he-empty{color:var(--muted);font-weight:800;border-style:dashed}
+@media (max-width:640px){.he-line{grid-template-columns:3rem minmax(0,1fr);gap:.3rem .35rem}.he-team.us .he-pl{grid-column:2;margin-left:calc(30px + .45rem);width:calc(100% - 30px - .45rem)}.he-champ .mini{width:30px;height:30px}.he-team.them .he-line{grid-template-columns:3.2rem minmax(0,1fr)}}
+.he-banrow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:.8rem}
+@media (max-width:640px){.he-banrow{grid-template-columns:minmax(0,1fr)}}
+.he-bans{padding:.65rem .7rem;border-radius:14px;border:1px solid var(--line)}
+.he-bans.us{border-color:rgba(215,180,106,.35)}.he-bans.them{border-color:rgba(255,106,92,.3)}
+.heb-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;font-size:.78rem;font-weight:800}
+.he-bans.us .heb-h span{color:var(--gold-hi)}.he-bans.them .heb-h span{color:#ffb3aa}
+.heb-h em{font-style:normal;font-size:.72rem;color:var(--muted)}.heb-h em.over{color:var(--bad)}
 .he-chips{display:flex;flex-wrap:wrap;gap:.35rem;align-items:center}
-.he-chip{display:inline-flex;align-items:center;gap:.35rem;padding:.2rem .3rem .2rem .25rem;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.03);font-size:.8rem;font-weight:700}
-.he-chip.us{border-color:rgba(215,180,106,.55)}.he-chip.them{border-color:rgba(255,106,92,.45)}
+.he-chip{display:inline-flex;align-items:center;gap:.2rem;padding:.2rem .25rem .2rem .25rem;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.03);font-size:.8rem;font-weight:700}
+.he-chip.us{border-color:rgba(215,180,106,.5)}.he-chip.them{border-color:rgba(255,106,92,.45)}
 .he-chip .mini{width:22px;height:22px;border-radius:50%}
-.he-chip button{border:0;background:none;color:var(--muted);cursor:pointer;font-size:1rem;line-height:1;padding:0 .2rem}
+.he-chip button{border:0;background:none;color:var(--muted);cursor:pointer;font-size:1rem;line-height:1;padding:0 .25rem}
+.he-chip button:hover{color:var(--bad)}
 .he-chip .he-swap{display:inline-flex;align-items:center;gap:.35rem;color:var(--text);font:inherit;font-weight:700;padding:0}
 .he-swap i{font-style:normal;font-size:.75rem;color:var(--muted);opacity:.6}
 .he-swap:hover i{opacity:1;color:var(--gold-hi)}
-.he-bans .flabel em.over{color:var(--bad);opacity:1}
-.he-chip button:hover{color:var(--bad)}
-.he-ban-add{display:inline-flex;gap:.25rem}.he-ban-add .inp{width:8.5rem;padding:.3rem .5rem}
+.he-ban-add{display:inline-flex;gap:.25rem}.he-body .he-ban-add .inp{width:7.5rem;padding:.3rem .5rem}
 .duo-warn{width:100%;display:grid;gap:.25rem;padding:.65rem .8rem;border-radius:12px;border:1px solid rgba(215,180,106,.45);background:rgba(215,180,106,.08);font-size:.82rem;line-height:1.45}
 .duo-warn b{color:var(--gold-hi)}.duo-warn span{color:var(--muted)}.duo-warn span b{color:var(--text)}
 .duo-prog{width:100%;display:flex;flex-wrap:wrap;gap:.35rem .9rem;font-size:.78rem;color:var(--muted)}
@@ -4564,38 +4597,52 @@ modal.addEventListener("close", () => { edit = null; });
 function renderModal(focusSel){
   if (!edit) return;
   const b = edit.buf;
+  modal.classList.toggle("wide", edit.kind === "he");
   if (edit.kind === "he"){
     const tAll = Object.values(teams).sort((x, y) => (y.date || "").localeCompare(x.date || ""));
-    const champIn = (bind, v, ph, lbl) => `<span class="he-champ">${v && champId(v) ? `<span class="mini">${initials(v)}${img(iconUrl(v))}</span>` : `<span class="mini he-empty">?</span>`}<input class="inp" list="champList" data-bind="${bind}" value="${esc(v)}" placeholder="${ph}" autocomplete="off" aria-label="${esc(lbl)}"></span>`;
-    const banChips = (k, arr) => `<div class="he-bans"><span class="flabel">${k === "us" ? "Unsere Banns" : "Gegner-Banns"} <em class="${arr.length > 5 ? "over" : ""}">${arr.length}/5</em></span><div class="he-chips">${arr.map((c, i) => `<span class="he-chip ${k}"><button class="he-swap" data-action="he-ban-swap" data-k="${k}" data-i="${i}" title="Auf die ${k === "us" ? "Gegner" : "eigene"}-Seite schieben"><span class="mini">${initials(c)}${img(iconUrl(c))}</span>${esc(c)}<i>⇄</i></button><button data-action="he-ban-del" data-k="${k}" data-i="${i}" aria-label="${esc(c)} entfernen">×</button></span>`).join("")}
-      ${arr.length < 5 ? `<span class="he-ban-add"><input class="inp" list="champList" data-bind="banAdd.${k}" data-he-ban="${k}" value="${esc(b.banAdd[k])}" placeholder="+ Champion" autocomplete="off" aria-label="Bann hinzufügen"><button class="btn sm" data-action="he-ban-add" data-k="${k}">+</button></span>` : ""}</div></div>`;
+    const ok = v => v && champId(v);
+    const ico = (v, big) => `<span class="mini${ok(v) ? "" : " he-empty"}${big ? " big" : ""}">${ok(v) ? initials(officialName(v)) + img(iconUrl(v)) : "?"}</span>`;
+    const champIn = (bind, v, lbl) => `<span class="he-champ">${ico(v)}<input class="inp" list="champList" data-bind="${bind}" value="${esc(v)}" placeholder="Champion" autocomplete="off" aria-label="${esc(lbl)}"></span>`;
+    const banChips = (k, arr) => `<div class="he-bans ${k}"><div class="heb-h"><span>${k === "us" ? "Unsere Banns" : "Gegner-Banns"}</span><em class="${arr.length > 5 ? "over" : ""}">${arr.length}/5</em></div>
+      <div class="he-chips">${arr.map((c, i) => `<span class="he-chip ${k}"><button class="he-swap" data-action="he-ban-swap" data-k="${k}" data-i="${i}" title="Auf die ${k === "us" ? "Gegner" : "eigene"}-Seite schieben"><span class="mini">${initials(c)}${img(iconUrl(c))}</span>${esc(c)}<i>⇄</i></button><button data-action="he-ban-del" data-k="${k}" data-i="${i}" aria-label="${esc(c)} entfernen">×</button></span>`).join("")}
+      ${arr.length < 5 ? `<span class="he-ban-add"><input class="inp" list="champList" data-bind="banAdd.${k}" data-he-ban="${k}" value="${esc(b.banAdd[k])}" placeholder="+ Bann" autocomplete="off" aria-label="Bann hinzufügen"><button class="btn sm" data-action="he-ban-add" data-k="${k}">+</button></span>` : ""}</div></div>`;
+    const t = b.oppId && teams[b.oppId], oppTxt = b.type === "liga" ? (t ? (t.tag || t.name) : "") : b.type === "scrim" ? b.oppName : "";
+    const resCls = b.result === "win" ? "win" : b.result === "loss" ? "loss" : "open";
+    const sideCol = s => s === "blue" ? "blue" : s === "red" ? "red" : "";
+    const dtTxt = b.dt ? (() => { try { return fmtDate(new Date(b.dt).getTime()); } catch(e){ return ""; } })() : "";
     modal.innerHTML = `
       <div class="m-head"><h2 id="mTitle">Spiel bearbeiten</h2><button class="x" data-action="close" aria-label="Schließen">×</button></div>
       <div class="m-body he-body">
-        <div class="row2" style="margin-bottom:.8rem">
-          <div><span class="flabel">Art</span><div class="seg">${KINDS.map(([v, l]) => `<button data-action="he-type" data-v="${v}" aria-pressed="${b.type === v}">${l}</button>`).join("")}</div></div>
-          <div><span class="flabel">Seite</span><div class="seg">${[["blue","Blau"],["red","Rot"],["","–"]].map(([v, l]) => `<button data-action="he-side" data-v="${v}" aria-pressed="${b.side === v}">${l}</button>`).join("")}</div></div>
-        </div>
-        ${b.type === "liga" ? `<div class="row2" style="margin-bottom:.8rem"><div class="field" style="margin:0"><label for="he-opp">Gegner-Team</label><select class="inp" id="he-opp" data-bind="oppId"><option value="">– kein Team –</option>${tAll.map(t => `<option value="${esc(t.id)}" ${t.id === b.oppId ? "selected" : ""}>${esc(t.tag ? t.tag + " · " : "")}${esc(t.name || "Unbenannt")}</option>`).join("")}</select></div>
-            <div><span class="flabel">Spiel im Bo3</span><div class="seg">${[1,2,3].map(n => `<button data-action="he-game" data-v="${n}" aria-pressed="${+b.game === n}">Spiel ${n}</button>`).join("")}</div></div></div>`
-          : b.type === "scrim" ? `<div class="field"><label for="he-oppn">Scrim-Gegner</label><input class="inp" id="he-oppn" data-bind="oppName" value="${esc(b.oppName)}" maxlength="60" placeholder="Teamname"></div>` : ""}
-        <span class="flabel">Ergebnis</span>
-        <div class="seg" style="margin-bottom:.9rem">${[["win","Sieg"],["loss","Niederlage"],["","Offen"]].map(([v, l]) => `<button data-action="he-res" data-v="${v}" aria-pressed="${b.result === v}">${l}</button>`).join("")}</div>
-        <div class="row2 he-row3">
-          <div class="field"><label for="he-dt">Datum & Uhrzeit</label><input class="inp" type="datetime-local" id="he-dt" data-bind="dt" value="${esc(b.dt)}"></div>
-          <div class="field"><label for="he-dur">Spielzeit (Min.)</label><input class="inp" id="he-dur" data-bind="dur" value="${esc(b.dur)}" inputmode="numeric" maxlength="3"></div>
-        </div>
-        <div class="field"><label for="he-note">Kurzes Fazit</label><input class="inp" id="he-note" data-bind="note" value="${esc(b.note)}" maxlength="200"></div>
-        <div class="he-teams">
-          <div><span class="flabel">Wir</span>${ROLES.map((r, i) => `<div class="he-line"><span class="he-role">${r}</span>
-            <select class="inp he-pl" data-bind="team.${i}.player" aria-label="Spieler ${r}"><option value="">–</option>${uniq([...players.map(p => p.name), b.team[i].player].filter(Boolean)).map(n => `<option ${n === b.team[i].player ? "selected" : ""}>${esc(n)}</option>`).join("")}</select>
-            ${champIn(`team.${i}.champ`, b.team[i].champ, "Champion", "Champion " + r)}</div>`).join("")}</div>
-          <div><span class="flabel">Gegner</span>${ROLES.map((r, i) => `<div class="he-line"><span class="he-role">${r}</span>${champIn(`enemy.${i}`, b.enemy[i], "Champion", "Gegner " + r)}</div>`).join("")}</div>
-        </div>
-        ${b.bansUs.length + b.bansThem.length ? `<p class="small-hint" style="margin:0 0 .4rem">Tipp auf einen Bann schiebt ihn auf die andere Seite.</p>` : ""}
-        <div class="he-banrow">${banChips("us", b.bansUs)}${banChips("them", b.bansThem)}</div>
+        <div class="he-sum ${resCls}"><span class="hs-res">${b.result === "win" ? "SIEG" : b.result === "loss" ? "NIEDERLAGE" : "OFFEN"}</span>
+          <span class="hs-txt"><b>${oppTxt ? "vs " + esc(oppTxt) : esc((KINDS.find(k => k[0] === b.type) || [])[1] || "")}</b><small>${[(KINDS.find(k => k[0] === b.type) || [])[1], b.type === "liga" ? "Spiel " + b.game : "", b.side === "blue" ? "Blaue Seite" : b.side === "red" ? "Rote Seite" : "", dtTxt, b.dur ? b.dur + " Min." : ""].filter(Boolean).map(esc).join(" · ")}</small></span>
+          <span class="hs-picks">${b.team.map(x => ico(x.champ)).join("")}</span></div>
+
+        <section class="he-sec"><h4>Spiel</h4>
+          <div class="he-grid">
+            <div><span class="flabel">Art</span><div class="seg">${KINDS.map(([v, l]) => `<button data-action="he-type" data-v="${v}" aria-pressed="${b.type === v}">${l}</button>`).join("")}</div></div>
+            <div><span class="flabel">Ergebnis</span><div class="seg he-res">${[["win","Sieg"],["loss","Niederlage"],["","Offen"]].map(([v, l]) => `<button class="r-${v || "open"}" data-action="he-res" data-v="${v}" aria-pressed="${b.result === v}">${l}</button>`).join("")}</div></div>
+            ${b.type === "liga" ? `<div class="field"><label for="he-opp">Gegner-Team</label><select class="inp" id="he-opp" data-bind="oppId" data-he-re="1"><option value="">– kein Team –</option>${tAll.map(x => `<option value="${esc(x.id)}" ${x.id === b.oppId ? "selected" : ""}>${esc(x.tag ? x.tag + " · " : "")}${esc(x.name || "Unbenannt")}</option>`).join("")}</select></div>
+              <div><span class="flabel">Spiel im Bo3</span><div class="seg">${[1,2,3].map(n => `<button data-action="he-game" data-v="${n}" aria-pressed="${+b.game === n}">Spiel ${n}</button>`).join("")}</div></div>`
+            : b.type === "scrim" ? `<div class="field he-full"><label for="he-oppn">Scrim-Gegner</label><input class="inp" id="he-oppn" data-bind="oppName" value="${esc(b.oppName)}" maxlength="60" placeholder="Teamname"></div>` : ""}
+            <div><span class="flabel">Seite</span><div class="seg he-side">${[["blue","Blau"],["red","Rot"],["","–"]].map(([v, l]) => `<button class="s-${v || "none"}" data-action="he-side" data-v="${v}" aria-pressed="${b.side === v}">${l}</button>`).join("")}</div></div>
+            <div class="he-dd"><div class="field"><label for="he-dt">Datum & Uhrzeit</label><input class="inp" type="datetime-local" id="he-dt" data-bind="dt" value="${esc(b.dt)}"></div>
+              <div class="field"><label for="he-dur">Minuten</label><input class="inp" id="he-dur" data-bind="dur" value="${esc(b.dur)}" inputmode="numeric" maxlength="3" placeholder="–"></div></div>
+            <div class="field he-full"><label for="he-note">Kurzes Fazit</label><input class="inp" id="he-note" data-bind="note" value="${esc(b.note)}" maxlength="200" placeholder="z. B. Early stark, Late verloren"></div>
+          </div></section>
+
+        <section class="he-sec"><h4>Aufstellung</h4>
+          <div class="he-teams">
+            <div class="he-team us ${sideCol(b.side)}"><div class="het-h"><span>Wir</span>${b.side ? `<em>${b.side === "blue" ? "Blau" : "Rot"}</em>` : ""}</div>
+              ${ROLES.map((r, i) => `<div class="he-line"><span class="he-role">${r}</span>${champIn(`team.${i}.champ`, b.team[i].champ, "Champion " + r)}
+                <select class="inp he-pl" data-bind="team.${i}.player" aria-label="Spieler ${r}"><option value="">Spieler</option>${uniq([...players.map(p => p.name), b.team[i].player].filter(Boolean)).map(n => `<option ${n === b.team[i].player ? "selected" : ""}>${esc(n)}</option>`).join("")}</select></div>`).join("")}</div>
+            <div class="he-team them ${sideCol(b.side === "blue" ? "red" : b.side === "red" ? "blue" : "")}"><div class="het-h"><span>Gegner</span>${b.side ? `<em>${b.side === "blue" ? "Rot" : "Blau"}</em>` : ""}</div>
+              ${ROLES.map((r, i) => `<div class="he-line"><span class="he-role">${r}</span>${champIn(`enemy.${i}`, b.enemy[i], "Gegner " + r)}</div>`).join("")}</div>
+          </div></section>
+
+        <section class="he-sec"><h4>Banns ${b.bansUs.length + b.bansThem.length ? `<small>Tipp auf einen Bann schiebt ihn auf die andere Seite</small>` : ""}</h4>
+          <div class="he-banrow">${banChips("us", b.bansUs)}${banChips("them", b.bansThem)}</div></section>
       </div>
-      <div class="m-foot"><button class="btn gold" data-action="he-save">Speichern</button><button class="btn" data-action="close">Abbrechen</button></div>`;
+      <div class="m-foot"><button class="btn gold" data-action="he-save">Änderungen speichern</button><button class="btn" data-action="close">Abbrechen</button></div>`;
     if (focusSel) modal.querySelector(focusSel)?.focus();
     return;
   }
@@ -4864,6 +4911,17 @@ function renderModal(focusSel){
 }
 modal.addEventListener("keydown", e => { const k = e.target.dataset && e.target.dataset.heBan; if (k && e.key === "Enter"){ e.preventDefault(); modal.querySelector(`[data-action="he-ban-add"][data-k="${k}"]`)?.click(); } });
 // Champion-Bild im Bearbeiten-Dialog sofort aktualisieren, wenn ein gültiger Name drinsteht
+// Vorschau oben mitführen, ohne den Dialog neu zu zeichnen (sonst gehen Klicks/Fokus verloren)
+function heSummary(){
+  const b = edit && edit.buf, el = modal.querySelector(".he-sum"); if (!b || !el) return;
+  const t = b.oppId && teams[b.oppId], kl = (KINDS.find(k => k[0] === b.type) || [])[1] || "";
+  const opp = b.type === "liga" ? (t ? (t.tag || t.name) : "") : b.type === "scrim" ? b.oppName : "";
+  let dt = ""; try { dt = b.dt ? fmtDate(new Date(b.dt).getTime()) : ""; } catch(e){}
+  el.querySelector(".hs-txt").innerHTML = `<b>${opp ? "vs " + esc(opp) : esc(kl)}</b><small>${[kl, b.type === "liga" ? "Spiel " + b.game : "", b.side === "blue" ? "Blaue Seite" : b.side === "red" ? "Rote Seite" : "", dt, b.dur ? b.dur + " Min." : ""].filter(Boolean).map(esc).join(" · ")}</small>`;
+  el.querySelector(".hs-picks").innerHTML = b.team.map(x => { const ok = x.champ && champId(x.champ); return `<span class="mini${ok ? "" : " he-empty"}">${ok ? initials(officialName(x.champ)) + img(iconUrl(x.champ)) : "?"}</span>`; }).join("");
+}
+modal.addEventListener("input", () => { if (edit && edit.kind === "he") requestAnimationFrame(heSummary); });
+modal.addEventListener("change", () => { if (edit && edit.kind === "he") requestAnimationFrame(heSummary); });
 modal.addEventListener("input", e => {
   if (!edit || edit.kind !== "he" || e.target.getAttribute("list") !== "champList" || e.target.dataset.heBan) return;
   const v = e.target.value.trim(), ok = v && champId(v), m = e.target.previousElementSibling; if (!m) return;
