@@ -1155,68 +1155,117 @@ dialog:has(.ce-body){width:min(860px,calc(100vw - 1.5rem))}
 .brand-patch.new{color:var(--gold-hi)}.brand-patch.new::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--gold);margin-right:.3rem;vertical-align:middle;box-shadow:0 0 8px var(--gold)}
 button.patch-pill{cursor:pointer;font-family:inherit;transition:background .15s,border-color .15s}
 button.patch-pill:hover{background:rgba(215,180,106,.18);border-color:rgba(215,180,106,.6)}
-.pn-body{display:flex;flex-direction:column;gap:.8rem}
-.pn-head{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
-.pn-ver{display:flex;align-items:center;gap:.4rem;font-size:.82rem;font-weight:700;color:var(--muted)}
-.pn-ver select{width:auto;padding:.35rem .5rem;font-size:.85rem}
-.pn-cmp{flex:1;font-size:.8rem;color:var(--muted)}
-.pn-load{display:flex;flex-direction:column;align-items:center;gap:.5rem;padding:2.2rem 1rem;text-align:center;color:var(--muted);border:1px dashed var(--line-2);border-radius:16px}
-.pn-load small{font-size:.75rem;opacity:.8}
+.pn-body{display:flex;flex-direction:column;gap:.9rem}
+dialog.pnx{width:min(1200px,calc(100vw - 1.5rem));height:min(900px,calc(100vh - 2rem))}
+.pn-mh{gap:.8rem;flex-wrap:wrap;background:linear-gradient(90deg,rgba(215,180,106,.10),transparent 60%)}
+.pn-title{display:flex;align-items:center;gap:.7rem}
+.pn-big{font-family:var(--fd);font-size:2rem;font-weight:800;line-height:1;background:var(--gold-grad,linear-gradient(135deg,#f0d79c,#a9843f));-webkit-background-clip:text;background-clip:text;color:transparent}
+.pn-sub{display:flex;flex-direction:column;font-size:.72rem;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.pn-sub small{font-size:.66rem;letter-spacing:.02em;text-transform:none;font-weight:700;color:var(--muted)}
+.pn-tools{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin-left:auto}
+.pn-ver{width:auto;padding:.35rem .5rem;font-size:.82rem}
+.pn-load{display:flex;flex-direction:column;align-items:center;gap:.6rem;padding:3rem 1rem;text-align:center;color:var(--muted)}
 .pn-load.err{color:var(--bad)}
-.pn-load .spin{width:26px;height:26px;border-radius:50%;border:3px solid rgba(215,180,106,.25);border-top-color:var(--gold);animation:pnspin .8s linear infinite}
+.pn-load .spin{width:28px;height:28px;border-radius:50%;border:3px solid rgba(215,180,106,.25);border-top-color:var(--gold);animation:pnspin .8s linear infinite}
 @keyframes pnspin{to{transform:rotate(360deg)}}
-.pn-sum{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.5rem}
-.pn-stat{display:flex;flex-direction:column;align-items:center;padding:.55rem .3rem;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid var(--line)}
-.pn-stat b{font-family:var(--fd);font-size:1.35rem;line-height:1.1}
-.pn-stat span{font-size:.7rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;text-align:center}
-.pn-stat.buff b{color:var(--good)}.pn-stat.nerf b{color:var(--bad)}.pn-stat.adj b{color:#7fb2ff}.pn-stat.gold b{color:var(--gold-hi)}
-.pn-bar{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
-.pn-seg{flex-wrap:wrap}
-.pn-seg small{opacity:.7;font-weight:800;margin-left:.15rem}
-.pn-q{flex:1 1 200px;min-width:0;padding:.45rem .7rem}
-.pn-grid{columns:280px;column-gap:.6rem;max-height:min(60vh,680px);overflow:auto;padding-right:.2rem}
-.pn-grid>.pn-card{break-inside:avoid;margin-bottom:.6rem}
-.pn-card{--pc:#7fb2ff;border:1px solid var(--line);border-left:3px solid var(--pc);border-radius:14px;background:rgba(6,10,18,.4);padding:.6rem .7rem;display:flex;flex-direction:column;gap:.45rem;min-width:0}
-.pn-card.pn-buff{--pc:var(--good)}.pn-card.pn-nerf{--pc:var(--bad)}.pn-card.pn-new{--pc:var(--gold)}.pn-card.pn-gone{--pc:var(--muted)}
-.pn-card.mine{background:linear-gradient(135deg,rgba(215,180,106,.09),rgba(6,10,18,.4) 60%)}
-.pn-top{display:flex;align-items:center;gap:.55rem;min-width:0}
-.pn-ic{width:38px;height:38px;border-radius:10px;overflow:hidden;flex:none;background:var(--panel-3);box-shadow:0 0 0 1px rgba(255,255,255,.08)}
-.pn-ic img{width:100%;height:100%;display:block;transform:scale(1.08)}
-.pn-ic.item img{transform:none}
-.pn-nm{flex:1;min-width:0;display:flex;flex-direction:column;gap:.15rem}
-.pn-nm b{font-size:.95rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pn-tags{display:flex;flex-wrap:wrap;gap:.2rem}
-.pn-tags em{font-style:normal;font-size:.66rem;font-weight:800;padding:.02rem .4rem;border-radius:999px}
-.pn-tags em.own{color:var(--gold-hi);background:rgba(215,180,106,.15)}
-.pn-tags em.foe{color:#ffb3aa;background:rgba(255,106,92,.14)}
-.pn-tag{flex:none;font-size:.68rem;font-weight:900;text-transform:uppercase;letter-spacing:.05em;padding:.15rem .5rem;border-radius:999px;color:var(--pc);background:color-mix(in srgb,var(--pc) 15%,transparent)}
-.pn-ch{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.18rem;font-size:.8rem}
-.pn-ch li{display:flex;justify-content:space-between;gap:.2rem .5rem;align-items:baseline;padding:.12rem 0;flex-wrap:wrap}
-.pn-ch li.pn-sec{font-size:.7rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding-top:.3rem;border-top:1px solid var(--line)}
-.pn-ch li.pn-sec:first-child{border-top:0;padding-top:0}
-.pn-l{color:var(--text);flex:0 1 auto;max-width:55%}
-.pn-v{flex:1 1 auto}
-.pn-ch li.eq .pn-l{color:var(--muted);font-style:italic}
-.pn-v{display:flex;gap:.3rem;align-items:baseline;text-align:right;flex-wrap:wrap;justify-content:flex-end;font-variant-numeric:tabular-nums;min-width:0;overflow-wrap:anywhere}
-.pn-v s{color:var(--muted);text-decoration-color:rgba(255,255,255,.3)}
-.pn-v i{font-style:normal;color:var(--muted);font-size:.7rem}
-.pn-ch li.up .pn-v b{color:var(--good)}.pn-ch li.dn .pn-v b{color:var(--bad)}
-.pn-new{margin:0;font-size:.8rem;color:var(--gold-hi)}
-.pn-hero{display:block;border-radius:14px;overflow:hidden;border:1px solid var(--line-2);background:#050a14}
-.pn-hero img{display:block;width:100%;height:auto;max-height:340px;object-fit:contain}
-.pn-note{margin:0;font-size:.8rem;color:var(--warn);padding:.5rem .7rem;border-radius:10px;background:rgba(240,181,74,.08);border:1px solid rgba(240,181,74,.25)}
-.pn-summ{margin:0;font-size:.8rem;color:var(--muted);font-style:italic;line-height:1.4}
-.pn-ch li.txt{display:block;color:var(--muted);line-height:1.4}
-.pn-ch li.sub{padding-left:.8rem;font-size:.76rem}
-.pn-why{font-size:.76rem;color:var(--muted)}
-.pn-why summary{cursor:pointer;font-weight:800;color:var(--gold);list-style:none}
-.pn-why summary::-webkit-details-marker{display:none}
-.pn-why summary::before{content:"▸ "}.pn-why[open] summary::before{content:"▾ "}
-.pn-why p{margin:.3rem 0 0;line-height:1.45}
-.pn-card.pn-other{--pc:var(--line-2)}
-.pn-empty{text-align:center;color:var(--muted);padding:1.6rem .5rem;margin:0}
+.pn-note{margin:0;font-size:.8rem;color:var(--warn);padding:.55rem .75rem;border-radius:12px;background:rgba(240,181,74,.08);border:1px solid rgba(240,181,74,.25)}
+.pn-hero{display:block;border-radius:16px;overflow:hidden;border:1px solid var(--line-2);background:#050a14}
+.pn-hero img{display:block;width:100%;height:auto}
+.pn-wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,410px);gap:1.1rem;align-items:start}
+.pn-left{display:flex;flex-direction:column;gap:.9rem;min-width:0}
+.pn-q{padding:.5rem .8rem}
+#pn-ov{display:flex;flex-direction:column;gap:1rem}
+.pn-right{position:sticky;top:.2rem;min-width:0}
+/* Euer Team */
+.pn-mine{border-radius:16px;padding:.75rem .8rem;border:1px solid rgba(215,180,106,.35);background:linear-gradient(135deg,rgba(215,180,106,.12),rgba(215,180,106,.02))}
+.pn-mine.none{display:flex;gap:.6rem;align-items:baseline;flex-wrap:wrap;border-color:var(--line);background:rgba(255,255,255,.03)}
+.pn-mine.none span{font-size:.82rem;color:var(--muted)}
+.pn-mt{display:flex;align-items:baseline;gap:.6rem;margin-bottom:.55rem;flex-wrap:wrap}
+.pn-mine b{color:var(--gold-hi)}
+.pn-mt span{font-size:.78rem;color:var(--muted)}
+.pn-chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:.4rem}
+.pn-chip{display:flex;align-items:center;gap:.5rem;padding:.35rem .45rem;border-radius:12px;border:1px solid var(--line);background:rgba(6,10,18,.45);color:var(--text);cursor:pointer;text-align:left;min-width:0;font:inherit}
+.pn-chip:hover,.pn-chip.on{border-color:var(--vc)}
+.pn-chip .pn-av{width:32px;height:32px}
+.pn-ct{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.15}
+.pn-ct b{font-size:.85rem;color:var(--text)!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pn-ct small{font-size:.68rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Farben je Urteil */
+.v-buff{--vc:var(--good)}.v-nerf{--vc:var(--bad)}.v-adj{--vc:#7fb2ff}.v-new{--vc:var(--gold)}.v-gone{--vc:var(--muted)}
+.pn-tag{flex:none;font-size:.64rem;font-weight:900;text-transform:uppercase;letter-spacing:.06em;padding:.16rem .5rem;border-radius:999px;color:var(--vc);background:color-mix(in srgb,var(--vc) 16%,transparent)}
+/* Reihen */
+.pn-row h3{display:flex;align-items:center;gap:.5rem;font-size:.82rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase;margin:0 0 .6rem;padding-bottom:.4rem;border-bottom:1px solid var(--line)}
+.pn-row h3 small{font-size:.72rem;letter-spacing:0;color:var(--muted);font-weight:800}
+.pn-ri{font-size:.8rem}
+.pn-row.nerf h3{color:#ff8b7f}.pn-row.buff h3{color:#5fe39b}.pn-row.adj h3{color:#9cc3ff}.pn-row.item h3,.pn-row.other h3{color:var(--gold-hi)}
+.pn-ports{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:.55rem .35rem}
+.pn-po{position:relative;display:flex;flex-direction:column;align-items:center;gap:.3rem;padding:.35rem .15rem .3rem;border:0;border-radius:14px;background:none;color:var(--text);cursor:pointer;font:inherit;min-width:0}
+.pn-po:hover{background:rgba(255,255,255,.05)}
+.pn-po.on{background:color-mix(in srgb,var(--vc) 13%,transparent)}
+.pn-av{position:relative;width:54px;height:54px;border-radius:50%;overflow:hidden;flex:none;background:var(--panel-3);display:grid;place-items:center;box-shadow:0 0 0 2px color-mix(in srgb,var(--vc,#7fb2ff) 70%,transparent),0 6px 16px -8px rgba(0,0,0,.8)}
+.pn-av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scale(1.1)}
+.pn-av i{font-style:normal;font-weight:800;font-size:.8rem;color:var(--muted)}
+.pn-av.sq{border-radius:12px}.pn-av.sq img{transform:none}
+.pn-po.own .pn-av{box-shadow:0 0 0 2px var(--gold),0 0 0 5px rgba(215,180,106,.25),0 6px 16px -8px rgba(0,0,0,.8)}
+.pn-po.on .pn-av{box-shadow:0 0 0 3px var(--vc),0 0 18px -2px var(--vc)}
+.pn-pn{font-size:.72rem;font-weight:700;text-align:center;max-width:100%;overflow:hidden;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere;color:var(--muted)}
+.pn-po.own .pn-pn,.pn-po.on .pn-pn{color:var(--text)}
+.pn-po em{position:absolute;top:44px;left:50%;transform:translateX(-50%);font-style:normal;font-size:.58rem;font-weight:900;padding:.02rem .35rem;border-radius:999px;background:var(--gold);color:#1b1305;white-space:nowrap;max-width:94%;overflow:hidden;text-overflow:ellipsis}
+.pn-po em.f{background:#ff6a5c;color:#fff}
+.pn-olist{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.4rem}
+.pn-oi{display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.55rem .7rem;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--text);font:inherit;font-size:.84rem;font-weight:700;cursor:pointer;text-align:left}
+.pn-oi span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pn-oi i{font-style:normal;color:var(--gold)}
+.pn-oi:hover,.pn-oi.on{border-color:var(--gold);background:rgba(215,180,106,.08)}
+/* Detail */
+.pn-det{border-radius:18px;border:1px solid var(--line-2);background:rgba(6,10,18,.55);overflow:hidden}
+.pn-det.empty{display:flex;flex-direction:column;align-items:center;gap:.5rem;padding:3rem 1rem;text-align:center;color:var(--muted);font-size:.86rem}
+.pn-det.empty p{margin:0}
+.pn-dh{position:relative;padding:1rem .95rem .85rem;border-bottom:1px solid var(--line);background:linear-gradient(135deg,color-mix(in srgb,var(--vc) 18%,transparent),transparent 70%)}
+.pn-dh.art{padding-top:5.2rem}
+.pn-dart{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 18%;opacity:.55;-webkit-mask-image:linear-gradient(180deg,#000 30%,transparent);mask-image:linear-gradient(180deg,#000 30%,transparent)}
+.pn-dhi{position:relative;display:flex;align-items:center;gap:.7rem}
+.pn-dhi .pn-av{width:52px;height:52px;box-shadow:0 0 0 2px var(--vc),0 8px 20px -8px #000}
+.pn-dn{flex:1;min-width:0;display:flex;flex-direction:column;gap:.25rem}
+.pn-dn b{font-size:1.25rem;font-family:var(--fd);line-height:1.1;text-shadow:0 2px 10px rgba(0,0,0,.8)}
+.pn-dn small{font-size:.72rem;color:var(--muted)}
+.pn-tags{display:flex;flex-wrap:wrap;gap:.25rem}
+.pn-tags em{font-style:normal;font-size:.66rem;font-weight:800;padding:.05rem .45rem;border-radius:999px}
+.pn-tags em.own{color:#1b1305;background:var(--gold)}
+.pn-tags em.foe{color:#fff;background:rgba(255,106,92,.85)}
+.pn-back{display:none;position:relative;margin-bottom:.6rem;border:0;background:rgba(6,10,18,.6);color:var(--text);font:inherit;font-size:.8rem;font-weight:800;padding:.3rem .65rem;border-radius:999px;cursor:pointer}
+.pn-dbody{padding:.85rem .95rem 1rem;display:flex;flex-direction:column;gap:.85rem;max-height:calc(100vh - 16rem);overflow:auto}
+.pn-summ{margin:0;font-size:.86rem;line-height:1.45;color:var(--text)}
+.pn-ctx{margin:0;padding:.55rem .7rem;border-left:3px solid var(--gold);border-radius:0 10px 10px 0;background:rgba(215,180,106,.07);font-size:.8rem;line-height:1.5;color:var(--muted)}
+.pn-ctx b{display:block;font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:.15rem}
+.pn-grp h4{margin:0 0 .4rem;font-size:.76rem;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-hi)}
+.pn-grp ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.35rem}
+.pn-ln{padding:.45rem .6rem;border-radius:10px;background:rgba(255,255,255,.035);border-left:3px solid var(--lc,var(--line-2))}
+.pn-ln.up{--lc:var(--good)}.pn-ln.dn{--lc:var(--bad)}.pn-ln.eq{--lc:#7fb2ff}
+.pn-ln.txt{--lc:var(--line-2);font-size:.82rem;line-height:1.45;color:var(--text)}
+.pn-ln.sub{margin-left:.9rem;font-size:.78rem}
+.pn-ll{display:block;font-size:.7rem;font-weight:800;color:var(--muted);margin-bottom:.12rem}
+.pn-lv{display:flex;flex-wrap:wrap;align-items:baseline;gap:.15rem .4rem;font-size:.86rem;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.pn-lv s{color:var(--muted);text-decoration-color:rgba(255,255,255,.35)}
+.pn-lv i{font-style:normal;color:var(--muted)}
+.pn-lv b{font-weight:800}
+.pn-ln.up .pn-lv b{color:#5fe39b}.pn-ln.dn .pn-lv b{color:#ff8b7f}.pn-ln.eq .pn-lv b{color:#9cc3ff}
+.pn-empty{text-align:center;color:var(--muted);padding:2rem .5rem;margin:0}
 .pn-hint{margin:0}
-@media (max-width:640px){.pn-sum{grid-template-columns:repeat(3,minmax(0,1fr))}.pn-sum .pn-stat:nth-child(n+4){display:none}.pn-grid{columns:auto;max-height:none}.pn-head .btn{flex:1 1 100%;justify-content:center}.pn-seg{display:flex;flex-wrap:nowrap;overflow-x:auto;width:100%;scrollbar-width:none}.pn-seg::-webkit-scrollbar{display:none}.pn-seg button{padding:.42rem .7rem;white-space:nowrap;flex:none}}
+@media (max-width:760px){
+  dialog.pnx{height:calc(100vh - 1rem)}
+  .pn-big{font-size:1.6rem}
+  .pn-tools{width:100%;margin-left:0}.pn-tools .x{margin-left:auto;order:-1;position:absolute;top:.8rem;right:.8rem}
+  .pn-mh{position:relative}
+  .pn-wrap{grid-template-columns:minmax(0,1fr)}
+  .pn-wrap.has-sel .pn-left{display:none}
+  .pn-wrap:not(.has-sel) .pn-right{display:none}
+  .pn-back{display:inline-block}
+  .pn-dbody{max-height:none}
+  .pn-ports{grid-template-columns:repeat(auto-fill,minmax(66px,1fr))}
+  .pn-av{width:48px;height:48px}.pn-po em{top:38px}
+  .pn-chips{grid-template-columns:minmax(0,1fr)}
+}
 @media (max-width:720px){.patch-pill{display:none}}
 @media (max-width:420px){.task-form-row{grid-template-columns:1fr 1fr}.task-form-row .btn{grid-column:1/-1;justify-content:center}}
 
@@ -3736,7 +3785,7 @@ function renderPatch(){
 }
 // ---------- Patchnotes: Änderungen zwischen zwei Patches, direkt aus Data Dragon berechnet ----------
 const PN_LS = "draftboard-patchnotes";
-let pn = { v: "", prev: "", data: null, loading: false, err: "", note: "", filter: "", q: "" };
+let pn = { v: "", prev: "", data: null, loading: false, err: "", note: "", sel: "", hero: false, q: "" };
 const PN_STAT = { hp:"Leben", hpperlevel:"Leben pro Stufe", mp:"Mana", mpperlevel:"Mana pro Stufe", movespeed:"Lauftempo", armor:"Rüstung", armorperlevel:"Rüstung pro Stufe", spellblock:"Magieresistenz", spellblockperlevel:"Magieresistenz pro Stufe", attackrange:"Angriffsreichweite", hpregen:"Lebensregeneration", hpregenperlevel:"Lebensreg. pro Stufe", mpregen:"Manaregeneration", mpregenperlevel:"Manareg. pro Stufe", attackdamage:"Angriffsschaden", attackdamageperlevel:"Angriffsschaden pro Stufe", attackspeed:"Angriffstempo", attackspeedperlevel:"Angriffstempo pro Stufe (%)" };
 const PN_ITEM = { FlatHPPoolMod:["Leben",""], FlatMPPoolMod:["Mana",""], FlatPhysicalDamageMod:["Angriffsschaden",""], FlatMagicDamageMod:["Fähigkeitsstärke",""], FlatArmorMod:["Rüstung",""], FlatSpellBlockMod:["Magieresistenz",""], PercentAttackSpeedMod:["Angriffstempo","%"], FlatCritChanceMod:["Krit. Trefferchance","%"], FlatMovementSpeedMod:["Lauftempo",""], PercentMovementSpeedMod:["Lauftempo","%"], PercentLifeStealMod:["Lebensraub","%"], FlatHPRegenMod:["Lebensregeneration",""] };
 const pnNum = n => String(+(+n).toFixed(3)).replace(".", ",");
@@ -3817,7 +3866,7 @@ function pnParseRiot(html){
   const hero = [...doc.querySelectorAll("img")].map(srcOf).find(s => okImg(s) && /infographic|highlight/i.test(s)) || "";
   const secs = []; let sec = null, ent = null, grp = null;
   const newSec = t => { sec = { t, entries: [], lines: [] }; secs.push(sec); ent = grp = null; };
-  const newEnt = el => { const blk = el.closest(".patch-change-block, .content-border"); ent = { name: T(el), icon: okImg(srcOf(blk && blk.querySelector("img"))), summary: "", context: "", groups: [] }; grp = null; sec.entries.push(ent); };
+  const newEnt = el => { const blk = el.closest(".patch-change-block, .content-border"), one = blk && blk.querySelectorAll("h3, h4").length === 1; ent = { name: T(el), icon: one ? okImg(srcOf(blk.querySelector("img"))) : "", summary: "", context: "", groups: [] }; grp = null; sec.entries.push(ent); };
   const add = o => { if (ent){ if (!grp){ grp = { t: "", lines: [] }; ent.groups.push(grp); } grp.lines.push(o); } else sec.lines.push(o); };
   newSec("");
   doc.body.querySelectorAll("h2, h3, h4, p, li, blockquote, .attribute-change").forEach(el => {
@@ -3880,14 +3929,24 @@ async function pnRiot(p){
   if (!d || !d.html) throw new Error("Leere Antwort vom Worker.");
   const o = { p, url: d.url || "", html: d.html }; lsSet(PN_RIOT_LS, JSON.stringify(o)); return o;
 }
+// Item-Bilder über den Namen aus Data Dragon (Riot hat mehrere Items in einem Abschnitt → eigene Bilder unzuverlässig)
+const pnItemMap = {};
+async function pnItemIcons(data, v){
+  try {
+    if (!pnItemMap[v]){ const j = await (await fetch(`https://ddragon.leagueoflegends.com/cdn/${v}/data/de_DE/item.json`)).json(); pnItemMap[v] = {}; Object.entries(j.data || {}).forEach(([id, it]) => { const k = norm(it.name); if (!pnItemMap[v][k] || (it.maps && it.maps["11"])) pnItemMap[v][k] = id; }); }
+    const m = pnItemMap[v];
+    [...data.items, ...data.other].forEach(x => { const id = m[norm(x.name)]; if (id) x.icon = `https://ddragon.leagueoflegends.com/cdn/${v}/img/item/${id}.png`; else if (x.kind === "item") x.icon = x.icon || ""; });
+  } catch(e){ /* ohne Bilder weiter */ }
+}
 async function pnLoad(v){
   const list = await pnVersions(), i = list.indexOf(v), prev = list[i + 1] || "", p = patchName(v);
-  pn = { ...pn, v, prev, data: null, err: "", note: "", loading: true }; if (edit && edit.kind === "pn") renderModal();
+  pn = { ...pn, v, prev, data: null, err: "", note: "", sel: "", loading: true }; if (edit && edit.kind === "pn") renderModal();
   let data = null, note = "";
   const OLD = "Für die vollständigen Patchnotes die neue worker.js (Version 10) bei Cloudflare einspielen – unten nur die Werte aus Data Dragon.";
   if (riotUrl && riotVer != null && riotVer < 10) note = OLD;
   else if (riotUrl){
     try { const r = await pnRiot(p); data = pnParseRiot(r.html); data.url = r.url;
+      await pnItemIcons(data, v);
       if (!data.champs.length && !data.items.length && !data.other.length){ data = null; note = "Die Riot-Seite hat ein unbekanntes Format – unten nur die Werte aus Data Dragon."; } }
     catch(e){ note = /Riot-ID|Region|Queue/i.test(e.message) ? OLD : e.message + " Unten nur die Werte aus Data Dragon."; }
   } else note = "Für die vollständigen offiziellen Patchnotes in den Einstellungen den Riot-Proxy eintragen – unten nur die Werte aus Data Dragon.";
@@ -3897,7 +3956,7 @@ async function pnLoad(v){
   if (edit && edit.kind === "pn") renderModal();
 }
 function openPatchNotes(){
-  edit = { kind: "pn", isNew: false, buf: {} }; pn.q = ""; pn.filter = "";
+  edit = { kind: "pn", isNew: false, buf: {} }; pn.q = ""; pn.sel = ""; pn.hero = false;
   modal.showModal(); renderModal();
   if (!pn.data || pn.v !== DD.v) pnLoad(DD.v);
 }
@@ -3908,28 +3967,54 @@ function pnOwners(){
   const t = at(); if (t) ROLES.forEach(r => roleOf(t, r).champs.forEach(c => { const id = champId(c); if (id) (them[id] = them[id] || []).push(r); }));
   return { ours, them };
 }
-function pnCard(x, ours, them){
-  const [k, l] = pnVerdict(x), mine = x.id && ours[x.id];
-  const icon = x.kind === "champ" || (x.kind === "other" && x.id) ? iconUrl(x.id) : x.icon;
-  const tags = x.id ? [...(ours[x.id] || []).map(n => `<em class="own">${esc(n)}</em>`), ...(them[x.id] || []).map(r => `<em class="foe">Gegner ${esc(r)}</em>`)].join("") : "";
-  const rows = x.groups.map(g => (g.t ? `<li class="pn-sec">${esc(g.t)}</li>` : "") + g.lines.map(c => c.text
-    ? `<li class="eq txt${c.sub ? " sub" : ""}">${esc(c.text)}</li>`
-    : `<li class="${c.d > 0 ? "up" : c.d < 0 ? "dn" : "eq"}${c.sub ? " sub" : ""}">${c.l ? `<span class="pn-l">${esc(c.l)}</span>` : ""}<span class="pn-v"><s>${esc(c.a)}</s><i>→</i><b>${esc(c.b)}</b></span></li>`).join("")).join("");
-  return `<div class="pn-card pn-${k}${mine ? " mine" : ""}${x.kind === "other" ? " pn-other" : ""}">
-    <div class="pn-top">${icon ? `<span class="pn-ic${x.kind === "champ" ? "" : " item"}">${img(icon)}</span>` : ""}<div class="pn-nm"><b>${esc(x.name)}</b>${tags ? `<span class="pn-tags">${tags}</span>` : ""}</div>${l ? `<span class="pn-tag">${l}</span>` : ""}</div>
-    ${x.summary ? `<p class="pn-summ">${esc(x.summary)}</p>` : ""}
-    ${rows ? `<ul class="pn-ch">${rows}</ul>` : x.isNew && x.kind === "champ" ? `<p class="pn-new">Neuer Champion in diesem Patch.</p>` : ""}
-    ${x.context ? `<details class="pn-why"><summary>Warum?</summary><p>${esc(x.context)}</p></details>` : ""}</div>`;
+const pnNarrow = () => window.innerWidth <= 760;
+function pnEntries(){
+  const d = pn.data; if (!d) return [];
+  return [...d.champs.map((x, i) => ({ ...x, key: "c" + i })), ...d.items.map((x, i) => ({ ...x, key: "i" + i })), ...d.other.map((x, i) => ({ ...x, key: "o" + i }))];
 }
-function pnListHtml(){
-  const d = pn.data; if (!d) return "";
-  const { ours, them } = pnOwners(), q = norm(pn.q), f = pn.filter;
-  const hit = x => !q || norm(x.name).includes(q) || (x.kind === "other" && norm(pnLines(x).map(l => l.text || l.l).join(" ")).includes(q));
-  let list = f === "items" ? d.items : f === "other" ? d.other : d.champs.filter(x => f === "ours" ? ours[x.id] : f === "them" ? them[x.id] : true);
-  list = list.filter(hit);
-  if (f !== "items" && f !== "other"){ const rank = x => ours[x.id] ? 0 : them[x.id] ? 1 : 2; list = [...list].sort((a, b) => rank(a) - rank(b)); }
-  if (!list.length) return `<p class="pn-empty">${q ? "Keine Treffer." : f === "ours" ? "Keiner eurer Champions wurde in diesem Patch angepasst." : f === "them" ? "Keiner der gescouteten Gegner-Champions wurde angepasst." : f === "items" ? "Keine Item-Änderungen." : "Nichts gefunden."}</p>`;
-  return `<div class="pn-grid">${list.map(x => pnCard(x, ours, them)).join("")}</div>`;
+// Übersicht wie Riots Grafik: Nerfs / Buffs / Angepasst als Porträt-Reihen, eure Champions zuerst
+function pnOverview(){
+  const { ours, them } = pnOwners(), q = norm(pn.q);
+  const all = pnEntries().filter(x => !q || norm(x.name).includes(q));
+  const champs = all.filter(x => x.kind === "champ");
+  const rank = x => ours[x.id] ? 0 : them[x.id] ? 1 : 2;
+  const by = (...ks) => champs.filter(x => ks.includes(pnVerdict(x)[0])).sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name, "de"));
+  const port = x => { const mine = x.id && ours[x.id], foe = x.id && them[x.id], ic = x.kind === "champ" ? iconUrl(x.id) : x.icon, [k] = pnVerdict(x);
+    return `<button class="pn-po v-${k}${mine ? " own" : ""}${foe ? " foe" : ""}${pn.sel === x.key ? " on" : ""}" data-action="pn-sel" data-k="${x.key}" title="${esc(x.name)}">
+      <span class="pn-av${x.kind === "item" ? " sq" : ""}">${ic ? img(ic) : ""}<i>${esc(initials(x.name))}</i></span>
+      <span class="pn-pn">${esc(x.name)}</span>${mine ? `<em>${esc(mine[0])}</em>` : foe ? `<em class="f">Gegner</em>` : ""}</button>`; };
+  const row = (cls, ic, title, list) => list.length ? `<section class="pn-row ${cls}"><h3><span class="pn-ri">${ic}</span>${title}<small>${list.length}</small></h3><div class="pn-ports">${list.map(port).join("")}</div></section>` : "";
+  const mine = champs.filter(x => ours[x.id]).sort((a, b) => a.name.localeCompare(b.name, "de"));
+  const other = all.filter(x => x.kind === "other");
+  const team = q ? "" : mine.length
+    ? `<div class="pn-mine"><div class="pn-mt"><b>Euer Team</b><span>${mine.length} eurer Champions ${mine.length === 1 ? "ist" : "sind"} betroffen</span></div><div class="pn-chips">${mine.map(x => { const [k, l] = pnVerdict(x);
+        return `<button class="pn-chip v-${k}${pn.sel === x.key ? " on" : ""}" data-action="pn-sel" data-k="${x.key}"><span class="pn-av">${img(iconUrl(x.id))}<i>${esc(initials(x.name))}</i></span><span class="pn-ct"><b>${esc(x.name)}</b><small>${esc(ours[x.id].join(", "))}</small></span><span class="pn-tag">${l}</span></button>`; }).join("")}</div></div>`
+    : `<div class="pn-mine none"><b>Euer Team</b><span>Keiner eurer Champions wurde in diesem Patch geändert.</span></div>`;
+  const html = team + row("nerf", "▼", "Nerfs", by("nerf")) + row("buff", "▲", "Buffs", by("buff")) + row("adj", "◆", "Angepasst", by("adj", "new"))
+    + row("item", "◇", "Items", all.filter(x => x.kind === "item"))
+    + (other.length ? `<section class="pn-row other"><h3><span class="pn-ri">✦</span>Systeme &amp; mehr<small>${other.length}</small></h3><div class="pn-olist">${other.map(x => `<button class="pn-oi${pn.sel === x.key ? " on" : ""}" data-action="pn-sel" data-k="${x.key}"><span>${esc(x.name)}</span><i>›</i></button>`).join("")}</div></section>` : "");
+  return html || `<p class="pn-empty">Keine Treffer für „${esc(pn.q)}“.</p>`;
+}
+function pnDetail(x){
+  if (!x) return `<div class="pn-det empty"><span class="pn-ri">◆</span><p>Champion oder Item anklicken,<br>um alle Änderungen zu sehen.</p></div>`;
+  const { ours, them } = pnOwners(), [k, l] = pnVerdict(x), champ = x.kind === "champ" || (x.kind === "other" && x.id);
+  const ic = champ ? iconUrl(x.id) : x.icon, art = x.kind === "champ" ? artUrl(x.id) : "";
+  const tags = x.id ? [...(ours[x.id] || []).map(n => `<em class="own">${esc(n)}</em>`), ...(them[x.id] || []).map(r => `<em class="foe">Gegner ${esc(r)}</em>`)].join("") : "";
+  const line = c => c.text
+    ? `<li class="pn-ln txt${c.sub ? " sub" : ""}">${esc(c.text)}</li>`
+    : `<li class="pn-ln ${c.d > 0 ? "up" : c.d < 0 ? "dn" : "eq"}${c.sub ? " sub" : ""}">${c.l ? `<span class="pn-ll">${esc(c.l)}</span>` : ""}<span class="pn-lv"><s>${esc(c.a)}</s><i>→</i><b>${esc(c.b)}</b></span></li>`;
+  const groups = x.groups.map(g => `<div class="pn-grp">${g.t ? `<h4>${esc(g.t)}</h4>` : ""}<ul>${g.lines.map(line).join("")}</ul></div>`).join("");
+  return `<div class="pn-det v-${k}">
+    <div class="pn-dh${art ? " art" : ""}">${art ? `<img class="pn-dart" src="${esc(art)}" alt="" onerror="this.remove()">` : ""}
+      <button class="pn-back" data-action="pn-back">‹ Übersicht</button>
+      <div class="pn-dhi">${ic ? `<span class="pn-av${x.kind === "item" ? " sq" : ""}">${img(ic)}<i>${esc(initials(x.name))}</i></span>` : ""}
+        <div class="pn-dn"><b>${esc(x.name)}</b>${tags ? `<span class="pn-tags">${tags}</span>` : x.sec && x.kind === "other" ? `<small>${esc(x.sec)}</small>` : ""}</div>${l ? `<span class="pn-tag">${l}</span>` : ""}</div>
+    </div>
+    <div class="pn-dbody">
+      ${x.summary ? `<p class="pn-summ">${esc(x.summary)}</p>` : ""}
+      ${x.context ? `<blockquote class="pn-ctx"><b>Warum?</b>${esc(x.context)}</blockquote>` : ""}
+      ${groups || (x.isNew && x.kind === "champ" ? `<p class="pn-summ">Neuer Champion in diesem Patch.</p>` : "")}
+    </div></div>`;
 }
 function pnHtml(){
   const cur = patchName(pn.v || DD.v), d = pn.data;
@@ -3939,33 +4024,26 @@ function pnHtml(){
   if (pn.loading) body = `<div class="pn-load"><span class="spin"></span>Lade Patchnotes ${esc(cur)}…</div>`;
   else if (!d) body = `<div class="pn-load err">Patchnotes konnten nicht geladen werden: ${esc(pn.err || pn.note || "unbekannter Fehler")}<button class="btn sm" data-action="pn-retry">Nochmal versuchen</button></div>`;
   else {
-    const { ours, them } = pnOwners(), cnt = k => d.champs.filter(x => pnVerdict(x)[0] === k).length;
-    const nO = d.champs.filter(x => ours[x.id]).length, nT = d.champs.filter(x => them[x.id]).length;
-    if (!pn.filter) pn.filter = nO ? "ours" : "all";
-    const fb = (k, l, n) => `<button data-action="pn-filter" data-f="${k}" aria-pressed="${pn.filter === k}">${l} <small>${n}</small></button>`;
-    body = `${d.hero ? `<a class="pn-hero" href="${esc(d.hero)}" target="_blank" rel="noopener" title="Übersicht in voller Größe">${img(d.hero)}</a>` : ""}
-      ${pn.note ? `<p class="pn-note">${esc(pn.note)}</p>` : ""}
-      <div class="pn-sum">
-        <div class="pn-stat buff"><b>${cnt("buff")}</b><span>Buffs</span></div>
-        <div class="pn-stat nerf"><b>${cnt("nerf")}</b><span>Nerfs</span></div>
-        <div class="pn-stat adj"><b>${cnt("adj") + cnt("new")}</b><span>Angepasst</span></div>
-        <div class="pn-stat"><b>${d.items.length}</b><span>Items</span></div>
-        <div class="pn-stat gold"><b>${nO}</b><span>eure Champs</span></div>
+    const es = pnEntries();
+    if (!es.some(x => x.key === pn.sel)) pn.sel = "";
+    if (!pn.sel && !pnNarrow()){ const { ours } = pnOwners(); pn.sel = (es.find(x => x.kind === "champ" && ours[x.id]) || es[0] || {}).key || ""; }
+    body = `${pn.note ? `<p class="pn-note">${esc(pn.note)}</p>` : ""}
+      ${pn.hero && d.hero ? `<a class="pn-hero" href="${esc(d.hero)}" target="_blank" rel="noopener" title="In voller Größe öffnen">${img(d.hero)}</a>` : ""}
+      <div class="pn-wrap${pn.sel ? " has-sel" : ""}">
+        <div class="pn-left"><input class="inp pn-q" id="pn-q" type="search" placeholder="Champion oder Item suchen…" value="${esc(pn.q)}" autocomplete="off"><div id="pn-ov">${pnOverview()}</div></div>
+        <div class="pn-right" id="pn-det">${pnDetail(es.find(x => x.key === pn.sel))}</div>
       </div>
-      <div class="pn-bar"><div class="seg pn-seg">${fb("ours", "Unsere", nO)}${at() ? fb("them", "Gegner", nT) : ""}${fb("all", "Champions", d.champs.length)}${fb("items", "Items", d.items.length)}${d.other.length ? fb("other", "Weitere", d.other.length) : ""}</div>
-        <input class="inp pn-q" id="pn-q" type="search" placeholder="Champion oder Item suchen…" value="${esc(pn.q)}" autocomplete="off"></div>
-      <div id="pn-list">${pnListHtml()}</div>`;
+      <p class="small-hint pn-hint">${d.src === "riot" ? "Quelle: offizielle Patchnotes von Riot. Buff/Nerf schätzt das Board anhand der Zahlen (mehr Schaden = Buff, längere Abklingzeit = Nerf)." : "Quelle: Data Dragon – enthält nur Grundwerte, Abklingzeiten, Kosten, Reichweiten und Item-Preise, keine Schadenswerte."}</p>`;
   }
-  return `<div class="m-head"><h2 id="mTitle">Patchnotes ${esc(cur)}</h2><button class="x" data-action="close" aria-label="Schließen">×</button></div>
-    <div class="m-body pn-body">
-      <div class="pn-head">
-        ${vers.length > 1 ? `<label class="pn-ver">Patch <select class="inp" data-action="pn-ver">${vers.map(v => `<option value="${esc(v)}"${v === pn.v ? " selected" : ""}>${esc(patchName(v))}</option>`).join("")}</select></label>` : ""}
-        <span class="pn-cmp">${d ? d.src === "riot" ? "Offizielle Patchnotes von Riot" : "Werte aus Data Dragon (Vergleich mit " + esc(patchName(pn.prev)) + ")" : ""}</span>
-        <a class="btn sm gold" href="${esc(off)}" target="_blank" rel="noopener">Bei Riot öffnen ↗</a>
-      </div>
-      ${body}
-      ${d && d.src === "riot" ? `<p class="small-hint pn-hint">Buff/Nerf schätzt das Board anhand der Zahlen (z. B. mehr Schaden = Buff, längere Abklingzeit = Nerf).</p>` : d ? `<p class="small-hint pn-hint">Data Dragon enthält nur Grundwerte, Abklingzeiten, Kosten, Reichweiten und Item-Preise – Schadensänderungen fehlen hier.</p>` : ""}
-    </div>`;
+  return `<div class="m-head pn-mh">
+      <div class="pn-title"><span class="pn-big">${esc(cur)}</span><span class="pn-sub">Patchnotes${d ? `<small>${d.src === "riot" ? "offiziell von Riot" : "aus Data Dragon"}</small>` : ""}</span></div>
+      <div class="pn-tools">
+        ${vers.length > 1 ? `<select class="inp pn-ver" data-action="pn-ver" aria-label="Patch wählen">${vers.map(v => `<option value="${esc(v)}"${v === pn.v ? " selected" : ""}>Patch ${esc(patchName(v))}</option>`).join("")}</select>` : ""}
+        ${d && d.hero ? `<button class="btn sm${pn.hero ? " gold" : ""}" data-action="pn-hero">Riot-Grafik</button>` : ""}
+        <a class="btn sm" href="${esc(off)}" target="_blank" rel="noopener" title="Bei Riot öffnen">Riot ↗</a>
+        <button class="x" data-action="close" aria-label="Schließen">×</button>
+      </div></div>
+    <div class="m-body pn-body">${body}</div>`;
 }
 // ---------- Statistik-Dashboard ----------
 let statSeries = []; // Punkte des Winrate-Verlaufs für den Tooltip
@@ -5012,7 +5090,8 @@ modal.addEventListener("close", () => { edit = null; });
 function renderModal(focusSel){
   if (!edit) return;
   const b = edit.buf;
-  modal.classList.toggle("wide", edit.kind === "he" || edit.kind === "pn");
+  modal.classList.toggle("wide", edit.kind === "he");
+  modal.classList.toggle("pnx", edit.kind === "pn");
   if (edit.kind === "pn"){ modal.innerHTML = pnHtml(); if (focusSel){ const el = modal.querySelector(focusSel); if (el){ el.focus(); const n = el.value.length; try { el.setSelectionRange(n, n); } catch(e){} } } return; }
   if (edit.kind === "he"){
     const tAll = Object.values(teams).sort((x, y) => (y.date || "").localeCompare(x.date || ""));
@@ -5340,7 +5419,7 @@ function heSummary(){
   el.querySelector(".hs-picks").innerHTML = b.team.map(x => { const ok = x.champ && champId(x.champ); return `<span class="mini${ok ? "" : " he-empty"}">${ok ? initials(officialName(x.champ)) + img(iconUrl(x.champ)) : "?"}</span>`; }).join("");
 }
 modal.addEventListener("input", () => { if (edit && edit.kind === "he") requestAnimationFrame(heSummary); });
-modal.addEventListener("input", e => { if (edit && edit.kind === "pn" && e.target.id === "pn-q"){ pn.q = e.target.value; const l = modal.querySelector("#pn-list"); if (l) l.innerHTML = pnListHtml(); } });
+modal.addEventListener("input", e => { if (edit && edit.kind === "pn" && e.target.id === "pn-q"){ pn.q = e.target.value; const l = modal.querySelector("#pn-ov"); if (l) l.innerHTML = pnOverview(); } });
 modal.addEventListener("change", e => { if (edit && edit.kind === "pn" && e.target.dataset.action === "pn-ver") pnLoad(e.target.value); });
 modal.addEventListener("change", () => { if (edit && edit.kind === "he") requestAnimationFrame(heSummary); });
 modal.addEventListener("input", e => {
@@ -5730,7 +5809,11 @@ document.addEventListener("click", async e => {
     case "task-showdone": showDoneTasks = !showDoneTasks; render(); break;
     case "patch-ok": meta = { ...meta, patch: patchName(DD.v) }; render(); fs.doc("config/meta").set({ patch: patchName(DD.v), at: Date.now() }, { merge: true }).catch(writeError); toast("Patch als geprüft markiert."); break;
     case "patch-notes": openPatchNotes(); break;
-    case "pn-filter": pn.filter = a.dataset.f; renderModal(); break;
+    case "pn-sel": { pn.sel = a.dataset.k; const es = pnEntries(), det = modal.querySelector("#pn-det"), w = modal.querySelector(".pn-wrap");
+      if (det && w && !pnNarrow()){ det.innerHTML = pnDetail(es.find(x => x.key === pn.sel)); modal.querySelectorAll(".pn-po.on, .pn-chip.on, .pn-oi.on").forEach(x => x.classList.remove("on")); modal.querySelectorAll(`[data-k="${pn.sel}"]`).forEach(x => x.classList.add("on")); w.classList.add("has-sel"); }
+      else { renderModal(); modal.scrollTop = 0; } break; }
+    case "pn-back": pn.sel = ""; renderModal(); break;
+    case "pn-hero": pn.hero = !pn.hero; renderModal(); break;
     case "pn-retry": pnLoad(pn.v || DD.v); break;
     case "patch-pools": tab = "pools"; render(); window.scrollTo({ top: 0 }); break;
     case "remind-on": b.remind = a.checked; setTimeout(renderModal, 0); if (discordUrl){ remindOn = b.remind; db.doc("config/discord").set({ remind: b.remind, lead: b.lead }, { merge: true }).catch(writeError); } break;
