@@ -1148,6 +1148,61 @@ dialog:has(.ce-body){width:min(860px,calc(100vw - 1.5rem))}
 .patch-banner>div:nth-child(2){flex:1 1 240px;display:flex;flex-direction:column}
 .patch-banner span{font-size:.85rem;color:var(--muted)}
 .pb-actions{display:flex;gap:.4rem}
+.brand-t{display:flex;flex-direction:column;justify-content:center;min-width:0;line-height:1.1}
+.brand-patch{align-self:flex-start;border:0;background:none;padding:.05rem 0 0;font:inherit;font-size:.68rem;font-weight:800;letter-spacing:.03em;color:var(--muted);cursor:pointer;white-space:nowrap;transition:color .15s}
+.brand-patch::after{content:" ›";color:var(--gold)}
+.brand-patch:hover,.brand-patch:focus-visible{color:var(--gold-hi)}
+.brand-patch.new{color:var(--gold-hi)}.brand-patch.new::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--gold);margin-right:.3rem;vertical-align:middle;box-shadow:0 0 8px var(--gold)}
+button.patch-pill{cursor:pointer;font-family:inherit;transition:background .15s,border-color .15s}
+button.patch-pill:hover{background:rgba(215,180,106,.18);border-color:rgba(215,180,106,.6)}
+.pn-body{display:flex;flex-direction:column;gap:.8rem}
+.pn-head{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
+.pn-ver{display:flex;align-items:center;gap:.4rem;font-size:.82rem;font-weight:700;color:var(--muted)}
+.pn-ver select{width:auto;padding:.35rem .5rem;font-size:.85rem}
+.pn-cmp{flex:1;font-size:.8rem;color:var(--muted)}
+.pn-load{display:flex;flex-direction:column;align-items:center;gap:.5rem;padding:2.2rem 1rem;text-align:center;color:var(--muted);border:1px dashed var(--line-2);border-radius:16px}
+.pn-load small{font-size:.75rem;opacity:.8}
+.pn-load.err{color:var(--bad)}
+.pn-load .spin{width:26px;height:26px;border-radius:50%;border:3px solid rgba(215,180,106,.25);border-top-color:var(--gold);animation:pnspin .8s linear infinite}
+@keyframes pnspin{to{transform:rotate(360deg)}}
+.pn-sum{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.5rem}
+.pn-stat{display:flex;flex-direction:column;align-items:center;padding:.55rem .3rem;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid var(--line)}
+.pn-stat b{font-family:var(--fd);font-size:1.35rem;line-height:1.1}
+.pn-stat span{font-size:.7rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;text-align:center}
+.pn-stat.buff b{color:var(--good)}.pn-stat.nerf b{color:var(--bad)}.pn-stat.adj b{color:#7fb2ff}.pn-stat.gold b{color:var(--gold-hi)}
+.pn-bar{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+.pn-seg{flex-wrap:wrap}
+.pn-seg small{opacity:.7;font-weight:800;margin-left:.15rem}
+.pn-q{flex:1 1 200px;min-width:0;padding:.45rem .7rem}
+.pn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:.6rem;max-height:min(58vh,620px);overflow:auto;padding-right:.2rem}
+.pn-card{--pc:#7fb2ff;border:1px solid var(--line);border-left:3px solid var(--pc);border-radius:14px;background:rgba(6,10,18,.4);padding:.6rem .7rem;display:flex;flex-direction:column;gap:.45rem;min-width:0}
+.pn-card.pn-buff{--pc:var(--good)}.pn-card.pn-nerf{--pc:var(--bad)}.pn-card.pn-new{--pc:var(--gold)}.pn-card.pn-gone{--pc:var(--muted)}
+.pn-card.mine{background:linear-gradient(135deg,rgba(215,180,106,.09),rgba(6,10,18,.4) 60%)}
+.pn-top{display:flex;align-items:center;gap:.55rem;min-width:0}
+.pn-ic{width:38px;height:38px;border-radius:10px;overflow:hidden;flex:none;background:var(--panel-3);box-shadow:0 0 0 1px rgba(255,255,255,.08)}
+.pn-ic img{width:100%;height:100%;display:block;transform:scale(1.08)}
+.pn-ic.item img{transform:none}
+.pn-nm{flex:1;min-width:0;display:flex;flex-direction:column;gap:.15rem}
+.pn-nm b{font-size:.95rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pn-tags{display:flex;flex-wrap:wrap;gap:.2rem}
+.pn-tags em{font-style:normal;font-size:.66rem;font-weight:800;padding:.02rem .4rem;border-radius:999px}
+.pn-tags em.own{color:var(--gold-hi);background:rgba(215,180,106,.15)}
+.pn-tags em.foe{color:#ffb3aa;background:rgba(255,106,92,.14)}
+.pn-tag{flex:none;font-size:.68rem;font-weight:900;text-transform:uppercase;letter-spacing:.05em;padding:.15rem .5rem;border-radius:999px;color:var(--pc);background:color-mix(in srgb,var(--pc) 15%,transparent)}
+.pn-ch{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.18rem;font-size:.8rem}
+.pn-ch li{display:flex;justify-content:space-between;gap:.5rem;align-items:baseline;padding:.12rem 0}
+.pn-ch li.pn-sec{font-size:.7rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding-top:.3rem;border-top:1px solid var(--line)}
+.pn-ch li.pn-sec:first-child{border-top:0;padding-top:0}
+.pn-l{color:var(--text);min-width:0}
+.pn-ch li.eq .pn-l{color:var(--muted);font-style:italic}
+.pn-v{display:flex;gap:.3rem;align-items:baseline;text-align:right;flex-wrap:wrap;justify-content:flex-end;font-variant-numeric:tabular-nums}
+.pn-v s{color:var(--muted);text-decoration-color:rgba(255,255,255,.3)}
+.pn-v i{font-style:normal;color:var(--muted);font-size:.7rem}
+.pn-ch li.up .pn-v b{color:var(--good)}.pn-ch li.dn .pn-v b{color:var(--bad)}
+.pn-new{margin:0;font-size:.8rem;color:var(--gold-hi)}
+.pn-empty{text-align:center;color:var(--muted);padding:1.6rem .5rem;margin:0}
+.pn-hint{margin:0}
+@media (max-width:640px){.pn-sum{grid-template-columns:repeat(3,minmax(0,1fr))}.pn-sum .pn-stat:nth-child(n+4){display:none}.pn-grid{grid-template-columns:minmax(0,1fr);max-height:none}.pn-head .btn{flex:1 1 100%;justify-content:center}.pn-seg{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));width:100%}.pn-seg button{padding:.42rem .3rem}}
 @media (max-width:720px){.patch-pill{display:none}}
 @media (max-width:420px){.task-form-row{grid-template-columns:1fr 1fr}.task-form-row .btn{grid-column:1/-1;justify-content:center}}
 
@@ -2052,7 +2107,7 @@ dialog:has(.set-body){width:min(880px,calc(100vw - 1.5rem))}
 <body>
 <header class="topbar">
   <div class="wrap">
-    <div class="brand"><div class="mark"><span>DB</span></div><h1>Draft Board</h1></div>
+    <div class="brand"><div class="mark"><span>DB</span></div><div class="brand-t"><h1>Draft Board</h1><button class="brand-patch" id="patchPill" data-action="patch-notes" title="Patchnotes: was hat sich geändert?" hidden></button></div></div>
     <nav class="tabs" role="tablist" aria-label="Bereiche">
       <button class="tab" role="tab" data-tab="draft" aria-selected="true" title="Draft"><svg class="tab-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16M4 12h16M4 19h10"/></svg><span class="tab-l">Draft</span><span class="tab-s">Draft</span></button>
       <button class="tab" role="tab" data-tab="scout" aria-selected="false" title="Gegner-Picks"><svg class="tab-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg><span class="tab-l">Gegner-Picks</span><span class="tab-s">Gegner</span></button>
@@ -2062,7 +2117,6 @@ dialog:has(.set-body){width:min(880px,calc(100vw - 1.5rem))}
       <button class="tab" role="tab" data-tab="team" aria-selected="false" title="Team"><svg class="tab-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span class="tab-l">Team</span><span class="tab-s">Team</span></button>
       <button class="tab" role="tab" data-tab="history" aria-selected="false" title="Verlauf"><svg class="tab-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1M3.5 4v4.5H8"/><path d="M12 8v4.5l3 2"/></svg><span class="tab-l">Verlauf</span><span class="tab-s">Verlauf</span></button>
     </nav>
-    <span class="patch-pill" id="patchPill" hidden></span>
     <div class="presence" id="presence" hidden></div>
     <span class="status" id="status"><i></i><span>Verbinde…</span></span>
     <button class="btn sm gold install-btn" id="installBtn" hidden title="Draft Board als App installieren"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span>App</span></button>
@@ -2270,7 +2324,7 @@ async function loadDD(){
   let cache = null; try { cache = JSON.parse(lsGet(LS_DD) || "null"); } catch(e){}
   if (cache && cache.v && Array.isArray(cache.list) && cache.list.length){ applyDD(cache.v, cache.list); render(); }
   try {
-    const v = (await (await fetch("https://ddragon.leagueoflegends.com/api/versions.json")).json())[0];
+    const vers = await (await fetch("https://ddragon.leagueoflegends.com/api/versions.json")).json(), v = vers[0]; DD.vers = vers.slice(0, 40);
     if (!cache || cache.v !== v){
       const data = (await (await fetch(`https://ddragon.leagueoflegends.com/cdn/${v}/data/de_DE/champion.json`)).json()).data;
       const list = Object.values(data).map(c => [c.id, c.key, c.name]);
@@ -3662,8 +3716,153 @@ function renderPatch(){
   pill.hidden = !cur; pill.textContent = cur ? "Patch " + cur : "";
   if (changed) requestAnimationFrame(fitNav);
   const isNew = cur && conn === "live" && meta.loaded && meta.patch !== cur && canEdit();
+  pill.classList.toggle("new", !!(cur && meta.loaded && meta.patch !== cur));
   $("#patchBanner").innerHTML = isNew ? `<div class="patch-banner"><span class="pb-ic">★</span><div><b>${meta.patch ? "Neuer Patch " + cur : "Aktueller Patch " + cur}</b><span>${meta.patch ? "Seit Patch " + esc(meta.patch) + " hat sich einiges geändert. Schaut, ob eure Tiers und Combos noch passen." : "Ab jetzt meldet das Board, wenn ein neuer Patch erscheint."}</span></div>
-    <div class="pb-actions"><button class="btn sm" data-action="patch-pools">Tiers prüfen</button><button class="btn sm gold" data-action="patch-ok">Erledigt</button></div></div>` : "";
+    <div class="pb-actions"><button class="btn sm" data-action="patch-notes">Patchnotes</button><button class="btn sm" data-action="patch-pools">Tiers prüfen</button><button class="btn sm gold" data-action="patch-ok">Erledigt</button></div></div>` : "";
+}
+// ---------- Patchnotes: Änderungen zwischen zwei Patches, direkt aus Data Dragon berechnet ----------
+const PN_LS = "draftboard-patchnotes";
+let pn = { v: "", prev: "", diff: null, loading: false, err: "", filter: "", q: "" };
+const PN_STAT = { hp:"Leben", hpperlevel:"Leben pro Stufe", mp:"Mana", mpperlevel:"Mana pro Stufe", movespeed:"Lauftempo", armor:"Rüstung", armorperlevel:"Rüstung pro Stufe", spellblock:"Magieresistenz", spellblockperlevel:"Magieresistenz pro Stufe", attackrange:"Angriffsreichweite", hpregen:"Lebensregeneration", hpregenperlevel:"Lebensreg. pro Stufe", mpregen:"Manaregeneration", mpregenperlevel:"Manareg. pro Stufe", attackdamage:"Angriffsschaden", attackdamageperlevel:"Angriffsschaden pro Stufe", attackspeed:"Angriffstempo", attackspeedperlevel:"Angriffstempo pro Stufe (%)" };
+const PN_ITEM = { FlatHPPoolMod:["Leben",""], FlatMPPoolMod:["Mana",""], FlatPhysicalDamageMod:["Angriffsschaden",""], FlatMagicDamageMod:["Fähigkeitsstärke",""], FlatArmorMod:["Rüstung",""], FlatSpellBlockMod:["Magieresistenz",""], PercentAttackSpeedMod:["Angriffstempo","%"], FlatCritChanceMod:["Krit. Trefferchance","%"], FlatMovementSpeedMod:["Lauftempo",""], PercentMovementSpeedMod:["Lauftempo","%"], PercentLifeStealMod:["Lebensraub","%"], FlatHPRegenMod:["Lebensregeneration",""] };
+const pnNum = n => String(+(+n).toFixed(3)).replace(".", ",");
+const pnList = a => { const x = (a || []).map(Number); return x.every(v => v === x[0]) ? pnNum(x[0]) : x.map(pnNum).join(" / "); };
+const pnTxt = s => String(s || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+const pnSum = a => (a || []).reduce((s, x) => s + Number(x), 0);
+function pnChamps(A, B){
+  const out = [];
+  Object.values(B).forEach(c => {
+    const o = A[c.id];
+    if (!o){ out.push({ id: c.id, name: c.name, isNew: true, ch: [] }); return; }
+    const ch = [], add = (s, l, x, y, d) => ch.push({ s, l, a: x, b: y, d });
+    Object.keys(PN_STAT).forEach(k => { const x = +((o.stats || {})[k]) || 0, y = +((c.stats || {})[k]) || 0; if (Math.abs(x - y) > 1e-6) add("Grundwerte", PN_STAT[k], pnNum(x), pnNum(y), y > x ? 1 : -1); });
+    if (pnTxt((o.passive || {}).description) !== pnTxt((c.passive || {}).description)) add("P · " + ((c.passive || {}).name || "Passive"), "Effekt angepasst", "", "", 0);
+    (c.spells || []).forEach((sp, i) => {
+      const op = (o.spells || [])[i]; if (!op) return;
+      const s = "QWER"[i] + " · " + sp.name;
+      if (op.name !== sp.name) add(s, "Neuer Name (vorher " + op.name + ")", "", "", 0);
+      [["cooldown", "Abklingzeit", -1, " s"], ["cost", "Kosten", -1, ""], ["range", "Reichweite", 1, ""]].forEach(([k, l, good, unit]) => {
+        const x = (op[k] || []).map(Number), y = (sp[k] || []).map(Number);
+        if (!x.length || !y.length || x.join() === y.join()) return;
+        if (k === "range" && [...x, ...y].some(v => v >= 25000)) return; // 25000 = "nur auf sich selbst"
+        add(s, l, pnList(x) + unit, pnList(y) + unit, Math.sign(pnSum(y) / y.length - pnSum(x) / x.length) * good);
+      });
+      if (op.name === sp.name && pnTxt(op.tooltip) !== pnTxt(sp.tooltip)) add(s, "Effekt angepasst", "", "", 0);
+    });
+    if (ch.length) out.push({ id: c.id, name: c.name, ch });
+  });
+  return out.sort((x, y) => x.name.localeCompare(y.name, "de"));
+}
+function pnItems(A, B){
+  const sr = i => !!(i && i.maps && i.maps["11"] && i.gold && i.gold.purchasable && !i.requiredChampion && !i.hideFromAll && i.inStore !== false);
+  const out = [], seen = new Set();
+  [...new Set([...Object.keys(A), ...Object.keys(B)])].forEach(id => {
+    const o = A[id], n = B[id], so = sr(o), sn = sr(n), name = (n || o).name;
+    if ((!so && !sn) || seen.has(name)) return;
+    if (!so){ seen.add(name); out.push({ id, name, isNew: true, ch: [] }); return; }
+    if (!sn){ seen.add(name); out.push({ id, name, gone: true, ch: [] }); return; }
+    const ch = [];
+    if (o.gold.total !== n.gold.total) ch.push({ l: "Preis", a: o.gold.total + " G", b: n.gold.total + " G", d: n.gold.total < o.gold.total ? 1 : -1 });
+    [...new Set([...Object.keys(o.stats || {}), ...Object.keys(n.stats || {})])].forEach(k => {
+      const x = +((o.stats || {})[k]) || 0, y = +((n.stats || {})[k]) || 0; if (Math.abs(x - y) < 1e-6) return;
+      const [l, u] = PN_ITEM[k] || [k.replace(/^(Flat|Percent)|Mod$/g, ""), ""], f = v => pnNum(u === "%" && Math.abs(v) <= 1 ? v * 100 : v) + u;
+      ch.push({ l, a: f(x), b: f(y), d: y > x ? 1 : -1 });
+    });
+    if (pnTxt(o.description) !== pnTxt(n.description)) ch.push({ l: "Effekt angepasst", a: "", b: "", d: 0 });
+    if (ch.length){ seen.add(name); out.push({ id, name, ch }); }
+  });
+  return out.sort((x, y) => (y.isNew ? 1 : 0) - (x.isNew ? 1 : 0) || x.name.localeCompare(y.name, "de"));
+}
+const pnVerdict = x => { if (x.isNew) return ["new", "Neu"]; if (x.gone) return ["gone", "Entfernt"]; const up = x.ch.some(c => c.d > 0), dn = x.ch.some(c => c.d < 0); return up && !dn ? ["buff", "Buff"] : dn && !up ? ["nerf", "Nerf"] : ["adj", "Angepasst"]; };
+async function pnVersions(){
+  if (!DD.vers){ try { DD.vers = (await (await fetch("https://ddragon.leagueoflegends.com/api/versions.json")).json()).slice(0, 40); } catch(e){ DD.vers = DD.v ? [DD.v] : []; } }
+  const seen = new Set(); return DD.vers.filter(v => /^\d+\.\d+\.\d+$/.test(v) && !seen.has(patchName(v)) && seen.add(patchName(v))).slice(0, 12);
+}
+async function pnLoad(v){
+  const list = await pnVersions(), i = list.indexOf(v), prev = list[i + 1];
+  pn = { ...pn, v, prev: prev || "", diff: null, err: "", loading: true }; if (edit && edit.kind === "pn") renderModal();
+  try {
+    if (!prev) throw new Error("Kein Vergleichs-Patch gefunden.");
+    const key = prev + ">" + v; let diff = null;
+    try { const c = JSON.parse(lsGet(PN_LS) || "null"); if (c && c.key === key) diff = c.diff; } catch(e){}
+    if (!diff){
+      const get = (ver, f) => fetch(`https://ddragon.leagueoflegends.com/cdn/${ver}/data/de_DE/${f}.json`).then(r => { if (!r.ok) throw new Error("Data Dragon antwortet mit " + r.status); return r.json(); });
+      const [ca, cb, ia, ib] = await Promise.all([get(prev, "championFull"), get(v, "championFull"), get(prev, "item"), get(v, "item")]);
+      diff = { champs: pnChamps(ca.data, cb.data), items: pnItems(ia.data, ib.data) };
+      lsSet(PN_LS, JSON.stringify({ key, diff }));
+    }
+    if (pn.v === v) pn = { ...pn, diff, loading: false };
+  } catch(e){ if (pn.v === v) pn = { ...pn, loading: false, err: e.message || "Laden fehlgeschlagen." }; }
+  if (edit && edit.kind === "pn") renderModal();
+}
+function openPatchNotes(){
+  edit = { kind: "pn", isNew: false, buf: {} }; pn.q = ""; pn.filter = "";
+  modal.showModal(); renderModal();
+  if (!pn.diff || pn.v !== DD.v) pnLoad(DD.v);
+}
+// Wem gehört der Champion? Eigene Pools (Spieler-Namen) und Gegner-Scouting (Rolle)
+function pnOwners(){
+  const ours = {}, them = {};
+  players.forEach(p => champsOf(p).forEach(c => { const id = champId(c); if (id) (ours[id] = ours[id] || []).push(p.name); }));
+  const t = at(); if (t) ROLES.forEach(r => roleOf(t, r).champs.forEach(c => { const id = champId(c); if (id) (them[id] = them[id] || []).push(r); }));
+  return { ours, them };
+}
+function pnRows(ch, grouped){
+  let last = "";
+  return ch.map(c => { const head = grouped && c.s !== last ? `<li class="pn-sec">${esc(c.s)}</li>` : ""; last = c.s;
+    return head + `<li class="${c.d > 0 ? "up" : c.d < 0 ? "dn" : "eq"}"><span class="pn-l">${esc(c.l)}</span>${c.a || c.b ? `<span class="pn-v"><s>${esc(c.a)}</s><i>→</i><b>${esc(c.b)}</b></span>` : ""}</li>`; }).join("");
+}
+function pnListHtml(){
+  const d = pn.diff; if (!d) return "";
+  const { ours, them } = pnOwners(), q = norm(pn.q);
+  const hit = x => !q || norm(x.name).includes(q);
+  if (pn.filter === "items"){
+    const its = d.items.filter(hit);
+    return its.length ? `<div class="pn-grid">${its.map(x => { const [k, l] = pnVerdict(x);
+      return `<div class="pn-card pn-${k}"><div class="pn-top"><span class="pn-ic item">${img(`https://ddragon.leagueoflegends.com/cdn/${x.gone ? pn.prev : pn.v}/img/item/${x.id}.png`)}</span><div class="pn-nm"><b>${esc(x.name)}</b></div><span class="pn-tag">${l}</span></div>${x.ch.length ? `<ul class="pn-ch">${pnRows(x.ch)}</ul>` : ""}</div>`; }).join("")}</div>` : `<p class="pn-empty">Keine Item-Änderungen gefunden.</p>`;
+  }
+  const f = pn.filter, list = d.champs.filter(x => hit(x) && (f === "ours" ? ours[x.id] : f === "them" ? them[x.id] : true));
+  // eigene Champions zuerst, dann Gegner, dann der Rest
+  const rank = x => ours[x.id] ? 0 : them[x.id] ? 1 : 2;
+  list.sort((x, y) => rank(x) - rank(y));
+  if (!list.length) return `<p class="pn-empty">${f === "ours" ? "Keiner eurer Champions wurde in diesem Patch angepasst." : f === "them" ? "Keiner der gescouteten Gegner-Champions wurde angepasst." : "Keine Treffer."}</p>`;
+  return `<div class="pn-grid">${list.map(x => { const [k, l] = pnVerdict(x), name = DD.idName[x.id] || x.name;
+    const tags = [...(ours[x.id] || []).map(n => `<em class="own">${esc(n)}</em>`), ...(them[x.id] || []).map(r => `<em class="foe">Gegner ${esc(r)}</em>`)].join("");
+    return `<div class="pn-card pn-${k}${ours[x.id] ? " mine" : ""}"><div class="pn-top"><span class="pn-ic">${img(`https://ddragon.leagueoflegends.com/cdn/${pn.v}/img/champion/${x.id}.png`)}</span><div class="pn-nm"><b>${esc(name)}</b>${tags ? `<span class="pn-tags">${tags}</span>` : ""}</div><span class="pn-tag">${l}</span></div>${x.ch.length ? `<ul class="pn-ch">${pnRows(x.ch, true)}</ul>` : `<p class="pn-new">Neuer Champion in diesem Patch.</p>`}</div>`; }).join("")}</div>`;
+}
+function pnHtml(){
+  const cur = patchName(pn.v || DD.v), prev = patchName(pn.prev), d = pn.diff;
+  const off = `https://www.leagueoflegends.com/de-de/news/game-updates/patch-${cur.replace(".", "-")}-notes/`;
+  const vers = (DD.vers || []).filter(v => /^\d+\.\d+\.\d+$/.test(v)).filter((v, i, a) => a.findIndex(w => patchName(w) === patchName(v)) === i).slice(0, 11);
+  let body;
+  if (pn.loading || (!d && !pn.err)) body = `<div class="pn-load"><span class="spin"></span>Vergleiche Patch ${esc(cur)} mit ${esc(prev || "dem Vorgänger")}…<small>Einmalig ca. 2 MB von Riot, danach gespeichert.</small></div>`;
+  else if (pn.err) body = `<div class="pn-load err">Patchnotes konnten nicht geladen werden: ${esc(pn.err)}<button class="btn sm" data-action="pn-retry">Nochmal versuchen</button></div>`;
+  else {
+    const { ours, them } = pnOwners(), cnt = k => d.champs.filter(x => pnVerdict(x)[0] === k).length;
+    const nO = d.champs.filter(x => ours[x.id]).length, nT = d.champs.filter(x => them[x.id]).length;
+    if (!pn.filter) pn.filter = nO ? "ours" : "all";
+    const fb = (k, l, n) => `<button data-action="pn-filter" data-f="${k}" aria-pressed="${pn.filter === k}">${l} <small>${n}</small></button>`;
+    body = `<div class="pn-sum">
+        <div class="pn-stat buff"><b>${cnt("buff")}</b><span>Buffs</span></div>
+        <div class="pn-stat nerf"><b>${cnt("nerf")}</b><span>Nerfs</span></div>
+        <div class="pn-stat adj"><b>${cnt("adj") + cnt("new")}</b><span>Angepasst</span></div>
+        <div class="pn-stat"><b>${d.items.length}</b><span>Items</span></div>
+        <div class="pn-stat gold"><b>${nO}</b><span>eure Champs</span></div>
+      </div>
+      <div class="pn-bar"><div class="seg pn-seg">${fb("ours", "Unsere", nO)}${at() ? fb("them", "Gegner", nT) : ""}${fb("all", "Alle", d.champs.length)}${fb("items", "Items", d.items.length)}</div>
+        <input class="inp pn-q" id="pn-q" type="search" placeholder="Champion oder Item suchen…" value="${esc(pn.q)}" autocomplete="off"></div>
+      <div id="pn-list">${pnListHtml()}</div>`;
+  }
+  return `<div class="m-head"><h2 id="mTitle">Patchnotes ${esc(cur)}</h2><button class="x" data-action="close" aria-label="Schließen">×</button></div>
+    <div class="m-body pn-body">
+      <div class="pn-head">
+        ${vers.length > 1 ? `<label class="pn-ver">Patch <select class="inp" data-action="pn-ver">${vers.map(v => `<option value="${esc(v)}"${v === pn.v ? " selected" : ""}>${esc(patchName(v))}</option>`).join("")}</select></label>` : ""}
+        <span class="pn-cmp">${prev ? "Vergleich mit Patch " + esc(prev) : ""}</span>
+        <a class="btn sm gold" href="${esc(off)}" target="_blank" rel="noopener">Offizielle Patchnotes ↗</a>
+      </div>
+      ${body}
+      <p class="small-hint pn-hint">Automatisch aus Riots Data Dragon ermittelt: Grundwerte, Abklingzeiten, Kosten, Reichweiten und Item-Preise. Genaue Schadenswerte stehen in den offiziellen Patchnotes – „Effekt angepasst“ heißt, dass sich dort etwas geändert hat.</p>
+    </div>`;
 }
 // ---------- Statistik-Dashboard ----------
 let statSeries = []; // Punkte des Winrate-Verlaufs für den Tooltip
@@ -4710,7 +4909,8 @@ modal.addEventListener("close", () => { edit = null; });
 function renderModal(focusSel){
   if (!edit) return;
   const b = edit.buf;
-  modal.classList.toggle("wide", edit.kind === "he");
+  modal.classList.toggle("wide", edit.kind === "he" || edit.kind === "pn");
+  if (edit.kind === "pn"){ modal.innerHTML = pnHtml(); if (focusSel){ const el = modal.querySelector(focusSel); if (el){ el.focus(); const n = el.value.length; try { el.setSelectionRange(n, n); } catch(e){} } } return; }
   if (edit.kind === "he"){
     const tAll = Object.values(teams).sort((x, y) => (y.date || "").localeCompare(x.date || ""));
     const ok = v => v && champId(v);
@@ -4988,7 +5188,7 @@ function renderModal(focusSel){
             <button class="btn sm gold" style="margin-top:.5rem" data-action="import">Backup einspielen</button></div>` : ""}`)
     };
     modal.innerHTML = `
-      <div class="m-head"><h2 id="mTitle">Einstellungen${DD.v ? ` <span class="patch-pill" style="display:inline-block;margin-left:.4rem;vertical-align:middle">Patch ${patchName(DD.v)}</span>` : ""}</h2><button class="x" data-action="close" aria-label="Schließen">×</button></div>
+      <div class="m-head"><h2 id="mTitle">Einstellungen${DD.v ? ` <button class="patch-pill" data-action="patch-notes" title="Patchnotes ansehen" style="display:inline-block;margin-left:.4rem;vertical-align:middle">Patch ${patchName(DD.v)} ›</button>` : ""}</h2><button class="x" data-action="close" aria-label="Schließen">×</button></div>
       <div class="m-body set-body">
         <nav class="set-nav" aria-label="Bereiche">${tabs.map(([k, l, ic, sub, ok]) => `<button data-action="s-tab" data-v="${k}" aria-pressed="${st === k}"><span class="set-ic">${ic}</span><span><b>${l}</b><small class="${ok ? "ok" : ""}">${sub}</small></span></button>`).join("")}</nav>
         <div class="set-main">${sections[st] || sections.team}</div>
@@ -5037,6 +5237,8 @@ function heSummary(){
   el.querySelector(".hs-picks").innerHTML = b.team.map(x => { const ok = x.champ && champId(x.champ); return `<span class="mini${ok ? "" : " he-empty"}">${ok ? initials(officialName(x.champ)) + img(iconUrl(x.champ)) : "?"}</span>`; }).join("");
 }
 modal.addEventListener("input", () => { if (edit && edit.kind === "he") requestAnimationFrame(heSummary); });
+modal.addEventListener("input", e => { if (edit && edit.kind === "pn" && e.target.id === "pn-q"){ pn.q = e.target.value; const l = modal.querySelector("#pn-list"); if (l) l.innerHTML = pnListHtml(); } });
+modal.addEventListener("change", e => { if (edit && edit.kind === "pn" && e.target.dataset.action === "pn-ver") pnLoad(e.target.value); });
 modal.addEventListener("change", () => { if (edit && edit.kind === "he") requestAnimationFrame(heSummary); });
 modal.addEventListener("input", e => {
   if (!edit || edit.kind !== "he" || e.target.getAttribute("list") !== "champList" || e.target.dataset.heBan) return;
@@ -5424,6 +5626,9 @@ document.addEventListener("click", async e => {
       toast("Aufgabe gelöscht.", { label: "Rückgängig", fn: () => { tasks = prev; queueSet("config/tasks", { items: tasks }); render(); } }); break; }
     case "task-showdone": showDoneTasks = !showDoneTasks; render(); break;
     case "patch-ok": meta = { ...meta, patch: patchName(DD.v) }; render(); fs.doc("config/meta").set({ patch: patchName(DD.v), at: Date.now() }, { merge: true }).catch(writeError); toast("Patch als geprüft markiert."); break;
+    case "patch-notes": openPatchNotes(); break;
+    case "pn-filter": pn.filter = a.dataset.f; renderModal(); break;
+    case "pn-retry": pnLoad(pn.v || DD.v); break;
     case "patch-pools": tab = "pools"; render(); window.scrollTo({ top: 0 }); break;
     case "remind-on": b.remind = a.checked; setTimeout(renderModal, 0); if (discordUrl){ remindOn = b.remind; db.doc("config/discord").set({ remind: b.remind, lead: b.lead }, { merge: true }).catch(writeError); } break;
     case "draft-mode": setDraft({ mode: a.dataset.v === "ranked" ? "ranked" : "" }); break;
