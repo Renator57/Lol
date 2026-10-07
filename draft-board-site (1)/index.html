@@ -1174,7 +1174,8 @@ button.patch-pill:hover{background:rgba(215,180,106,.18);border-color:rgba(215,1
 .pn-seg{flex-wrap:wrap}
 .pn-seg small{opacity:.7;font-weight:800;margin-left:.15rem}
 .pn-q{flex:1 1 200px;min-width:0;padding:.45rem .7rem}
-.pn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:.6rem;max-height:min(58vh,620px);overflow:auto;padding-right:.2rem}
+.pn-grid{columns:280px;column-gap:.6rem;max-height:min(60vh,680px);overflow:auto;padding-right:.2rem}
+.pn-grid>.pn-card{break-inside:avoid;margin-bottom:.6rem}
 .pn-card{--pc:#7fb2ff;border:1px solid var(--line);border-left:3px solid var(--pc);border-radius:14px;background:rgba(6,10,18,.4);padding:.6rem .7rem;display:flex;flex-direction:column;gap:.45rem;min-width:0}
 .pn-card.pn-buff{--pc:var(--good)}.pn-card.pn-nerf{--pc:var(--bad)}.pn-card.pn-new{--pc:var(--gold)}.pn-card.pn-gone{--pc:var(--muted)}
 .pn-card.mine{background:linear-gradient(135deg,rgba(215,180,106,.09),rgba(6,10,18,.4) 60%)}
@@ -1190,19 +1191,32 @@ button.patch-pill:hover{background:rgba(215,180,106,.18);border-color:rgba(215,1
 .pn-tags em.foe{color:#ffb3aa;background:rgba(255,106,92,.14)}
 .pn-tag{flex:none;font-size:.68rem;font-weight:900;text-transform:uppercase;letter-spacing:.05em;padding:.15rem .5rem;border-radius:999px;color:var(--pc);background:color-mix(in srgb,var(--pc) 15%,transparent)}
 .pn-ch{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.18rem;font-size:.8rem}
-.pn-ch li{display:flex;justify-content:space-between;gap:.5rem;align-items:baseline;padding:.12rem 0}
+.pn-ch li{display:flex;justify-content:space-between;gap:.2rem .5rem;align-items:baseline;padding:.12rem 0;flex-wrap:wrap}
 .pn-ch li.pn-sec{font-size:.7rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding-top:.3rem;border-top:1px solid var(--line)}
 .pn-ch li.pn-sec:first-child{border-top:0;padding-top:0}
-.pn-l{color:var(--text);min-width:0}
+.pn-l{color:var(--text);flex:0 1 auto;max-width:55%}
+.pn-v{flex:1 1 auto}
 .pn-ch li.eq .pn-l{color:var(--muted);font-style:italic}
-.pn-v{display:flex;gap:.3rem;align-items:baseline;text-align:right;flex-wrap:wrap;justify-content:flex-end;font-variant-numeric:tabular-nums}
+.pn-v{display:flex;gap:.3rem;align-items:baseline;text-align:right;flex-wrap:wrap;justify-content:flex-end;font-variant-numeric:tabular-nums;min-width:0;overflow-wrap:anywhere}
 .pn-v s{color:var(--muted);text-decoration-color:rgba(255,255,255,.3)}
 .pn-v i{font-style:normal;color:var(--muted);font-size:.7rem}
 .pn-ch li.up .pn-v b{color:var(--good)}.pn-ch li.dn .pn-v b{color:var(--bad)}
 .pn-new{margin:0;font-size:.8rem;color:var(--gold-hi)}
+.pn-hero{display:block;border-radius:14px;overflow:hidden;border:1px solid var(--line-2);background:#050a14}
+.pn-hero img{display:block;width:100%;height:auto;max-height:340px;object-fit:contain}
+.pn-note{margin:0;font-size:.8rem;color:var(--warn);padding:.5rem .7rem;border-radius:10px;background:rgba(240,181,74,.08);border:1px solid rgba(240,181,74,.25)}
+.pn-summ{margin:0;font-size:.8rem;color:var(--muted);font-style:italic;line-height:1.4}
+.pn-ch li.txt{display:block;color:var(--muted);line-height:1.4}
+.pn-ch li.sub{padding-left:.8rem;font-size:.76rem}
+.pn-why{font-size:.76rem;color:var(--muted)}
+.pn-why summary{cursor:pointer;font-weight:800;color:var(--gold);list-style:none}
+.pn-why summary::-webkit-details-marker{display:none}
+.pn-why summary::before{content:"▸ "}.pn-why[open] summary::before{content:"▾ "}
+.pn-why p{margin:.3rem 0 0;line-height:1.45}
+.pn-card.pn-other{--pc:var(--line-2)}
 .pn-empty{text-align:center;color:var(--muted);padding:1.6rem .5rem;margin:0}
 .pn-hint{margin:0}
-@media (max-width:640px){.pn-sum{grid-template-columns:repeat(3,minmax(0,1fr))}.pn-sum .pn-stat:nth-child(n+4){display:none}.pn-grid{grid-template-columns:minmax(0,1fr);max-height:none}.pn-head .btn{flex:1 1 100%;justify-content:center}.pn-seg{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));width:100%}.pn-seg button{padding:.42rem .3rem}}
+@media (max-width:640px){.pn-sum{grid-template-columns:repeat(3,minmax(0,1fr))}.pn-sum .pn-stat:nth-child(n+4){display:none}.pn-grid{columns:auto;max-height:none}.pn-head .btn{flex:1 1 100%;justify-content:center}.pn-seg{display:flex;flex-wrap:nowrap;overflow-x:auto;width:100%;scrollbar-width:none}.pn-seg::-webkit-scrollbar{display:none}.pn-seg button{padding:.42rem .7rem;white-space:nowrap;flex:none}}
 @media (max-width:720px){.patch-pill{display:none}}
 @media (max-width:420px){.task-form-row{grid-template-columns:1fr 1fr}.task-form-row .btn{grid-column:1/-1;justify-content:center}}
 
@@ -3722,7 +3736,7 @@ function renderPatch(){
 }
 // ---------- Patchnotes: Änderungen zwischen zwei Patches, direkt aus Data Dragon berechnet ----------
 const PN_LS = "draftboard-patchnotes";
-let pn = { v: "", prev: "", diff: null, loading: false, err: "", filter: "", q: "" };
+let pn = { v: "", prev: "", data: null, loading: false, err: "", note: "", filter: "", q: "" };
 const PN_STAT = { hp:"Leben", hpperlevel:"Leben pro Stufe", mp:"Mana", mpperlevel:"Mana pro Stufe", movespeed:"Lauftempo", armor:"Rüstung", armorperlevel:"Rüstung pro Stufe", spellblock:"Magieresistenz", spellblockperlevel:"Magieresistenz pro Stufe", attackrange:"Angriffsreichweite", hpregen:"Lebensregeneration", hpregenperlevel:"Lebensreg. pro Stufe", mpregen:"Manaregeneration", mpregenperlevel:"Manareg. pro Stufe", attackdamage:"Angriffsschaden", attackdamageperlevel:"Angriffsschaden pro Stufe", attackspeed:"Angriffstempo", attackspeedperlevel:"Angriffstempo pro Stufe (%)" };
 const PN_ITEM = { FlatHPPoolMod:["Leben",""], FlatMPPoolMod:["Mana",""], FlatPhysicalDamageMod:["Angriffsschaden",""], FlatMagicDamageMod:["Fähigkeitsstärke",""], FlatArmorMod:["Rüstung",""], FlatSpellBlockMod:["Magieresistenz",""], PercentAttackSpeedMod:["Angriffstempo","%"], FlatCritChanceMod:["Krit. Trefferchance","%"], FlatMovementSpeedMod:["Lauftempo",""], PercentMovementSpeedMod:["Lauftempo","%"], PercentLifeStealMod:["Lebensraub","%"], FlatHPRegenMod:["Lebensregeneration",""] };
 const pnNum = n => String(+(+n).toFixed(3)).replace(".", ",");
@@ -3773,32 +3787,119 @@ function pnItems(A, B){
   });
   return out.sort((x, y) => (y.isNew ? 1 : 0) - (x.isNew ? 1 : 0) || x.name.localeCompare(y.name, "de"));
 }
-const pnVerdict = x => { if (x.isNew) return ["new", "Neu"]; if (x.gone) return ["gone", "Entfernt"]; const up = x.ch.some(c => c.d > 0), dn = x.ch.some(c => c.d < 0); return up && !dn ? ["buff", "Buff"] : dn && !up ? ["nerf", "Nerf"] : ["adj", "Angepasst"]; };
 async function pnVersions(){
   if (!DD.vers){ try { DD.vers = (await (await fetch("https://ddragon.leagueoflegends.com/api/versions.json")).json()).slice(0, 40); } catch(e){ DD.vers = DD.v ? [DD.v] : []; } }
   const seen = new Set(); return DD.vers.filter(v => /^\d+\.\d+\.\d+$/.test(v) && !seen.has(patchName(v)) && seen.add(patchName(v))).slice(0, 12);
 }
-async function pnLoad(v){
-  const list = await pnVersions(), i = list.indexOf(v), prev = list[i + 1];
-  pn = { ...pn, v, prev: prev || "", diff: null, err: "", loading: true }; if (edit && edit.kind === "pn") renderModal();
-  try {
-    if (!prev) throw new Error("Kein Vergleichs-Patch gefunden.");
-    const key = prev + ">" + v; let diff = null;
-    try { const c = JSON.parse(lsGet(PN_LS) || "null"); if (c && c.key === key) diff = c.diff; } catch(e){}
-    if (!diff){
-      const get = (ver, f) => fetch(`https://ddragon.leagueoflegends.com/cdn/${ver}/data/de_DE/${f}.json`).then(r => { if (!r.ok) throw new Error("Data Dragon antwortet mit " + r.status); return r.json(); });
-      const [ca, cb, ia, ib] = await Promise.all([get(prev, "championFull"), get(v, "championFull"), get(prev, "item"), get(v, "item")]);
-      diff = { champs: pnChamps(ca.data, cb.data), items: pnItems(ia.data, ib.data) };
-      lsSet(PN_LS, JSON.stringify({ key, diff }));
+// Einheitliches Format für beide Quellen: { id?, name, icon?, summary, context, isNew?, gone?, groups:[{ t, lines:[{ l, a, b, d, text, sub }] }] }
+const pnLines = x => x.groups.flatMap(g => g.lines);
+const pnVerdict = x => { if (x.isNew) return ["new", "Neu"]; if (x.gone) return ["gone", "Entfernt"]; const ls = pnLines(x), up = ls.some(c => c.d > 0), dn = ls.some(c => c.d < 0);
+  if (x.kind === "other") return ["adj", ""]; return up && !dn ? ["buff", "Buff"] : dn && !up ? ["nerf", "Nerf"] : ["adj", "Angepasst"]; };
+// Werte, bei denen weniger besser ist (Abklingzeit, Kosten …)
+const PN_LOWER = /abklingzeit|kosten|wirkzeit|zauberzeit|verzögerung|aufladezeit|ausführungszeit|preis|cooldown|\bcost|cast time|delay|lockout/i;
+const pnNums = s => (String(s).replace(/(\d),(\d)/g, "$1.$2").match(/-?\d+(?:\.\d+)?/g) || []).map(Number);
+function pnLine(t){
+  const parts = t.split(/\s*(?:⇒|=>|➜|➔|→)\s*/);
+  if (parts.length < 2) return { text: t, d: 0 };
+  const left = parts[0], b = parts.slice(1).join(" ⇒ ").trim(), ci = left.indexOf(":");
+  const l = ci > 0 ? left.slice(0, ci).trim() : "", a = (ci > 0 ? left.slice(ci + 1) : left).trim();
+  const x = pnNums(a), y = pnNums(b); let d = 0;
+  if (x.length && y.length){ const ax = pnSum(x) / x.length, ay = pnSum(y) / y.length; if (ax !== ay) d = Math.sign(ay - ax) * (PN_LOWER.test(l) ? -1 : 1); }
+  else if (/^(entfernt|removed)/i.test(b)) d = 0;
+  return { l, a, b, d };
+}
+// Offizielle Patchnotes (HTML vom Worker) → Karten. Es wird nur Text übernommen, kein fremdes HTML.
+function pnParseRiot(html){
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const T = el => (el.textContent || "").replace(/\s+/g, " ").trim();
+  const srcOf = i => i ? (i.getAttribute("src") || i.getAttribute("data-src") || "") : "";
+  const okImg = s => /^https:\/\//.test(s) ? s : "";
+  const hero = [...doc.querySelectorAll("img")].map(srcOf).find(s => okImg(s) && /infographic|highlight/i.test(s)) || "";
+  const secs = []; let sec = null, ent = null, grp = null;
+  const newSec = t => { sec = { t, entries: [], lines: [] }; secs.push(sec); ent = grp = null; };
+  const newEnt = el => { const blk = el.closest(".patch-change-block, .content-border"); ent = { name: T(el), icon: okImg(srcOf(blk && blk.querySelector("img"))), summary: "", context: "", groups: [] }; grp = null; sec.entries.push(ent); };
+  const add = o => { if (ent){ if (!grp){ grp = { t: "", lines: [] }; ent.groups.push(grp); } grp.lines.push(o); } else sec.lines.push(o); };
+  newSec("");
+  doc.body.querySelectorAll("h2, h3, h4, p, li, blockquote, .attribute-change").forEach(el => {
+    if (el.parentElement && el.parentElement.closest("blockquote, .attribute-change")) return;
+    if (el.tagName === "P" && el.closest("li")) return;
+    const tag = el.tagName;
+    if (tag === "H2") return newSec(T(el));
+    if (tag === "H3") return newEnt(el);
+    if (tag === "H4"){ if (!ent) return newEnt(el); grp = { t: T(el), lines: [] }; ent.groups.push(grp); return; }
+    if (tag === "BLOCKQUOTE"){ const t = T(el); if (!t) return; if (ent) ent.context = (ent.context ? ent.context + " " : "") + t; else sec.lines.push({ text: t, d: 0 }); return; }
+    if (el.classList.contains("attribute-change")){
+      const q = c => { const x = el.querySelector(c); return x ? T(x) : ""; }, name = q(".attribute"), a = q(".attribute-before"), b = q(".attribute-after");
+      return add(a || b ? { ...pnLine((name ? name + ": " : "") + (a || "–") + " ⇒ " + (b || "–")), l: name } : { text: T(el), d: 0 });
     }
-    if (pn.v === v) pn = { ...pn, diff, loading: false };
-  } catch(e){ if (pn.v === v) pn = { ...pn, loading: false, err: e.message || "Laden fehlgeschlagen." }; }
+    if (tag === "LI"){ if (el.querySelector(".attribute-change")) return; const c = el.cloneNode(true); c.querySelectorAll("ul, ol").forEach(x => x.remove()); const t = T(c); if (t) add({ ...pnLine(t), sub: !!(el.parentElement && el.parentElement.closest("li")) }); return; }
+    if (tag === "P"){ const t = T(el); if (!t) return; if (ent && !ent.groups.length && !ent.summary) ent.summary = t; else add({ text: t, d: 0 }); }
+  });
+  const champs = [], items = [], other = [], byId = {};
+  const SKIP = /skin|chroma|highlight|höhepunkt|kommende|upcoming|shop|bundle|paket/i, MODE = /aram|arena|swarm|urf|nexus|modus|mode/i, ITEM = /item|gegenst/i;
+  secs.forEach(s => {
+    if (SKIP.test(s.t)) return;
+    s.entries.forEach(e => {
+      const groups = e.groups.filter(g => g.lines.length), id = champId(e.name);
+      if (!groups.length && !e.summary && !e.context) return;
+      const x = { name: e.name, icon: e.icon, summary: e.summary, context: e.context, groups, sec: s.t };
+      if (id && !ITEM.test(s.t) && !MODE.test(s.t)){
+        if (byId[id]){ byId[id].groups.push(...groups); if (!byId[id].summary) byId[id].summary = e.summary; return; }
+        champs.push(byId[id] = { ...x, id, kind: "champ", name: DD.idName[id] || e.name });
+      } else if (ITEM.test(s.t)) items.push({ ...x, kind: "item" });
+      else other.push({ ...x, id: id || "", kind: "other", name: s.t && !MODE.test(e.name) && MODE.test(s.t) ? s.t + " · " + e.name : e.name });
+    });
+    if (s.t && s.lines.length && !s.entries.length) other.push({ name: s.t, kind: "other", summary: "", context: "", groups: [{ t: "", lines: s.lines }] });
+  });
+  return { src: "riot", hero, champs: champs.sort((a, b) => a.name.localeCompare(b.name, "de")), items, other };
+}
+// Data-Dragon-Vergleich in dasselbe Format bringen (Ersatz, wenn der Worker die Riot-Seite nicht liefert)
+function pnFromDD(diff, v, prev){
+  const grp = ch => { const g = []; ch.forEach(c => { const s = c.s || ""; let x = g[g.length - 1]; if (!x || x.t !== s){ x = { t: s, lines: [] }; g.push(x); } x.lines.push({ l: c.l, a: c.a, b: c.b, d: c.d, text: c.a || c.b ? "" : c.l }); }); return g.map(x => ({ ...x, lines: x.lines.map(l => l.text ? { text: l.text, d: 0 } : l) })); };
+  return { src: "dd",
+    champs: diff.champs.map(x => ({ id: x.id, kind: "champ", name: x.name, isNew: x.isNew, groups: grp(x.ch) })),
+    items: diff.items.map(x => ({ kind: "item", name: x.name, isNew: x.isNew, gone: x.gone, icon: `https://ddragon.leagueoflegends.com/cdn/${x.gone ? prev : v}/img/item/${x.id}.png`, groups: grp(x.ch) })),
+    other: [] };
+}
+async function pnDD(v, prev){
+  if (!prev) throw new Error("Kein Vergleichs-Patch gefunden.");
+  const key = prev + ">" + v; let diff = null;
+  try { const c = JSON.parse(lsGet(PN_LS) || "null"); if (c && c.key === key) diff = c.diff; } catch(e){}
+  if (!diff){
+    const get = (ver, f) => fetch(`https://ddragon.leagueoflegends.com/cdn/${ver}/data/de_DE/${f}.json`).then(r => { if (!r.ok) throw new Error("Data Dragon antwortet mit " + r.status); return r.json(); });
+    const [ca, cb, ia, ib] = await Promise.all([get(prev, "championFull"), get(v, "championFull"), get(prev, "item"), get(v, "item")]);
+    diff = { champs: pnChamps(ca.data, cb.data), items: pnItems(ia.data, ib.data) };
+    lsSet(PN_LS, JSON.stringify({ key, diff }));
+  }
+  return pnFromDD(diff, v, prev);
+}
+const PN_RIOT_LS = "draftboard-patchnotes-riot";
+async function pnRiot(p){
+  try { const c = JSON.parse(lsGet(PN_RIOT_LS) || "null"); if (c && c.p === p && c.html) return c; } catch(e){}
+  const d = await riotFetch("patch", { v: p, lang: "de-de" });
+  if (!d || !d.html) throw new Error("Leere Antwort vom Worker.");
+  const o = { p, url: d.url || "", html: d.html }; lsSet(PN_RIOT_LS, JSON.stringify(o)); return o;
+}
+async function pnLoad(v){
+  const list = await pnVersions(), i = list.indexOf(v), prev = list[i + 1] || "", p = patchName(v);
+  pn = { ...pn, v, prev, data: null, err: "", note: "", loading: true }; if (edit && edit.kind === "pn") renderModal();
+  let data = null, note = "";
+  const OLD = "Für die vollständigen Patchnotes die neue worker.js (Version 10) bei Cloudflare einspielen – unten nur die Werte aus Data Dragon.";
+  if (riotUrl && riotVer != null && riotVer < 10) note = OLD;
+  else if (riotUrl){
+    try { const r = await pnRiot(p); data = pnParseRiot(r.html); data.url = r.url;
+      if (!data.champs.length && !data.items.length && !data.other.length){ data = null; note = "Die Riot-Seite hat ein unbekanntes Format – unten nur die Werte aus Data Dragon."; } }
+    catch(e){ note = /Riot-ID|Region|Queue/i.test(e.message) ? OLD : e.message + " Unten nur die Werte aus Data Dragon."; }
+  } else note = "Für die vollständigen offiziellen Patchnotes in den Einstellungen den Riot-Proxy eintragen – unten nur die Werte aus Data Dragon.";
+  let err = "";
+  if (!data){ try { data = await pnDD(v, prev); } catch(e){ err = e.message || "Laden fehlgeschlagen."; } }
+  if (pn.v === v) pn = { ...pn, data, note, err, loading: false };
   if (edit && edit.kind === "pn") renderModal();
 }
 function openPatchNotes(){
   edit = { kind: "pn", isNew: false, buf: {} }; pn.q = ""; pn.filter = "";
   modal.showModal(); renderModal();
-  if (!pn.diff || pn.v !== DD.v) pnLoad(DD.v);
+  if (!pn.data || pn.v !== DD.v) pnLoad(DD.v);
 }
 // Wem gehört der Champion? Eigene Pools (Spieler-Namen) und Gegner-Scouting (Rolle)
 function pnOwners(){
@@ -3807,49 +3908,51 @@ function pnOwners(){
   const t = at(); if (t) ROLES.forEach(r => roleOf(t, r).champs.forEach(c => { const id = champId(c); if (id) (them[id] = them[id] || []).push(r); }));
   return { ours, them };
 }
-function pnRows(ch, grouped){
-  let last = "";
-  return ch.map(c => { const head = grouped && c.s !== last ? `<li class="pn-sec">${esc(c.s)}</li>` : ""; last = c.s;
-    return head + `<li class="${c.d > 0 ? "up" : c.d < 0 ? "dn" : "eq"}"><span class="pn-l">${esc(c.l)}</span>${c.a || c.b ? `<span class="pn-v"><s>${esc(c.a)}</s><i>→</i><b>${esc(c.b)}</b></span>` : ""}</li>`; }).join("");
+function pnCard(x, ours, them){
+  const [k, l] = pnVerdict(x), mine = x.id && ours[x.id];
+  const icon = x.kind === "champ" || (x.kind === "other" && x.id) ? iconUrl(x.id) : x.icon;
+  const tags = x.id ? [...(ours[x.id] || []).map(n => `<em class="own">${esc(n)}</em>`), ...(them[x.id] || []).map(r => `<em class="foe">Gegner ${esc(r)}</em>`)].join("") : "";
+  const rows = x.groups.map(g => (g.t ? `<li class="pn-sec">${esc(g.t)}</li>` : "") + g.lines.map(c => c.text
+    ? `<li class="eq txt${c.sub ? " sub" : ""}">${esc(c.text)}</li>`
+    : `<li class="${c.d > 0 ? "up" : c.d < 0 ? "dn" : "eq"}${c.sub ? " sub" : ""}">${c.l ? `<span class="pn-l">${esc(c.l)}</span>` : ""}<span class="pn-v"><s>${esc(c.a)}</s><i>→</i><b>${esc(c.b)}</b></span></li>`).join("")).join("");
+  return `<div class="pn-card pn-${k}${mine ? " mine" : ""}${x.kind === "other" ? " pn-other" : ""}">
+    <div class="pn-top">${icon ? `<span class="pn-ic${x.kind === "champ" ? "" : " item"}">${img(icon)}</span>` : ""}<div class="pn-nm"><b>${esc(x.name)}</b>${tags ? `<span class="pn-tags">${tags}</span>` : ""}</div>${l ? `<span class="pn-tag">${l}</span>` : ""}</div>
+    ${x.summary ? `<p class="pn-summ">${esc(x.summary)}</p>` : ""}
+    ${rows ? `<ul class="pn-ch">${rows}</ul>` : x.isNew && x.kind === "champ" ? `<p class="pn-new">Neuer Champion in diesem Patch.</p>` : ""}
+    ${x.context ? `<details class="pn-why"><summary>Warum?</summary><p>${esc(x.context)}</p></details>` : ""}</div>`;
 }
 function pnListHtml(){
-  const d = pn.diff; if (!d) return "";
-  const { ours, them } = pnOwners(), q = norm(pn.q);
-  const hit = x => !q || norm(x.name).includes(q);
-  if (pn.filter === "items"){
-    const its = d.items.filter(hit);
-    return its.length ? `<div class="pn-grid">${its.map(x => { const [k, l] = pnVerdict(x);
-      return `<div class="pn-card pn-${k}"><div class="pn-top"><span class="pn-ic item">${img(`https://ddragon.leagueoflegends.com/cdn/${x.gone ? pn.prev : pn.v}/img/item/${x.id}.png`)}</span><div class="pn-nm"><b>${esc(x.name)}</b></div><span class="pn-tag">${l}</span></div>${x.ch.length ? `<ul class="pn-ch">${pnRows(x.ch)}</ul>` : ""}</div>`; }).join("")}</div>` : `<p class="pn-empty">Keine Item-Änderungen gefunden.</p>`;
-  }
-  const f = pn.filter, list = d.champs.filter(x => hit(x) && (f === "ours" ? ours[x.id] : f === "them" ? them[x.id] : true));
-  // eigene Champions zuerst, dann Gegner, dann der Rest
-  const rank = x => ours[x.id] ? 0 : them[x.id] ? 1 : 2;
-  list.sort((x, y) => rank(x) - rank(y));
-  if (!list.length) return `<p class="pn-empty">${f === "ours" ? "Keiner eurer Champions wurde in diesem Patch angepasst." : f === "them" ? "Keiner der gescouteten Gegner-Champions wurde angepasst." : "Keine Treffer."}</p>`;
-  return `<div class="pn-grid">${list.map(x => { const [k, l] = pnVerdict(x), name = DD.idName[x.id] || x.name;
-    const tags = [...(ours[x.id] || []).map(n => `<em class="own">${esc(n)}</em>`), ...(them[x.id] || []).map(r => `<em class="foe">Gegner ${esc(r)}</em>`)].join("");
-    return `<div class="pn-card pn-${k}${ours[x.id] ? " mine" : ""}"><div class="pn-top"><span class="pn-ic">${img(`https://ddragon.leagueoflegends.com/cdn/${pn.v}/img/champion/${x.id}.png`)}</span><div class="pn-nm"><b>${esc(name)}</b>${tags ? `<span class="pn-tags">${tags}</span>` : ""}</div><span class="pn-tag">${l}</span></div>${x.ch.length ? `<ul class="pn-ch">${pnRows(x.ch, true)}</ul>` : `<p class="pn-new">Neuer Champion in diesem Patch.</p>`}</div>`; }).join("")}</div>`;
+  const d = pn.data; if (!d) return "";
+  const { ours, them } = pnOwners(), q = norm(pn.q), f = pn.filter;
+  const hit = x => !q || norm(x.name).includes(q) || (x.kind === "other" && norm(pnLines(x).map(l => l.text || l.l).join(" ")).includes(q));
+  let list = f === "items" ? d.items : f === "other" ? d.other : d.champs.filter(x => f === "ours" ? ours[x.id] : f === "them" ? them[x.id] : true);
+  list = list.filter(hit);
+  if (f !== "items" && f !== "other"){ const rank = x => ours[x.id] ? 0 : them[x.id] ? 1 : 2; list = [...list].sort((a, b) => rank(a) - rank(b)); }
+  if (!list.length) return `<p class="pn-empty">${q ? "Keine Treffer." : f === "ours" ? "Keiner eurer Champions wurde in diesem Patch angepasst." : f === "them" ? "Keiner der gescouteten Gegner-Champions wurde angepasst." : f === "items" ? "Keine Item-Änderungen." : "Nichts gefunden."}</p>`;
+  return `<div class="pn-grid">${list.map(x => pnCard(x, ours, them)).join("")}</div>`;
 }
 function pnHtml(){
-  const cur = patchName(pn.v || DD.v), prev = patchName(pn.prev), d = pn.diff;
-  const off = `https://www.leagueoflegends.com/de-de/news/game-updates/patch-${cur.replace(".", "-")}-notes/`;
+  const cur = patchName(pn.v || DD.v), d = pn.data;
+  const off = (d && d.url) || `https://www.leagueoflegends.com/de-de/news/game-updates/patch-${cur.replace(".", "-")}-notes/`;
   const vers = (DD.vers || []).filter(v => /^\d+\.\d+\.\d+$/.test(v)).filter((v, i, a) => a.findIndex(w => patchName(w) === patchName(v)) === i).slice(0, 11);
   let body;
-  if (pn.loading || (!d && !pn.err)) body = `<div class="pn-load"><span class="spin"></span>Vergleiche Patch ${esc(cur)} mit ${esc(prev || "dem Vorgänger")}…<small>Einmalig ca. 2 MB von Riot, danach gespeichert.</small></div>`;
-  else if (pn.err) body = `<div class="pn-load err">Patchnotes konnten nicht geladen werden: ${esc(pn.err)}<button class="btn sm" data-action="pn-retry">Nochmal versuchen</button></div>`;
+  if (pn.loading) body = `<div class="pn-load"><span class="spin"></span>Lade Patchnotes ${esc(cur)}…</div>`;
+  else if (!d) body = `<div class="pn-load err">Patchnotes konnten nicht geladen werden: ${esc(pn.err || pn.note || "unbekannter Fehler")}<button class="btn sm" data-action="pn-retry">Nochmal versuchen</button></div>`;
   else {
     const { ours, them } = pnOwners(), cnt = k => d.champs.filter(x => pnVerdict(x)[0] === k).length;
     const nO = d.champs.filter(x => ours[x.id]).length, nT = d.champs.filter(x => them[x.id]).length;
     if (!pn.filter) pn.filter = nO ? "ours" : "all";
     const fb = (k, l, n) => `<button data-action="pn-filter" data-f="${k}" aria-pressed="${pn.filter === k}">${l} <small>${n}</small></button>`;
-    body = `<div class="pn-sum">
+    body = `${d.hero ? `<a class="pn-hero" href="${esc(d.hero)}" target="_blank" rel="noopener" title="Übersicht in voller Größe">${img(d.hero)}</a>` : ""}
+      ${pn.note ? `<p class="pn-note">${esc(pn.note)}</p>` : ""}
+      <div class="pn-sum">
         <div class="pn-stat buff"><b>${cnt("buff")}</b><span>Buffs</span></div>
         <div class="pn-stat nerf"><b>${cnt("nerf")}</b><span>Nerfs</span></div>
         <div class="pn-stat adj"><b>${cnt("adj") + cnt("new")}</b><span>Angepasst</span></div>
         <div class="pn-stat"><b>${d.items.length}</b><span>Items</span></div>
         <div class="pn-stat gold"><b>${nO}</b><span>eure Champs</span></div>
       </div>
-      <div class="pn-bar"><div class="seg pn-seg">${fb("ours", "Unsere", nO)}${at() ? fb("them", "Gegner", nT) : ""}${fb("all", "Alle", d.champs.length)}${fb("items", "Items", d.items.length)}</div>
+      <div class="pn-bar"><div class="seg pn-seg">${fb("ours", "Unsere", nO)}${at() ? fb("them", "Gegner", nT) : ""}${fb("all", "Champions", d.champs.length)}${fb("items", "Items", d.items.length)}${d.other.length ? fb("other", "Weitere", d.other.length) : ""}</div>
         <input class="inp pn-q" id="pn-q" type="search" placeholder="Champion oder Item suchen…" value="${esc(pn.q)}" autocomplete="off"></div>
       <div id="pn-list">${pnListHtml()}</div>`;
   }
@@ -3857,11 +3960,11 @@ function pnHtml(){
     <div class="m-body pn-body">
       <div class="pn-head">
         ${vers.length > 1 ? `<label class="pn-ver">Patch <select class="inp" data-action="pn-ver">${vers.map(v => `<option value="${esc(v)}"${v === pn.v ? " selected" : ""}>${esc(patchName(v))}</option>`).join("")}</select></label>` : ""}
-        <span class="pn-cmp">${prev ? "Vergleich mit Patch " + esc(prev) : ""}</span>
-        <a class="btn sm gold" href="${esc(off)}" target="_blank" rel="noopener">Offizielle Patchnotes ↗</a>
+        <span class="pn-cmp">${d ? d.src === "riot" ? "Offizielle Patchnotes von Riot" : "Werte aus Data Dragon (Vergleich mit " + esc(patchName(pn.prev)) + ")" : ""}</span>
+        <a class="btn sm gold" href="${esc(off)}" target="_blank" rel="noopener">Bei Riot öffnen ↗</a>
       </div>
       ${body}
-      <p class="small-hint pn-hint">Automatisch aus Riots Data Dragon ermittelt: Grundwerte, Abklingzeiten, Kosten, Reichweiten und Item-Preise. Genaue Schadenswerte stehen in den offiziellen Patchnotes – „Effekt angepasst“ heißt, dass sich dort etwas geändert hat.</p>
+      ${d && d.src === "riot" ? `<p class="small-hint pn-hint">Buff/Nerf schätzt das Board anhand der Zahlen (z. B. mehr Schaden = Buff, längere Abklingzeit = Nerf).</p>` : d ? `<p class="small-hint pn-hint">Data Dragon enthält nur Grundwerte, Abklingzeiten, Kosten, Reichweiten und Item-Preise – Schadensänderungen fehlen hier.</p>` : ""}
     </div>`;
 }
 // ---------- Statistik-Dashboard ----------

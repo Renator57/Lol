@@ -4,6 +4,7 @@
 //   GET /?id=Name%23TAG&region=euw&queue=ranked&count=20
 //   GET /health
 //   GET /live?ids=Name%23TAG,Name2%23TAG&region=euw   laufendes Spiel (Spectator-V5) des ersten Spielers, der gerade spielt
+//   GET /patch?v=26.20&lang=de-de   offizielle Patchnotes (leagueoflegends.com erlaubt kein CORS)
 //   /vod/...  Video-Upload für die VOD-Review (optional, braucht R2, siehe README.md)
 //
 // Secrets / Variablen (siehe README.md):
@@ -32,7 +33,7 @@ const QUEUES = {
   tournament: "type=tournament", // Turnier-Codes (z. B. Prime League)
   all:        "",
 };
-const VERSION = 9;           // vom Board geprüft (Einstellungen → Testen)
+const VERSION = 10;          // vom Board geprüft (Einstellungen → Testen)
 const MAX_COUNT = 30;
 // Cloudflare-eigener Standard-Cache (caches.default fehlt in den Browser-Typen)
 const edgeCache = () => /** @type {Cache} */ (/** @type {any} */ (caches).default);
@@ -56,6 +57,7 @@ export default {
     if (req.method !== "GET") return json({ error: "Nur GET erlaubt." }, 405, cors);
 
     if (url.pathname === "/health") return json({ ok: true, key: !!env.RIOT_API_KEY, keyOk: /^RGAPI-[0-9a-f-]{36}$/i.test(env.RIOT_API_KEY || ""), version: VERSION, vod: !!env.VODS, vodAuth: !!env.UPLOAD_KEY }, 200, { ...cors, "Cache-Control": "no-store" });
+    if (url.pathname === "/patch") return patchNotes(url, ctx, cors); // braucht keinen API-Key
     if (!env.RIOT_API_KEY) return json({ error: "RIOT_API_KEY fehlt im Worker." }, 500, cors);
 
     if (url.pathname === "/live") return liveGame(url, env, ctx, cors);
@@ -400,4 +402,57 @@ async function liveGame(url, env, ctx, cors) {
       : `Riot-Fehler ${status}${e.step ? " bei " + e.step : ""}${e.msg ? ": " + e.msg : ""}.`;
     return json({ error: msg, status, step: e.step || "", checked, ...(status === 429 ? { retryAfter: e.retryAfter || 10 } : {}) }, status === 429 ? 429 : 502, cors);
   }
+}
+
+// ---------- Offizielle Patchnotes ----------
+// Holt die Patchnotes-Seite von leagueoflegends.com und gibt nur den Artikel-Inhalt (HTML) zurück.
+// Das Board baut daraus eigene Karten – das HTML wird dort nie direkt eingefügt.
+const PATCH_LANGS = ["de-de", "en-gb", "en-us"];
+async function patchNotes(url, ctx, cors) {
+  const m = String(url.searchParams.get("v") || "").match(/^(\d{2})\.(\d{1,2})$/);
+  if (!m) return json({ error: "Ungültiger Patch (z. B. 26.20)." }, 400, cors);
+  const lang = PATCH_LANGS.includes(url.searchParams.get("lang") || "") ? url.searchParams.get("lang") : "de-de";
+  const v = m[1] + "." + (+m[2]);
+  const cacheKey = new Request(`https://patch.cache/${lang}/${v}`);
+  const hit = await edgeCache().match(cacheKey);
+  if (hit) return withCors(hit, cors);
+  const slugs = [...new Set([`patch-${m[1]}-${+m[2]}-notes`, `patch-${m[1]}-${m[2].padStart(2, "0")}-notes`, `league-of-legends-patch-${m[1]}-${+m[2]}-notes`])];
+  let page = "", src = "";
+  outer: for (const l of [...new Set([lang, "en-us"])]) for (const slug of slugs) {
+    const u = `https://www.leagueoflegends.com/${l}/news/game-updates/${slug}/`;
+    try {
+      const r = await fetch(u, { headers: { "User-Agent": "Mozilla/5.0 (DraftBoard Patchnotes)", "Accept-Language": l }, cf: { cacheTtl: 1800 } });
+      if (r.ok) { page = await r.text(); src = u; break outer; }
+    } catch (e) { /* nächste Variante */ }
+  }
+  if (!page) return json({ error: "Patchnotes für " + v + " noch nicht veröffentlicht.", status: 404 }, 404, { ...cors, "Cache-Control": "max-age=600" });
+  const html = patchArticle(page);
+  if (!html) return json({ error: "Patchnotes-Seite hat ein unbekanntes Format.", url: src }, 502, cors);
+  const res = json({ v, lang: src.split("/")[3], url: src, html }, 200, { "Cache-Control": "public, max-age=21600" });
+  ctx.waitUntil(edgeCache().put(cacheKey, res.clone()));
+  return withCors(res, cors);
+}
+function patchArticle(page) {
+  const strip = h => h.replace(/<script[\s\S]*?<\/script>/gi, "").replace(/<style[\s\S]*?<\/style>/gi, "").replace(/<svg[\s\S]*?<\/svg>/gi, "");
+  // Neue Seite (Next.js): der Artikel steckt als HTML-Text in __NEXT_DATA__
+  const nd = page.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+  if (nd) {
+    try {
+      const parts = [], seen = new Set();
+      const walk = x => {
+        if (typeof x === "string") { if (x.length > 200 && /<(h2|h3|h4|ul|li|p)[\s>]/.test(x) && !seen.has(x)) { seen.add(x); parts.push(x); } }
+        else if (Array.isArray(x)) x.forEach(walk);
+        else if (x && typeof x === "object") Object.values(x).forEach(walk);
+      };
+      walk(JSON.parse(nd[1]));
+      const body = parts.join("\n");
+      if (/<h[234][\s>]/.test(body)) return strip(body);
+    } catch (e) { /* weiter mit dem HTML */ }
+  }
+  // Ältere Seite: fertiges HTML im Container
+  const i = page.search(/<div[^>]+id="patch-notes-container"/);
+  if (i >= 0) return strip(page.slice(i, i + 1500000));
+  const b = page.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+  const all = strip(b ? b[1] : page);
+  return /patch-change-block|change-title/.test(all) ? all : "";
 }

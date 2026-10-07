@@ -133,6 +133,18 @@ Die laufende Championauswahl selbst gibt Riot nicht über die API heraus, nur da
 Übernommen werden nur Spiele auf Summoner's Rift (Ranked, Normal, Flex, Clash, Turnier, Custom) – ARAM, Arena, URF usw. werden übersprungen.
 Braucht die `worker.js` ab **Version 8**.
 
+## Patchnotes (Klick auf „Patch xx.yy“ unter dem Logo)
+
+Das Board zeigt die **offiziellen Patchnotes** von leagueoflegends.com als Karten:
+alle Champions mit Fähigkeit, alt → neu, Buff/Nerf, Begründung, dazu Items,
+Systeme/ARAM/Fehlerbehebungen und die Übersichtsgrafik. Eure Champions und die
+des aktuellen Gegners stehen oben.
+
+Die Riot-Seite erlaubt keinen direkten Abruf aus dem Browser, deshalb holt der
+Worker sie (`GET /patch?v=26.20`, ohne API-Key, 6 Std. zwischengespeichert).
+Braucht die `worker.js` ab **Version 10** – ohne sie zeigt das Board nur die
+Werte aus Data Dragon (ohne Schadenswerte).
+
 ## Video-Upload (optional)
 
 Damit ihr Spielvideos direkt im Board hochladen könnt (Verlauf → Spielnotizen → **⬆ Hochladen**),
