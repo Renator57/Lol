@@ -116,7 +116,7 @@ Darauf ist alles abgestimmt:
 
 - **Spieler importieren**: Im Gegner-Team den Link zur Prime-League-Teamseite
   eintragen → „Spieler importieren“. Der Worker liest die Riot-IDs von der Seite
-  (`GET /pl?url=…`, nur primeleague.gg), im Board ordnest du sie den Rollen zu
+  (`GET /pl?url=…`, nur primeleague.gg; Prime League blockt das oft mit 403), im Board ordnest du sie den Rollen zu
   (Ersatz / Coach werden erkannt, wenn die Seite es angibt).
   Klappt das nicht: Teamseite öffnen, alles markieren und kopieren und bei
   „IDs einfügen“ einfügen – das Board sucht die Riot-IDs selbst heraus.

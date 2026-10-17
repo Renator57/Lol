@@ -788,6 +788,9 @@ dialog:has(.pe-body){width:min(800px,calc(100vw - 1.5rem))}
 .md-them{display:flex;align-items:center;gap:.5rem;min-width:0;overflow:hidden;white-space:nowrap}
 .md-foot{display:flex;gap:.5rem;flex-wrap:wrap}
 @media (max-width:700px){.md-cols{grid-template-columns:minmax(0,1fr)}.md-lu{grid-template-columns:3.4rem minmax(0,1fr);}.md-vs{display:none}.md-them{grid-column:1/-1}}
+.pl-steps{padding:.7rem .8rem;margin-bottom:.7rem;border-radius:12px;border:1px solid rgba(215,180,106,.35);background:rgba(215,180,106,.07);font-size:.86rem}
+.pl-steps ol{margin:.5rem 0 0;padding-left:1.2rem;display:flex;flex-direction:column;gap:.4rem}
+.pl-steps kbd{font:inherit;font-size:.75rem;font-weight:800;padding:.05rem .35rem;border-radius:5px;border:1px solid var(--line-2);background:var(--panel-2)}
 .pl-list{display:flex;flex-direction:column;gap:.35rem;max-height:55vh;overflow:auto}
 .pl-row{display:flex;align-items:center;gap:.6rem;padding:.4rem .55rem;border:1px solid var(--line);border-radius:11px;background:rgba(6,10,18,.35)}
 .pl-id{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.2}
@@ -2591,7 +2594,7 @@ let tab = "draft", mode = "pick", active = null, query = "", edit = null;
 
 function toast(msg, action){
   const t = $("#toast"), ms = action ? 7000 : Math.max(2600, msg.length * 60); // lange Hinweise länger stehen lassen
-  const warn = /nicht|fehl|kein|ungültig|falsch|bitte|erst |schon |vergeben|veraltet/i.test(msg) && !action;
+  const warn = /nicht|fehl|kein|ungültig|falsch|bitte|erst |schon |vergeben|veraltet|antwortet mit|blockiert|\b[45]\d\d\b/i.test(msg) && !action;
   t.className = "toast" + (action ? " has-action" : "") + (warn ? " warn" : "");
   t.innerHTML = `<span class="toast-ic" aria-hidden="true">${warn ? "!" : action ? "↺" : "✓"}</span><span class="toast-msg"></span>${action ? `<button class="toast-btn"></button>` : ""}<span class="toast-bar" style="animation-duration:${ms}ms"></span>`;
   t.querySelector(".toast-msg").textContent = msg;
@@ -5236,7 +5239,7 @@ function openPlAssign(d){
     return { ...p, role };
   });
   edit = { kind: "pl", isNew: false, buf: { name: d.name || "", tag: d.tag || "", players } };
-  modal.showModal(); renderModal();
+  if (!modal.open) modal.showModal(); renderModal();
 }
 // Prüft, ob Riot eure Prime-League-Spiele (Turniercodes) über Match-V5 herausgibt
 async function riotTourneyTest(){
@@ -5251,19 +5254,20 @@ async function riotTourneyTest(){
     toast(d.games ? `✓ ${d.games} Turnierspiele von ${pid.name} gefunden${last && last.at ? " (zuletzt " + new Date(last.at).toLocaleDateString("de-DE") + ")" : ""} – Prime-League-Spiele lassen sich laden. Für Gegner den Filter „Turnier“ wählen.` : `Für ${pid.name} findet Riot keine Turnierspiele. Entweder noch keine gespielt, oder Riot gibt Turnierspiele nicht heraus – dann bleiben Ranked/Flex/Clash.`);
   } catch(e){ toast("Test fehlgeschlagen: " + e.message); }
 }
+let plBlocked = false; // Prime League blockt den Worker (403) → direkt zum Einfügen
 async function plImport(){
   const t = team(viewId); if (!t) return;
   if (!/primeleague\.gg/i.test(t.link || "")) return toast("Erst den Link zur Prime-League-Teamseite eintragen.");
-  if (!riotUrl) return toast("Der Import läuft über den Riot-Proxy – bitte in den Einstellungen eintragen.");
-  toast("Lese die Prime-League-Teamseite …");
-  try {
-    const d = await riotFetch("pl", { url: t.link.trim() });
-    if (!d.players || !d.players.length) throw new Error("Auf der Seite wurden keine Riot-IDs gefunden.");
-    openPlAssign(d);
-  } catch(e){
-    const old = /Riot-ID|Region|Queue/i.test(e.message);
-    toast((old ? "Der Import braucht die neue worker.js (Version 13)." : e.message) + " Alternative: Teamseite öffnen, alles markieren (Strg+A), kopieren und bei „IDs einfügen“ einfügen.");
+  if (riotUrl && !plBlocked){
+    toast("Lese die Prime-League-Teamseite …");
+    try {
+      const d = await riotFetch("pl", { url: t.link.trim() });
+      if (d.players && d.players.length) return openPlAssign(d);
+    } catch(e){ plBlocked = /\b40[13]\b|429/.test(e.message); }
   }
+  // Fallback: Seite selbst kopieren – der Dialog erkennt das Einfügen und ordnet direkt zu
+  edit = { kind: "ids", isNew: false, buf: { text: "", pl: true } };
+  modal.showModal(); renderModal("#ids-text");
 }
 // ---------- Spieltag-Ansicht ----------
 const MD_MANUAL = [["termin", "Termin mit dem Gegner bestätigt"], ["code", "Lobby/Turniercode erhalten"], ["voice", "Alle 30 Min. vorher im Voice"]];
@@ -5521,7 +5525,9 @@ function renderModal(focusSel){
     modal.innerHTML = `
       <div class="m-head"><h2 id="mTitle">Riot-IDs einfügen</h2><button class="x" data-action="close" aria-label="Schließen">×</button></div>
       <div class="m-body">
-        <p class="small-hint" style="margin:0 0 .6rem">Eine Riot-ID pro Zeile, in der Reihenfolge Top, Jungle, Mid, Bot, Support. Oder einfach die ganze Prime-League-Teamseite kopieren (Strg+A, Strg+C) und hier einfügen – die Riot-IDs werden herausgesucht und du ordnest sie den Rollen zu.</p>
+        ${b.pl ? (() => { const tl = (team(viewId) || {}).link || ""; return `<div class="pl-steps"><b>Prime League lässt den automatischen Abruf nicht zu – so geht's in 10 Sekunden:</b>
+          <ol><li>${/^https:\/\//.test(tl) ? `<a class="btn sm gold" href="${esc(tl)}" target="_blank" rel="noopener">Teamseite öffnen ↗</a>` : "Teamseite öffnen"}</li><li>Dort <kbd>Strg</kbd>+<kbd>A</kbd> und <kbd>Strg</kbd>+<kbd>C</kbd> (am Handy: alles markieren → Kopieren)</li><li>Zurück hierher und unten einfügen – die Spieler werden automatisch erkannt.</li></ol></div>`; })()
+          : `<p class="small-hint" style="margin:0 0 .6rem">Eine Riot-ID pro Zeile, in der Reihenfolge Top, Jungle, Mid, Bot, Support. Oder einfach die ganze Prime-League-Teamseite kopieren (Strg+A, Strg+C) und hier einfügen – die Riot-IDs werden herausgesucht und du ordnest sie den Rollen zu.</p>`}
         <textarea class="inp" id="ids-text" data-bind="text" rows="6" placeholder="TopName#EUW&#10;JungleName#EUW&#10;MidName#EUW&#10;BotName#EUW&#10;SuppName#EUW">${esc(b.text)}</textarea>
       </div>
       <div class="m-foot"><button class="btn gold" data-action="save-ids">Übernehmen</button><button class="btn" data-action="close">Abbrechen</button></div>`;
@@ -5708,6 +5714,8 @@ function heSummary(){
   el.querySelector(".hs-picks").innerHTML = b.team.map(x => { const ok = x.champ && champId(x.champ); return `<span class="mini${ok ? "" : " he-empty"}">${ok ? initials(officialName(x.champ)) + img(iconUrl(x.champ)) : "?"}</span>`; }).join("");
 }
 modal.addEventListener("input", () => { if (edit && edit.kind === "he") requestAnimationFrame(heSummary); });
+// Teamseite eingefügt → sofort zuordnen
+modal.addEventListener("paste", e => { if (!edit || edit.kind !== "ids" || e.target.id !== "ids-text") return; setTimeout(() => { const txt = e.target.value; edit.buf.text = txt; const found = extractRiotIds(txt); if (found.length > 5 || (found.length >= 3 && found.some(x => x.hint)) || (edit.buf.pl && found.length)) openPlAssign({ players: found }); }, 0); });
 modal.addEventListener("input", e => { if (edit && edit.kind === "pn" && e.target.id === "pn-q"){ pn.q = e.target.value; const l = modal.querySelector("#pn-ov"); if (l) l.innerHTML = pnOverview(); } });
 modal.addEventListener("change", e => { if (edit && edit.kind === "pn" && e.target.dataset.action === "pn-ver") pnLoad(e.target.value); });
 modal.addEventListener("change", () => { if (edit && edit.kind === "he") requestAnimationFrame(heSummary); });
