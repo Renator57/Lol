@@ -799,6 +799,7 @@ dialog:has(.pe-body){width:min(800px,calc(100vw - 1.5rem))}
 .ctr-n{font-size:.68rem;color:var(--muted);font-weight:800;margin-left:.2rem}
 .ctr-row.hit{box-shadow:inset 0 0 0 1px var(--gold)}
 .ctr-t em.strong{background:var(--good);color:#032015}
+.ctr-t em.thin{background:rgba(240,181,74,.18);color:var(--warn);font-weight:700}
 .ctr-t em.l.strong{background:var(--bad);color:#2a0400}
 .ctr-more{border:0;background:none;color:var(--gold);font:inherit;font-size:.76rem;font-weight:800;padding:.2rem .3rem;cursor:pointer;text-align:left}
 .rec-badge.ctr-g{background:var(--good);color:#032015;box-shadow:0 2px 8px rgba(63,209,127,.45)}
@@ -3929,15 +3930,25 @@ function countersFromCrawler(data, minGames){
   });
   return { map: out, enemies };
 }
-function applyCrawlerCounters(data){
-  const minGames = 20, { map: built, enemies } = countersFromCrawler(data, minGames);
+function crawlerCoverage(data, minGames){ return countersFromCrawler(data, minGames).enemies; }
+function openCrawlerImport(data){
+  const ours = uniq(players.flatMap(champsOf)).map(officialName).filter(champId);
+  if (!ours.length) return toast("Erst in den Pools eure Champions eintragen – sonst gibt es nichts zuzuordnen.");
+  const opts = [20, 10, 5, 3, 2, 1], cov = {}; opts.forEach(t => cov[t] = crawlerCoverage(data, t));
+  const auto = opts.find(t => cov[t] >= Math.min(120, Math.round(cov[1] * 0.9))) || 5;
+  edit = { kind: "ci", isNew: false, buf: { data, min: auto, cov } };
+  if (!modal.open) modal.showModal(); renderModal();
+}
+function applyCrawlerCounters(data, minGames){
+  const { map: built, enemies } = countersFromCrawler(data, minGames);
   if (!enemies) return toast("Keine Matchups zu euren Pool-Champions gefunden. Mehr Spiele crawlen oder Pools prüfen.");
   const src = `Riot-API${data.patch ? " · Patch " + esc(String(data.patch)) : ""}${data.matches ? " · " + (+data.matches).toLocaleString("de-DE") + " Spiele" : ""}`;
   const map = { ...counters };
   Object.entries(built).forEach(([E, c]) => { const old = map[E] || {};
     map[E] = { ...old, good: c.good, avoid: c.avoid, stats: c.stats, src, at: data.generated || Date.now(), note: old.note || "" }; });
   counters = map; queueSet("config/counters", { map });
-  toast(`${enemies} Gegner-Champions mit Siegraten gegen eure Pools übernommen.`);
+  closeEditor(); render();
+  toast(`${enemies} Gegner-Champions übernommen (ab ${minGames} ${minGames === 1 ? "Spiel" : "Spielen"} je Matchup).`);
 }
 
 
@@ -3949,7 +3960,7 @@ function ctrList(enemy, c, key){
   const open = ctrOpen.has(enemy + ":" + key), LIM = 3, show = open || arr.length <= LIM + 1 ? arr : arr.slice(0, LIM);
   return `<div class="gl"><span class="dot" style="background:var(${good ? "--good" : "--bad"})"></span>${good ? "Gut dagegen" : "Lieber nicht"} <small class="ctr-n">${arr.length}</small></div>
     <div class="ctr-rows">${show.map(o => { const why = good ? counterWhy(o, enemy) : counterWhy(enemy, o), x = st[o], strong = x && Math.abs(x.wr - 50) >= 3;
-      return `<div class="ctr-row ${good ? "g" : "b"}${q && norm(o).includes(q) ? " hit" : ""}"><span class="mini">${initials(o)}${img(iconUrl(o))}</span><div class="ctr-t"><b>${esc(o)}${x ? `<em class="${x.wr >= 50 ? "w" : "l"}${strong ? " strong" : ""}" title="${strong ? "deutlich" : "knapp"}">${wrTxt(x.wr)}</em>` : ""}</b>${why.length ? `<small>${why.map(esc).join(" · ")}</small>` : `<small class="none">${x && x.n ? `${x.n.toLocaleString("de-DE")} Spiele` : "Eigene Erfahrung"}</small>`}</div></div>`; }).join("")}
+      return `<div class="ctr-row ${good ? "g" : "b"}${q && norm(o).includes(q) ? " hit" : ""}"><span class="mini">${initials(o)}${img(iconUrl(o))}</span><div class="ctr-t"><b>${esc(o)}${x ? `<em class="${x.wr >= 50 ? "w" : "l"}${strong ? " strong" : ""}" title="${strong ? "deutlich" : "knapp"}${x.n ? " · " + x.n + " Spiele" : ""}">${wrTxt(x.wr)}</em>${x && x.n && x.n < 10 ? `<em class="thin" title="nur ${x.n} Spiele – unsicher">wenig Daten</em>` : ""}` : ""}</b>${why.length ? `<small>${why.map(esc).join(" · ")}</small>` : `<small class="none">${x && x.n ? `${x.n.toLocaleString("de-DE")} Spiele` : "Eigene Erfahrung"}</small>`}</div></div>`; }).join("")}
       ${arr.length > show.length ? `<button class="ctr-more" data-action="ctr-more" data-k="${esc(enemy + ":" + key)}">+ ${arr.length - show.length} weitere anzeigen</button>` : open && arr.length > LIM + 1 ? `<button class="ctr-more" data-action="ctr-more" data-k="${esc(enemy + ":" + key)}">Weniger anzeigen</button>` : ""}</div>`;
 }
 function renderCounters(){
@@ -5715,6 +5726,18 @@ function renderModal(focusSel){
     renderLiveGrid(); return;
   } else if (edit.kind === "md"){
     modal.innerHTML = mdHtml();
+  } else if (edit.kind === "ci"){
+    const data = b.data, n = crawlerCoverage(data, b.min);
+    modal.innerHTML = `
+      <div class="m-head"><h2 id="mTitle">Counter-Daten laden</h2><button class="x" data-action="close" aria-label="Schließen">×</button></div>
+      <div class="m-body">
+        <p class="small-hint" style="margin:0 0 .7rem">${data.matches ? (+data.matches).toLocaleString("de-DE") + " Spiele" : ""}${data.patch ? " · Patch " + esc(String(data.patch)) : ""}${data.region ? " · " + esc(String(data.region).toUpperCase()) : ""}. Für jeden Gegner-Champion werden eure Pool-Champions mit echter Siegrate eingetragen.</p>
+        <div class="field"><label for="ci-min">Mindestens wie viele Spiele je Matchup?</label>
+          <select class="inp" id="ci-min" data-ci-min>${[20,10,5,3,2,1].map(t => `<option value="${t}" ${b.min === t ? "selected" : ""}>ab ${t} ${t === 1 ? "Spiel" : "Spielen"} → ${b.cov[t]} Gegner-Karten</option>`).join("")}</select></div>
+        <p class="small-hint" style="margin:.5rem 0 0">Weniger Spiele = mehr Champions, aber unsicherere Siegraten. Matchups mit wenigen Spielen werden auf den Karten als „wenig Daten“ markiert. Für verlässliche Zahlen mehr Spiele crawlen (längere Laufzeit).</p>
+        <p class="small-hint" style="margin:.5rem 0 0;color:var(--muted)">Übernimmt ${n} Gegner-Champions. Eure Pool-Champions ab 51 % Siegrate werden „Gut dagegen“, bis 49 % „Lieber nicht“.</p>
+      </div>
+      <div class="m-foot"><button class="btn gold" data-action="ci-apply">${n} Karten übernehmen</button><button class="btn" data-action="close">Abbrechen</button></div>`;
   } else if (edit.kind === "ki"){
     const rows = b.rows || [], ours = rows.filter(r => r.ours), rest = rows.filter(r => !r.ours);
     const row = (r, i) => { const why = r.pick === "avoid" ? counterWhy(b.enemy, r.c) : counterWhy(r.c, b.enemy);
@@ -6196,6 +6219,7 @@ document.addEventListener("click", async e => {
     case "new-counter": openEditor("k"); break;
     case "k-add": { const key = a.dataset.key; const inp = modal.querySelector(`[data-kadd="${key}"]`); if (addChampTo(b[key], inp.value)) renderModal(`[data-kadd="${key}"]`); break; }
     case "k-del": b[a.dataset.key].splice(+a.dataset.oi, 1); renderModal(); break;
+    case "ci-apply": applyCrawlerCounters(b.data, b.min); break;
     case "ctr-f": ctrF = a.dataset.v; renderCounters(); break;
     case "ctr-more": { const k = a.dataset.k; ctrOpen.has(k) ? ctrOpen.delete(k) : ctrOpen.add(k); renderCounters(); break; }
     case "ctr-import": { const c = a.dataset.c || (edit && edit.kind === "k" ? edit.buf.name : ""); openCounterImport(c); break; }
@@ -6696,6 +6720,7 @@ document.addEventListener("input", e => {
 });
 document.addEventListener("change", e => {
   const t = e.target;
+  if (t.dataset && "ciMin" in t.dataset && edit && edit.kind === "ci"){ edit.buf.min = +t.value; renderModal(); return; }
   if (t.dataset && t.dataset.ki != null && edit && edit.kind === "ki"){ edit.buf.rows[+t.dataset.ki].pick = t.value; renderModal(); return; }
   if (t.dataset && "kiFlip" in t.dataset && edit && edit.kind === "ki"){ const b = edit.buf; b.flip = t.checked; b.rows = ctrRowsFrom(b.parsed, b.flip); renderModal(); return; }
   if (t.dataset && t.dataset.mdCheck && viewId){ const k = t.dataset.mdCheck, v = t.checked; mutTeam(viewId, x => { x.check = { ...(x.check || {}), [k]: v }; }); if (edit && edit.kind === "md") renderModal(); return; }
@@ -6732,7 +6757,7 @@ document.addEventListener("change", async e => {
   const f = e.target.files[0]; e.target.value = ""; if (!f) return;
   try { const d = JSON.parse(await f.text());
     if (!d || typeof d.m !== "object") throw 0;
-    applyCrawlerCounters(d);
+    openCrawlerImport(d);
   } catch(err){ toast("Das ist keine gültige counters.json vom Counter-Crawler."); }
 });
 modal.addEventListener("change", async e => {
