@@ -10,7 +10,8 @@ Nur Python 3.8+ nötig (keine Zusatzpakete).
 
     set RIOT_API_KEY=RGAPI-...            (Windows, oder Datei .env mit RIOT_API_KEY=... daneben)
     python crawl.py                       (Standard: EUW, Challenger–Master, 2 Stunden)
-    python crawl.py --stunden 6 --ligen challenger,grandmaster,master,diamond
+    python crawl.py --stunden 6 --ligen alle          (ALLE Ränge Iron–Challenger, sehr viele Daten)
+    python crawl.py --ligen diamond,emerald,platinum   (nur bestimmte Ränge)
     python crawl.py --nur-export          (nur counters.json aus den bisher gesammelten Daten schreiben)
 
 Abbrechen mit Strg+C ist jederzeit ok – beim nächsten Start geht es dort weiter (crawl.db).
@@ -25,6 +26,10 @@ REGIONS = {  # Plattform → regionaler Host für Match-V5
     "kr": "asia", "jp1": "asia", "oc1": "sea", "vn2": "sea", "sg2": "sea", "tw2": "sea",
 }
 LANES = ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY"]
+APEX = ["challenger", "grandmaster", "master"]
+TIERS_DIV = ["diamond", "emerald", "platinum", "gold", "silver", "bronze", "iron"]  # haben Divisionen I–IV
+DIVS = ["I", "II", "III", "IV"]
+ALL_LEAGUES = APEX + TIERS_DIV
 UA = "DraftBoard-CounterCrawler/1.0"
 
 
@@ -106,33 +111,42 @@ def current_patch():
         return ""
 
 
-def collect_players(riot, db, platform, leagues, max_players):
+def collect_players(riot, db, platform, leagues, max_players, pages_per_div):
     base = f"https://{platform}.api.riotgames.com/lol/league/v4"
-    have = db.execute("SELECT COUNT(*) FROM players").fetchone()[0]
-    if have >= max_players:
+    def count():
+        return db.execute("SELECT COUNT(*) FROM players").fetchone()[0]
+    if count() >= max_players:
         return
     for lg in leagues:
-        if lg in ("challenger", "grandmaster", "master"):
+        if count() >= max_players:
+            break
+        if lg in APEX:
             data = riot.get(f"{base}/{lg}leagues/by-queue/RANKED_SOLO_5x5") or {}
             entries = data.get("entries", [])
-        else:  # z. B. diamond → Division I, erste Seiten
-            entries = []
-            for page in range(1, 4):
-                part = riot.get(f"{base}/entries/RANKED_SOLO_5x5/{lg.upper()}/I?page={page}") or []
-                entries += part
-                if not part: break
-        entries.sort(key=lambda e: -e.get("leaguePoints", 0))
-        added = 0
-        for e in entries:
-            pu = e.get("puuid")
-            if not pu: continue
-            cur = db.execute("INSERT OR IGNORE INTO players(puuid) VALUES (?)", (pu,))
-            added += cur.rowcount
-        db.commit()
-        print(f"  {lg}: {len(entries)} Spieler gefunden, {added} neu")
-        if db.execute("SELECT COUNT(*) FROM players").fetchone()[0] >= max_players:
-            break
-
+            added = 0
+            for e in entries:
+                if e.get("puuid"):
+                    added += db.execute("INSERT OR IGNORE INTO players(puuid) VALUES (?)", (e["puuid"],)).rowcount
+            db.commit()
+            print(f"  {lg}: {len(entries)} Spieler, {added} neu")
+        else:
+            tier = lg.upper()
+            total = 0
+            for div in DIVS:
+                page = 1
+                while page <= pages_per_div and count() < max_players:
+                    part = riot.get(f"{base}/entries/RANKED_SOLO_5x5/{tier}/{div}?page={page}") or []
+                    if not part:
+                        break
+                    for e in part:
+                        if e.get("puuid"):
+                            db.execute("INSERT OR IGNORE INTO players(puuid) VALUES (?)", (e["puuid"],))
+                            total += 1
+                    db.commit()
+                    page += 1
+                if count() >= max_players:
+                    break
+            print(f"  {lg}: ~{total} Spieler gesammelt (bis {pages_per_div} Seiten/Division)")
 
 def same_patch(game_version, patch):
     return not patch or ".".join(str(game_version).split(".")[:2]) == patch
@@ -172,9 +186,11 @@ def export(db, out, region, patch, leagues):
 def main():
     ap = argparse.ArgumentParser(description="Lane-Matchups aus High-Elo-Spielen für das Draft Board")
     ap.add_argument("--region", default="euw1", choices=sorted(REGIONS), help="Plattform (Standard: euw1)")
-    ap.add_argument("--ligen", default="challenger,grandmaster,master", help="z. B. challenger,grandmaster,master,diamond")
+    ap.add_argument("--ligen", default="challenger,grandmaster,master", help="z. B. challenger,grandmaster,master · \"alle\" = alle Ränge Iron–Challenger")
     ap.add_argument("--stunden", type=float, default=2.0, help="maximale Laufzeit (Standard: 2)")
-    ap.add_argument("--max-spiele", type=int, default=20000, help="höchstens so viele Spiele auswerten")
+    ap.add_argument("--max-spiele", type=int, default=200000, help="höchstens so viele Spiele auswerten")
+    ap.add_argument("--spieler", type=int, default=8000, help="höchstens so viele Spieler sammeln")
+    ap.add_argument("--seiten-pro-division", type=int, default=6, dest="seiten_pro_division", help="bei Iron–Diamond: Seiten je Division (je ~205 Spieler)")
     ap.add_argument("--spiele-pro-spieler", type=int, default=20, help="neueste Spiele je Spieler (Standard: 20)")
     ap.add_argument("--tage", type=int, default=14, help="nur Spiele der letzten N Tage (Standard: 14)")
     ap.add_argument("--patch", default="", help="nur dieser Patch, z. B. 15.20 (Standard: aktueller Patch)")
@@ -187,6 +203,11 @@ def main():
     db = db_open(os.path.join(HERE, "crawl.db"))
     patch = "" if args.alle_patches else (args.patch or current_patch())
     leagues = [x.strip().lower() for x in args.ligen.split(",") if x.strip()]
+    if "alle" in leagues or "all" in leagues:
+        leagues = list(ALL_LEAGUES)
+    unknown = [x for x in leagues if x not in ALL_LEAGUES]
+    if unknown:
+        sys.exit("Unbekannte Liga(en): " + ", ".join(unknown) + "\nErlaubt: " + ", ".join(ALL_LEAGUES) + "  oder  alle")
     if args.nur_export:
         return export(db, args.out, args.region, patch, leagues)
 
@@ -198,7 +219,7 @@ def main():
     print(f"Region {args.region} · Ligen {', '.join(leagues)} · Patch {patch or 'alle'} · bis {time.strftime('%H:%M', time.localtime(end))} Uhr")
 
     print("1) Spieler sammeln …")
-    collect_players(riot, db, args.region, leagues, max_players=3000)
+    collect_players(riot, db, args.region, leagues, max_players=args.spieler, pages_per_div=args.seiten_pro_division)
     done = lambda: db.execute("SELECT COUNT(*) FROM matches WHERE state = 1 AND patch = ?", (patch,)).fetchone()[0]
     last_export = time.time()
     try:
@@ -206,7 +227,7 @@ def main():
         while time.time() < end and done() < args.max_spiele:
             mid = db.execute("SELECT id FROM matches WHERE state = 0 LIMIT 1").fetchone()
             if not mid:  # neue Match-IDs vom nächsten Spieler holen
-                pu = db.execute("SELECT puuid FROM players WHERE done = 0 LIMIT 1").fetchone()
+                pu = db.execute("SELECT puuid FROM players WHERE done = 0 ORDER BY RANDOM() LIMIT 1").fetchone()
                 if not pu:
                     print("Alle Spieler abgearbeitet."); break
                 q = urllib.parse.urlencode({"queue": 420, "start": 0, "count": args.spiele_pro_spieler, "startTime": start_time})
