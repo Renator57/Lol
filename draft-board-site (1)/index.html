@@ -757,6 +757,16 @@ dialog:has(.pe-body){width:min(800px,calc(100vw - 1.5rem))}
 .pc-actions .on-danger{background:rgba(255,106,92,.22);border-color:rgba(255,106,92,.55);color:#ff8b7f}
 .pc-actions .on-ban{background:rgba(157,134,255,.24);border-color:rgba(157,134,255,.55);color:#cfc4ff}
 .pc-actions .on-exp{background:rgba(215,180,106,.24);border-color:var(--gold-dim);color:var(--gold-hi)}
+.pick-card.is-sug .pc-art{display:block;width:100%;padding:0;font:inherit;color:inherit;border-style:dashed;border-color:rgba(255,122,107,.45);opacity:.78;cursor:pointer;transition:opacity .15s,border-color .15s,transform .15s}
+.pick-card.is-sug .pc-img{filter:saturate(.6) brightness(.8)}
+.pick-card.is-sug:hover .pc-art{opacity:1;border-color:#ff7a6b}
+.pick-card.is-sug:hover .pc-img{filter:none}
+.pc-flag.sug{background:rgba(255,106,92,.9);color:#fff;font-size:.56rem;letter-spacing:0}
+.pc-plus{position:absolute;top:.35rem;right:.35rem;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--gold);color:#1b1305;font-weight:900;font-size:1rem;line-height:1;opacity:0;transition:opacity .15s}
+.pick-card.is-sug:hover .pc-plus{opacity:1}
+.pc-sub{font-size:.7rem;font-weight:700;color:var(--muted);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc-sub b.w{color:var(--good)}.pc-sub b.l{color:var(--bad)}
+@media (hover:none){.pc-plus{opacity:1}}
 .pick-add{flex:none;width:96px;height:120px;border-radius:14px;border:1.5px dashed var(--line-2);background:rgba(255,255,255,.015);color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.2rem;font-weight:700;font-size:.78rem;transition:border-color .15s,color .15s,background .15s}
 .pick-add span{font-size:1.8rem;font-weight:300;line-height:1}
 .pick-add:hover{border-color:rgba(215,180,106,.55);color:var(--gold-hi);background:rgba(215,180,106,.05)}
@@ -2998,6 +3008,8 @@ function riotPickable(sr){
   const cand = rd.champs.filter(c => !have.has(c.c)), strong = cand.filter(c => c.g >= 2);
   return (strong.length ? strong : cand.slice(0, 3)).slice(0, 5);
 }
+// Meistgespielte Champions (Riot), die noch nicht als Top-Pick eingetragen sind → als Vorschlag in der Pick-Reihe
+function scoutSug(t, sr){ const rd = riotView(sr.riot); return rd && rd.games && riotFresh(sr, t, rd) ? riotPickable(sr) : []; }
 function riotTake(teamId, r){
   mutTeam(teamId, t => {
     const sr = roleOf(t, r), add = riotPickable(sr).map(c => ({ c: c.c }));
@@ -4928,6 +4940,8 @@ function renderScout(){
                   ${i < sr.champs.length - 1 ? `<button data-action="sc-move" data-role="${r}" data-i="${i}" data-dir="1" title="Nach hinten">${I.right}</button>` : ""}
                 </div>` : ""}
               </div>`; }).join("")}
+            ${scoutSug(t, sr).map(c => { const wr = Math.round(c.w / c.g * 100), tip = `Meistgespielt laut Riot: ${c.g} ${c.g === 1 ? "Spiel" : "Spiele"}, ${wr} % Siege`, inner = `${img(artUrl(c.c), "pc-img")}<span class="pc-ini">${initials(c.c)}</span><span class="pc-flag sug">Meistgespielt</span>${ed ? `<span class="pc-plus">+</span>` : ""}<span class="pc-name">${esc(c.c)}</span>`;
+              return `<div class="pick-card is-sug" title="${esc(tip)}${ed ? " – klicken, um als Top-Pick zu übernehmen" : ""}">${ed ? `<button class="pc-art" data-action="sc-sug" data-role="${r}" data-c="${esc(c.c)}" aria-label="${esc(c.c)} als Top-Pick übernehmen">${inner}</button>` : `<div class="pc-art">${inner}</div>`}<div class="pc-sub">${c.g} Sp · <b class="${wr >= 50 ? "w" : "l"}">${wr} %</b></div></div>`; }).join("")}
             ${ed ? `<button class="pick-add" data-action="sc-add" data-role="${r}" aria-label="Champions für ${r} hinzufügen"><span>+</span>${sr.champs.length ? "" : "Top-Picks"}</button>` : (!sr.champs.length ? `<p class="hint" style="margin:auto 0">Keine Top-Picks.</p>` : "")}
           </div>
           ${riotBlock(t, r, sr, ed)}
@@ -5766,6 +5780,7 @@ document.addEventListener("click", async e => {
       if (b.stab === "riot" && riotUrl && upKey() && !vodCloud.checked) vodCloudCheck().then(() => edit && renderModal()); break;
     case "riot-all": if (viewId) riotLoadAll(viewId); break;
     case "riot-role": if (viewId) riotLoadRole(viewId, a.dataset.role).then(ok => ok ? toast("Matchdaten geladen.") : riotKeyBad && Date.now() - riotKeyBad < 60e3 && toast(RIOT_KEY_MSG)); break;
+    case "sc-sug": if (viewId && canEdit()){ const r = a.dataset.role, c = a.dataset.c; mutTeam(viewId, t => { const sr = roleOf(t, r); if (!sr.champs.some(x => x.c === c)) t.roles[r] = { ...sr, champs: [...sr.champs, { c }] }; }); toast(c + " als Top-Pick übernommen."); } break;
     case "riot-take": if (viewId){ riotTake(viewId, a.dataset.role); toast("Als Top-Picks eingetragen."); } break;
     case "riot-test": {
       const u = (b.riot || "").trim(); if (!/^https:\/\//.test(u)) return toast("Bitte eine https-Adresse eintragen.");
