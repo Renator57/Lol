@@ -792,6 +792,8 @@ dialog:has(.pe-body){width:min(800px,calc(100vw - 1.5rem))}
 .pl-steps ol{margin:.5rem 0 0;padding-left:1.2rem;display:flex;flex-direction:column;gap:.4rem}
 .pl-steps kbd{font:inherit;font-size:.75rem;font-weight:800;padding:.05rem .35rem;border-radius:5px;border:1px solid var(--line-2);background:var(--panel-2)}
 #counters{align-items:start}
+.ch-actions{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+.btn.ctr-load{cursor:pointer}
 .ctr-tools{display:flex;gap:.7rem;align-items:center;flex-wrap:wrap;margin:-.4rem 0 1rem}
 .ctr-tools .search{flex:1 1 260px;max-width:420px}
 .ctr-n{font-size:.68rem;color:var(--muted);font-weight:800;margin-left:.2rem}
@@ -2389,7 +2391,7 @@ main.wrap{padding-top:1.4rem}
   <section class="view" id="view-counters" hidden>
     <div class="view-head">
       <div><h2>Counter-Notizen</h2><p>Was gut oder schlecht gegen bestimmte Gegner-Champions läuft.</p></div>
-      <button class="btn gold" id="addCounter" hidden>Notiz hinzufügen</button>
+      <div class="ch-actions"><label class="btn ghost ctr-load" title="counters.json vom Counter-Crawler einlesen (Riot-API)">Counter-Daten laden<input type="file" accept=".json,application/json" id="ctrFile" hidden></label><button class="btn gold" id="addCounter" hidden>Notiz hinzufügen</button></div>
     </div>
     <div class="ctr-tools"><label class="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" id="ctrQ" placeholder="Gegner- oder eigenen Champion suchen" aria-label="Counter-Notizen durchsuchen" autocomplete="off"></label>
       <div class="cf-bar" id="ctrF"></div></div>
@@ -3903,7 +3905,42 @@ function openCounterImport(enemy){
   edit = { kind: "ki", isNew: false, buf: { enemy: name, text: "", parsed: [], flip: false, rows: [], back: prev } };
   if (!modal.open) modal.showModal(); renderModal("#ki-text");
 }
-// Zeilen mit Siegrate und „Warum?“ für eine Counter-Karte
+// Counter-Daten aus dem Crawler (counters.json, Riot-API) in Notizen umwandeln.
+// Format: { m: { LANE: { A: { B: [spiele, siege] } } } } – A gegen B, A gewann „siege“ von „spiele“.
+function countersFromCrawler(data, minGames){
+  const m = (data && data.m) || {}, ours = uniq(players.flatMap(champsOf)).map(officialName).filter(champId);
+  const canon = n => DD.idName[champId(n)] || officialName(n); // Crawler nutzt Riot-IDs wie „MonkeyKing“
+  // pro (unser Champ C, Gegner E) Spiele/Siege über alle Lanes summieren
+  const agg = {}; // E -> C -> [g, w]
+  Object.values(m).forEach(byA => Object.entries(byA).forEach(([A, byB]) => {
+    const C = canon(A); if (!ours.includes(C)) return;
+    Object.entries(byB).forEach(([B, gw]) => { const E = canon(B); if (!champId(E) || E === C) return;
+      const e = (agg[E] = agg[E] || {}), r = (e[C] = e[C] || [0, 0]); r[0] += gw[0] || 0; r[1] += gw[1] || 0; });
+  }));
+  const out = {}; let enemies = 0;
+  Object.entries(agg).forEach(([E, byC]) => {
+    const rows = Object.entries(byC).filter(([, gw]) => gw[0] >= minGames).map(([C, gw]) => ({ c: C, wr: +(gw[1] / gw[0] * 100).toFixed(1), n: gw[0] }));
+    if (!rows.length) return;
+    const good = rows.filter(r => r.wr >= 51).sort((a, b) => b.wr - a.wr).slice(0, 6);
+    const avoid = rows.filter(r => r.wr <= 49).sort((a, b) => a.wr - b.wr).slice(0, 6);
+    if (!good.length && !avoid.length) return;
+    const stats = {}; [...good, ...avoid].forEach(r => stats[r.c] = { wr: r.wr, n: r.n });
+    out[E] = { good: good.map(r => r.c), avoid: avoid.map(r => r.c), stats }; enemies++;
+  });
+  return { map: out, enemies };
+}
+function applyCrawlerCounters(data){
+  const minGames = 20, { map: built, enemies } = countersFromCrawler(data, minGames);
+  if (!enemies) return toast("Keine Matchups zu euren Pool-Champions gefunden. Mehr Spiele crawlen oder Pools prüfen.");
+  const src = `Riot-API${data.patch ? " · Patch " + esc(String(data.patch)) : ""}${data.matches ? " · " + (+data.matches).toLocaleString("de-DE") + " Spiele" : ""}`;
+  const map = { ...counters };
+  Object.entries(built).forEach(([E, c]) => { const old = map[E] || {};
+    map[E] = { ...old, good: c.good, avoid: c.avoid, stats: c.stats, src, at: data.generated || Date.now(), note: old.note || "" }; });
+  counters = map; queueSet("config/counters", { map });
+  toast(`${enemies} Gegner-Champions mit Siegraten gegen eure Pools übernommen.`);
+}
+
+
 let ctrQ = "", ctrF = "all", ctrOpen = new Set();
 function ctrList(enemy, c, key){
   const st = c.stats || {}, good = key === "good", q = norm(ctrQ);
@@ -6689,6 +6726,14 @@ modal.addEventListener("change", async e => {
     if (!/^https:\/\//.test(u) || !safeImg(u)) return toast("Bitte einen https-Link zu einem Bild einfügen.");
     edit.buf.avatar = u; renderModal();
   }
+});
+document.addEventListener("change", async e => {
+  if (e.target.id !== "ctrFile") return;
+  const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+  try { const d = JSON.parse(await f.text());
+    if (!d || typeof d.m !== "object") throw 0;
+    applyCrawlerCounters(d);
+  } catch(err){ toast("Das ist keine gültige counters.json vom Counter-Crawler."); }
 });
 modal.addEventListener("change", async e => {
   if (e.target.id !== "importFile" || !edit) return;
