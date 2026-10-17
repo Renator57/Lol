@@ -1,3 +1,4 @@
 .env
 crawl.db
 counters.json
+__pycache__/
