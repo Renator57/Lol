@@ -807,16 +807,23 @@ dialog:has(.pe-body){width:min(800px,calc(100vw - 1.5rem))}
 .rec-badge.ctr-g.light{color:var(--good);border:1px solid var(--good)}
 .rec-badge.bad.light{color:var(--bad);border:1px solid var(--bad)}
 .rec-badge.strong{font-size:.68rem}
-.ctr-rows{display:flex;flex-direction:column;gap:.3rem;margin-bottom:.6rem}
-.ctr-row{display:flex;align-items:flex-start;gap:.5rem;padding:.35rem .45rem;border-radius:10px;background:rgba(6,10,18,.35);border-left:3px solid var(--good)}
-.ctr-row.b{border-left-color:var(--bad)}
-.ctr-row .mini{flex:none;width:30px;height:30px}
-.ctr-t{display:flex;flex-direction:column;min-width:0;line-height:1.25}
-.ctr-t b{font-size:.84rem;display:flex;align-items:center;gap:.4rem}
-.ctr-t em{font-style:normal;font-size:.7rem;font-weight:800;padding:.02rem .35rem;border-radius:6px;background:rgba(63,209,127,.14);color:var(--good)}
-.ctr-t em.l{background:rgba(255,106,92,.14);color:var(--bad)}
-.ctr-t small{font-size:.72rem;color:var(--muted)}
-.ctr-t small.none{font-style:italic;opacity:.75}
+.ctr-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(66px,1fr));gap:.5rem;margin-bottom:.6rem}
+.ctr-tile{display:flex;flex-direction:column;align-items:center;gap:.22rem;min-width:0}
+.ct-port{position:relative;width:52px;height:52px;border-radius:12px;overflow:hidden;background:var(--panel-3);display:grid;place-items:center;box-shadow:0 0 0 2px var(--cc,#7fb2ff);flex:none}
+.ctr-tile.g .ct-port{--cc:rgba(63,209,127,.6)}
+.ctr-tile.b .ct-port{--cc:rgba(255,106,92,.6)}
+.ctr-tile.g.strong .ct-port{--cc:var(--good)}
+.ctr-tile.b.strong .ct-port{--cc:var(--bad)}
+.ctr-tile.hit .ct-port{box-shadow:0 0 0 2px var(--gold),0 0 12px -2px var(--gold)}
+.ct-port img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scale(1.08)}
+.ct-port i{font-style:normal;font-weight:800;font-size:.8rem;color:var(--muted)}
+.ct-port em{position:absolute;left:0;right:0;bottom:0;z-index:2;font-style:normal;font-size:.64rem;font-weight:900;text-align:center;padding:.05rem 0;background:rgba(5,10,18,.82);color:#fff}
+.ctr-tile.g .ct-port em{color:#7dffb8}
+.ctr-tile.b .ct-port em{color:#ffb3aa}
+.ctr-tile.thin .ct-port{opacity:.8}
+.ctr-tile.thin .ct-port::after{content:"";position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;background:var(--warn);box-shadow:0 0 0 1.5px rgba(5,10,18,.8)}
+.ct-nm{font-size:.72rem;font-weight:700;text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+.ct-thin{font-size:.58rem;font-weight:800;color:var(--warn);line-height:1}
 .ctr-src{font-size:.7rem;color:var(--muted);margin:.1rem 0 .4rem}
 .ctr-bad{font-size:.8rem;color:var(--warn);margin:.2rem 0 .5rem}
 .card-foot{display:flex;gap:.4rem;flex-wrap:wrap}
@@ -3957,11 +3964,15 @@ function ctrList(enemy, c, key){
   const st = c.stats || {}, good = key === "good", q = norm(ctrQ);
   const arr = [...(c[key] || [])].sort((x, y) => good ? (st[y] ? st[y].wr : 50) - (st[x] ? st[x].wr : 50) : (st[x] ? st[x].wr : 50) - (st[y] ? st[y].wr : 50));
   if (!arr.length) return "";
-  const open = ctrOpen.has(enemy + ":" + key), LIM = 3, show = open || arr.length <= LIM + 1 ? arr : arr.slice(0, LIM);
+  const open = ctrOpen.has(enemy + ":" + key), LIM = 8, show = open || arr.length <= LIM + 2 ? arr : arr.slice(0, LIM);
+  const tile = o => { const why = good ? counterWhy(o, enemy) : counterWhy(enemy, o), x = st[o], strong = x && Math.abs(x.wr - 50) >= 3, thin = x && x.n && x.n < 10;
+    const tip = `${o}${x ? ": " + wrTxt(x.wr) + " Siegrate" + (x.n ? " · " + x.n + " Spiele" : "") : ""}${why.length ? " – " + why.join(" · ") : ""}`;
+    return `<div class="ctr-tile ${good ? "g" : "b"}${strong ? " strong" : ""}${thin ? " thin" : ""}${q && norm(o).includes(q) ? " hit" : ""}" title="${esc(tip)}">
+      <span class="ct-port">${img(iconUrl(o))}<i>${esc(initials(o))}</i>${x ? `<em>${wrTxt(x.wr)}</em>` : ""}</span>
+      <span class="ct-nm">${esc(o)}</span>${thin ? `<span class="ct-thin">wenig Daten</span>` : ""}</div>`; };
   return `<div class="gl"><span class="dot" style="background:var(${good ? "--good" : "--bad"})"></span>${good ? "Gut dagegen" : "Lieber nicht"} <small class="ctr-n">${arr.length}</small></div>
-    <div class="ctr-rows">${show.map(o => { const why = good ? counterWhy(o, enemy) : counterWhy(enemy, o), x = st[o], strong = x && Math.abs(x.wr - 50) >= 3;
-      return `<div class="ctr-row ${good ? "g" : "b"}${q && norm(o).includes(q) ? " hit" : ""}"><span class="mini">${initials(o)}${img(iconUrl(o))}</span><div class="ctr-t"><b>${esc(o)}${x ? `<em class="${x.wr >= 50 ? "w" : "l"}${strong ? " strong" : ""}" title="${strong ? "deutlich" : "knapp"}${x.n ? " · " + x.n + " Spiele" : ""}">${wrTxt(x.wr)}</em>${x && x.n && x.n < 10 ? `<em class="thin" title="nur ${x.n} Spiele – unsicher">wenig Daten</em>` : ""}` : ""}</b>${why.length ? `<small>${why.map(esc).join(" · ")}</small>` : `<small class="none">${x && x.n ? `${x.n.toLocaleString("de-DE")} Spiele` : "Eigene Erfahrung"}</small>`}</div></div>`; }).join("")}
-      ${arr.length > show.length ? `<button class="ctr-more" data-action="ctr-more" data-k="${esc(enemy + ":" + key)}">+ ${arr.length - show.length} weitere anzeigen</button>` : open && arr.length > LIM + 1 ? `<button class="ctr-more" data-action="ctr-more" data-k="${esc(enemy + ":" + key)}">Weniger anzeigen</button>` : ""}</div>`;
+    <div class="ctr-tiles">${show.map(tile).join("")}</div>
+    ${arr.length > show.length ? `<button class="ctr-more" data-action="ctr-more" data-k="${esc(enemy + ":" + key)}">+ ${arr.length - show.length} weitere</button>` : open && arr.length > LIM + 2 ? `<button class="ctr-more" data-action="ctr-more" data-k="${esc(enemy + ":" + key)}">Weniger</button>` : ""}`;
 }
 function renderCounters(){
   fillOurList();
