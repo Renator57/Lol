@@ -4,6 +4,7 @@
 //   GET /?id=Name%23TAG&region=euw&queue=ranked&count=20[&season=1]   season=1: nur Spiele seit Saisonstart (1. Januar)
 //   GET /health
 //   GET /live?ids=Name%23TAG,Name2%23TAG&region=euw   laufendes Spiel (Spectator-V5) des ersten Spielers, der gerade spielt
+//   GET /pl?url=https://www.primeleague.gg/…   Riot-IDs von einer Prime-League-Teamseite
 //   GET /patch?v=26.20&lang=de-de   offizielle Patchnotes (leagueoflegends.com erlaubt kein CORS)
 //   /vod/...  Video-Upload für die VOD-Review (optional, braucht R2, siehe README.md)
 //
@@ -33,7 +34,7 @@ const QUEUES = {
   tournament: "type=tournament", // Turnier-Codes (z. B. Prime League)
   all:        "",
 };
-const VERSION = 12;          // vom Board geprüft (Einstellungen → Testen)
+const VERSION = 13;          // vom Board geprüft (Einstellungen → Testen)
 const MAX_COUNT = 100;         // „Saison“ im Board: bis 100 Spiele seit Saisonstart
 // Cloudflare-eigener Standard-Cache (caches.default fehlt in den Browser-Typen)
 const edgeCache = () => /** @type {Cache} */ (/** @type {any} */ (caches).default);
@@ -63,6 +64,7 @@ export default {
 
     if (url.pathname === "/health") return json({ ok: true, key: !!env.RIOT_API_KEY, keyOk: /^RGAPI-[0-9a-f-]{36}$/i.test(env.RIOT_API_KEY || ""), version: VERSION, vod: !!env.VODS, vodAuth: !!env.UPLOAD_KEY }, 200, { ...cors, "Cache-Control": "no-store" });
     if (url.pathname === "/patch") return patchNotes(url, ctx, cors); // braucht keinen API-Key
+    if (url.pathname === "/pl") return primeTeam(url, ctx, cors);
     if (!env.RIOT_API_KEY) return json({ error: "RIOT_API_KEY fehlt im Worker." }, 500, cors);
 
     if (url.pathname === "/live") return liveGame(url, env, ctx, cors);
@@ -111,7 +113,7 @@ export default {
       const puuid = acc.puuid;
       // Pro Spieler EIN Cache-Eintrag mit den kompakten Zeilen aller schon geladenen Spiele
       // (statt je Spiel ~50 KB einzeln) – spart Unteranfragen und CPU
-      const storeReq = new Request(`https://cache.local/pm1/${kt}/${puuid}`);
+      const storeReq = new Request(`https://cache.local/pm2/${kt}/${puuid}`);
       let store = {};
       try { const c = await edgeCache().match(storeReq); if (c) store = await c.json(); } catch (e) { store = {}; }
       const missing = ids.filter(mid => !(mid in store));
@@ -122,7 +124,7 @@ export default {
         const m = await riot(`${api(reg.regional)}/lol/match/v5/matches/${mid}`, 0, "Match").catch(() => null);
         if (!m) return;
         const info = m.info || {}, p = (info.participants || []).find(x => x.puuid === puuid);
-        store[mid] = p ? [mid, p.championName, p.win ? 1 : 0, p.teamPosition || p.individualPosition || "", p.kills, p.deaths, p.assists, info.gameStartTimestamp || info.gameCreation || 0, info.gameDuration || 0, info.queueId || 0] : 0;
+        store[mid] = p ? [mid, p.championName, p.win ? 1 : 0, p.teamPosition || p.individualPosition || "", p.kills, p.deaths, p.assists, info.gameStartTimestamp || info.gameCreation || 0, info.gameDuration || 0, info.queueId || 0, teamDraft(info, p)] : 0;
         added++;
       });
       if (added) {
@@ -249,7 +251,7 @@ function summarize(acc, rows, leagues, meta) {
     c.k += kk; c.d += dd; c.a += aa;
     if (pos) c.pos[pos] = (c.pos[pos] || 0) + 1;
     // kompakte Spieleliste: erkennt im Board gemeinsame Spiele (Duos)
-    list.push([mid, champ, win ? 1 : 0, pos, kk, dd, aa, start, dur, queueId]);
+    list.push(r[10] ? [mid, champ, win ? 1 : 0, pos, kk, dd, aa, start, dur, queueId, r[10]] : [mid, champ, win ? 1 : 0, pos, kk, dd, aa, start, dur, queueId]);
     if (recent.length < 10) recent.push({ champ, win: !!win, k: kk, d: dd, a: aa, pos, queue: queueId, at: start, dur });
   }
   return {
@@ -475,4 +477,63 @@ function patchArticle(page) {
   const b = page.match(/<body[^>]*>([\s\S]*)<\/body>/i);
   const all = strip(b ? b[1] : page);
   return /patch-change-block|change-title/.test(all) ? all : "";
+}
+
+// ---------- Team-Draft eines Spiels (nur Summoner's Rift außerhalb von Solo/Duo – dort spielen 5er-Teams) ----------
+// [Seite 100/200, eigene Champions (Top→Sup), eigene Banns (Champion-Keys), gegnerische Champions, gegnerische Banns, Riot-IDs des eigenen Teams]
+const POS_ORDER = ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY"];
+function teamDraft(info, p) {
+  if (info.mapId !== 11 || info.queueId === 420) return undefined;
+  const all = info.participants || [];
+  const sort = list => { const out = POS_ORDER.map(pos => list.find(x => (x.teamPosition || x.individualPosition) === pos)); const rest = list.filter(x => !out.includes(x)); return out.map(x => x || rest.shift()).filter(Boolean); };
+  const mine = sort(all.filter(x => x.teamId === p.teamId)), foe = sort(all.filter(x => x.teamId !== p.teamId));
+  const bans = id => ((info.teams || []).find(t => t.teamId === id) || {}).bans || [];
+  const ban = id => bans(id).slice().sort((a, b) => a.pickTurn - b.pickTurn).map(b => b.championId).filter(c => c > 0);
+  const foeId = p.teamId === 100 ? 200 : 100;
+  return [p.teamId, mine.map(x => x.championName), ban(p.teamId), foe.map(x => x.championName), ban(foeId), mine.map(x => x.riotIdGameName ? x.riotIdGameName + "#" + (x.riotIdTagline || "") : "")];
+}
+
+// ---------- Prime League: Riot-IDs von der Teamseite ----------
+async function primeTeam(url, ctx, cors) {
+  let u;
+  try { u = new URL(url.searchParams.get("url") || ""); } catch (e) { return json({ error: "Ungültiger Link." }, 400, cors); }
+  if (u.protocol !== "https:" || !/(^|\.)primeleague\.gg$/.test(u.hostname)) return json({ error: "Nur Links von primeleague.gg." }, 400, cors);
+  const cacheKey = new Request("https://pl.cache/" + encodeURIComponent(u.href));
+  const hit = await edgeCache().match(cacheKey);
+  if (hit) return withCors(hit, cors);
+  let html = "";
+  try {
+    const r = await fetch(u.href, { headers: { "User-Agent": "Mozilla/5.0 (DraftBoard Team-Import)", "Accept-Language": "de-DE" } });
+    if (!r.ok) return json({ error: "Prime League antwortet mit " + r.status + "." }, 502, cors);
+    html = await r.text();
+  } catch (e) { return json({ error: "Prime League nicht erreichbar." }, 502, cors); }
+  const res = json({ url: u.href, ...parsePrimeTeam(html) }, 200, { "Cache-Control": "public, max-age=1800" });
+  ctx.waitUntil(edgeCache().put(cacheKey, res.clone()));
+  return withCors(res, cors);
+}
+const decodeHtml = s => s.replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(+n)).replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16))).replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#039;|&apos;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&nbsp;/g, " ");
+function parsePrimeTeam(html) {
+  const meta = n => { const m = html.match(new RegExp(`<meta[^>]+property="og:${n}"[^>]+content="([^"]*)"`, "i")) || html.match(new RegExp(`<meta[^>]+content="([^"]*)"[^>]+property="og:${n}"`, "i")); return m ? decodeHtml(m[1]).trim() : ""; };
+  const h1 = (html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i) || [])[1];
+  let name = h1 ? decodeHtml(h1.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim() : meta("title");
+  name = name.replace(/\s*[|–-]\s*Prime League.*$/i, "").trim();
+  const tagM = name.match(/^(.*?)\s*\(([^)]{1,6})\)$/);
+  const ids = [], seen = new Set();
+  const add = (n, t, hint = "") => { n = decodeHtml(String(n)).replace(/\s+/g, " ").trim(); t = decodeHtml(String(t)).trim(); if (n.length < 3 || n.length > 16 || t.length < 2 || t.length > 5) return; const k = (n + "#" + t).toLowerCase(); if (seen.has(k)) return; seen.add(k); ids.push({ id: n + "#" + t, hint }); };
+  // 1) JSON (z. B. Next.js-Daten): gameName/tagLine oder riotId
+  for (const m of html.matchAll(/"(?:gameName|riotIdGameName)"\s*:\s*"([^"]{3,16})"\s*,\s*"(?:tagLine|riotIdTagline)"\s*:\s*"([^"]{2,5})"/g)) add(m[1], m[2]);
+  for (const m of html.matchAll(/"riotId"\s*:\s*"([^"#]{3,16})#([^"]{2,5})"/g)) add(m[1], m[2]);
+  // 2) sichtbarer Text: Name#TAG (mit Rolle in der Nähe, falls vorhanden)
+  const text = decodeHtml(html.replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/<[^>]+>/g, "\n"));
+  const lines = text.split(/\n+/).map(x => x.replace(/\s+/g, " ").trim()).filter(Boolean);
+  const label = x => /^(coach|trainer|head coach)\b/i.test(x) ? "Coach" : /^(ersatz|substitute|sub\b|bank)/i.test(x) ? "Ersatz" : /^(captain|kapitän)\b/i.test(x) ? "Captain" : "";
+  lines.forEach((ln, i) => {
+    const m = ln.match(/^([\p{L}\p{N}_. ]{3,16})#([\p{L}\p{N}]{2,5})$/u) || ln.match(/(?:^|[\s:])([\p{L}\p{N}_.][\p{L}\p{N}_. ]{2,15})#([\p{L}\p{N}]{2,5})(?=$|[\s,)])/u);
+    if (!m) return;
+    // Rolle: Label direkt danach, oder davor mit Doppelpunkt bzw. als Abschnitts-Überschrift (z. B. „Ersatzspieler“)
+    const nx = lines[i + 1] || "", after = /:$/.test(nx) || /^(ersatzspieler|substitutes|coaches)$/i.test(nx) ? "" : label(nx), prev = lines[i - 1] || "", before = /:$/.test(prev) || /^(ersatzspieler|substitutes|coaches)$/i.test(prev) ? label(prev) : "";
+    const inLine = /:/.test(ln) ? label(ln) : "";
+    add(m[1], m[2], inLine || before || after);
+  });
+  return { name: tagM ? tagM[1].trim() : name, tag: tagM ? tagM[2].trim() : "", players: ids.slice(0, 15) };
 }

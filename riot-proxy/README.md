@@ -112,6 +112,24 @@ Darauf ist alles abgestimmt:
 - „API-Key ungültig oder abgelaufen“ heißt meistens, dass noch der 24-Stunden-Development-Key
   eingetragen ist. Dann den Personal Key als `RIOT_API_KEY` eintragen.
 
+## Prime League (ab Worker-Version 13)
+
+- **Spieler importieren**: Im Gegner-Team den Link zur Prime-League-Teamseite
+  eintragen → „Spieler importieren“. Der Worker liest die Riot-IDs von der Seite
+  (`GET /pl?url=…`, nur primeleague.gg), im Board ordnest du sie den Rollen zu
+  (Ersatz / Coach werden erkannt, wenn die Seite es angibt).
+  Klappt das nicht: Teamseite öffnen, alles markieren und kopieren und bei
+  „IDs einfügen“ einfügen – das Board sucht die Riot-IDs selbst heraus.
+- **Team-Drafts**: Aus Spielen, in denen 3 oder mehr Gegner zusammen gespielt
+  haben (Flex, Clash, Normal, Turnier), zeigt das Board Picks, Banns, Seite und
+  Ergebnis. Dafür Filter „Alle“ oder „Turnier“ wählen und Matchdaten laden.
+- **Ersatzspieler**: bis zu 3 pro Team, Matchdaten werden mitgeladen,
+  „Tauschen mit …“ setzt einen Ersatz in die Rolle.
+- **Spieltag**: Knopf „Spieltag“ im Gegner-Team – Checkliste, Serie, Bann-Plan,
+  Draft-Pläne und Aufstellungen auf einen Blick.
+- **Turnierspiele testen** (Einstellungen → Riot-API): prüft mit euren eigenen
+  Riot-IDs (Verlauf → Duo), ob Riot eure Prime-League-Spiele herausgibt.
+
 ## Saison & Mastery (Gegner-Picks)
 
 - **Anzahl Spiele → „Saison · bis 50/100 Spiele“** lädt die Ranked-Spiele seit

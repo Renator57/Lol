@@ -758,6 +758,65 @@ dialog:has(.pe-body){width:min(800px,calc(100vw - 1.5rem))}
 .pc-actions .on-ban{background:rgba(157,134,255,.24);border-color:rgba(157,134,255,.55);color:#cfc4ff}
 .pc-actions .on-exp{background:rgba(215,180,106,.24);border-color:var(--gold-dim);color:var(--gold-hi)}
 .riot-old{font-size:.72rem;font-weight:800;color:var(--warn);white-space:nowrap}
+.md-body{display:flex;flex-direction:column;gap:1rem}
+.md-body h3{font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(--gold-hi);margin:0 0 .5rem;display:flex;align-items:center;gap:.5rem}
+.md-top{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.8rem 1rem;border-radius:16px;background:linear-gradient(135deg,rgba(215,180,106,.12),rgba(215,180,106,.02));border:1px solid rgba(215,180,106,.3)}
+.md-top>div:first-child{display:flex;flex-direction:column}
+.md-top b{font-size:1.15rem;font-family:var(--fd)}
+.md-top small{color:var(--muted);font-size:.82rem}
+.md-prog{display:flex;flex-direction:column;align-items:center;gap:.2rem}
+.md-prog small{font-size:.68rem;color:var(--muted);font-weight:700}
+.md-cols{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:1.2rem}
+.md-checks{display:flex;flex-direction:column;gap:.3rem}
+.md-c{display:flex;align-items:center;gap:.5rem;padding:.45rem .6rem;border-radius:11px;border:1px solid var(--line);background:rgba(6,10,18,.35);font-size:.86rem}
+.md-c.ok{border-color:rgba(63,209,127,.35);background:rgba(63,209,127,.06)}
+.md-c label{display:flex;align-items:center;gap:.5rem;flex:1;cursor:pointer}
+.md-c>span:nth-child(2){flex:1}
+.md-c small{color:var(--muted);font-size:.72rem;font-weight:700}
+.md-ic{width:1.2rem;text-align:center;font-weight:900;color:var(--muted)}
+.md-c.ok .md-ic{color:var(--good)}
+.md-gs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.4rem}
+.md-g{display:flex;flex-direction:column;align-items:flex-start;gap:.25rem;padding:.5rem .6rem;border-radius:11px;border:1px solid var(--line);background:rgba(6,10,18,.35);font-size:.8rem}
+.md-plan{display:flex;align-items:center;gap:.5rem;padding:.35rem 0;border-bottom:1px solid var(--line)}
+.md-plan b{min-width:4.5rem}
+.md-plan .btn{margin-left:auto}
+.md-lineups{display:flex;flex-direction:column;gap:.3rem}
+.md-lu{display:grid;grid-template-columns:4.2rem minmax(0,1fr) 1.6rem minmax(0,1.6fr);align-items:center;gap:.5rem;padding:.4rem .6rem;border-radius:11px;background:rgba(255,255,255,.03)}
+.md-role{font-size:.72rem;font-weight:800;text-transform:uppercase;color:var(--muted)}
+.md-us{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.md-vs{font-size:.7rem;color:var(--muted);text-align:center}
+.md-them{display:flex;align-items:center;gap:.5rem;min-width:0;overflow:hidden;white-space:nowrap}
+.md-foot{display:flex;gap:.5rem;flex-wrap:wrap}
+@media (max-width:700px){.md-cols{grid-template-columns:minmax(0,1fr)}.md-lu{grid-template-columns:3.4rem minmax(0,1fr);}.md-vs{display:none}.md-them{grid-column:1/-1}}
+.pl-list{display:flex;flex-direction:column;gap:.35rem;max-height:55vh;overflow:auto}
+.pl-row{display:flex;align-items:center;gap:.6rem;padding:.4rem .55rem;border:1px solid var(--line);border-radius:11px;background:rgba(6,10,18,.35)}
+.pl-id{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.2}
+.pl-id b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pl-id small{font-size:.72rem;color:var(--muted)}
+.pl-row select{flex:none;width:8rem;padding:.3rem .45rem;border-radius:9px;background:var(--panel-2);color:var(--text);border:1px solid var(--line-2)}
+.subs-panel{display:flex;flex-direction:column;gap:.7rem}
+.subs-head{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
+.subs-head h3{margin:0}
+.subs-head .btn{margin-left:auto}
+.sub-row{display:grid;grid-template-columns:minmax(200px,260px) minmax(0,1fr);gap:.8rem;align-items:start;padding-top:.7rem;border-top:1px solid var(--line)}
+.sub-row .rr-role{display:flex;flex-direction:column}
+.sub-played{font-size:.68rem;font-weight:700;color:var(--muted);text-transform:none;letter-spacing:0}
+.sub-act{display:flex;gap:.4rem;margin-top:.45rem;flex-wrap:wrap}
+.sub-act select{flex:1;min-width:0;padding:.3rem .45rem;font-size:.78rem;border-radius:9px;background:var(--panel-2);color:var(--text);border:1px solid var(--line-2)}
+@media (max-width:760px){.sub-row{grid-template-columns:minmax(0,1fr)}}
+.tg-panel{margin-bottom:1rem}
+.tg-sum{display:flex;flex-wrap:wrap;gap:1rem 2rem;margin:.2rem 0 .8rem}
+.tg-cnt{display:inline-flex;flex-direction:column;align-items:center;gap:.1rem}
+.tg-cnt small{font-size:.66rem;font-weight:800;color:var(--muted)}
+.tg-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:.6rem}
+.tg-game{border:1px solid var(--line);border-left:3px solid var(--good);border-radius:14px;padding:.6rem .7rem;background:rgba(6,10,18,.35);display:flex;flex-direction:column;gap:.4rem;min-width:0}
+.tg-game.l{border-left-color:var(--bad)}
+.tg-meta{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
+.tg-meta small{font-size:.74rem;color:var(--muted)}
+.tg-line{display:flex;align-items:center;gap:.5rem;min-width:0}
+.tg-l{flex:none;width:3.6rem;font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.tg-bans .mini{filter:grayscale(.7);opacity:.85}
+.tg-line.vs .mini{width:22px;height:22px;opacity:.75}
 .rms{display:flex;flex-wrap:wrap;gap:.35rem}
 .rm{display:flex;align-items:center;gap:.4rem;padding:.25rem .55rem .25rem .25rem;border-radius:999px;border:1px solid var(--line);background:rgba(6,10,18,.35)}
 .rm .mini{width:26px;height:26px}
@@ -2475,6 +2534,9 @@ const opggPlayer = (v, region) => { const p = parseRiotId(v, region); return p ?
 const riotIds = t => ROLES.map(r => parseRiotId(roleOf(t, r).player, t.region)).filter(Boolean).map(p => p.name + "#" + p.tag);
 const opggMulti = t => `https://op.gg/lol/multisearch/${t.region || "euw"}?summoners=${encodeURIComponent(riotIds(t).join(","))}`;
 const team = id => { const t = teams[id]; return t ? { ...blankTeam(), ...t, roles: t.roles || {}, banPlan: t.banPlan || [] } : null; };
+// Ersatzspieler liegen wie Rollen in t.roles (S1–S3) – alle Rollen-Funktionen (Riot laden usw.) funktionieren damit ebenso
+const SUB_KEYS = ["S1", "S2", "S3"];
+const subKeys = t => SUB_KEYS.filter(k => t && t.roles && t.roles[k]);
 const roleOf = (t, r) => { const x = (t && t.roles && t.roles[r]) || {}; return { ...x, player: x.player || "", champs: Array.isArray(x.champs) ? x.champs : [] }; };
 const vt = () => team(viewId), at = () => team(activeId);
 const scoutRole = r => roleOf(vt(), r);
@@ -2491,7 +2553,9 @@ const fmtDay = d => { if (!d) return ""; try { return DTF_DAY.format(new Date(d 
 const pendingTeams = new Set();
 function saveTeam(id, now){
   pendingTeams.add(id); clearTimeout(saveTeam.t);
-  const flush = () => { const ids = [...pendingTeams]; pendingTeams.clear(); ids.forEach(i => { const t = teams[i]; if (t) fs.doc("config/scouting").set({ teams: { [i]: t } }, { merge: true }).catch(writeError); }); };
+  // update mit Feldpfad ersetzt das ganze Team – mit set+merge blieben gelöschte Felder (z. B. Ersatzspieler, alte Matchdaten) stehen
+  const flush = () => { const ids = [...pendingTeams]; pendingTeams.clear(); ids.forEach(i => { const t = teams[i]; if (!t) return; const ref = fs.doc("config/scouting");
+    (/^[\w-]+$/.test(i) ? ref.update({ ["teams." + i]: t }) : Promise.reject({ code: "not-found" })).catch(e => e && e.code === "not-found" ? ref.set({ teams: { [i]: t } }, { merge: true }).catch(writeError) : writeError(e)); }); };
   if (now) flush(); else saveTeam.t = setTimeout(flush, 450);
 }
 function mutTeam(id, fn, now = true){ if (!id || !teams[id]) return; const t = JSON.parse(JSON.stringify(team(id) || blankTeam())); fn(t); teams = { ...teams, [id]: t }; saveTeam(id, now); render(); }
@@ -2645,7 +2709,7 @@ function render(){
   else if (tab === "scout") renderScout();
   else if (tab === "team") renderTeam();
   renderChat();
-  renderPatch();
+  renderPatch(); mdRefresh();
 }
 
 function renderDraft(picks, types, rec){
@@ -2925,6 +2989,9 @@ function riotCompact(d){
     m: (Array.isArray(d.matches) ? d.matches : []).slice(0, 30).map(x => ({ i: String(x[0]), c: DD.idName[x[1]] || x[1] || "", w: x[2] ? 1 : 0 })),
     part: d.partial && d.requested ? { got: N(d.loaded), of: N(d.requested) } : null,
     ss: d.season ? 1 : 0,
+    // Team-Spiele (nicht Solo/Duo) mit komplettem Draft: daraus erkennt das Board 5er-Teams des Gegners
+    tg: (Array.isArray(d.matches) ? d.matches : []).filter(x => Array.isArray(x[10])).slice(0, 12).map(x => { const g = x[10], nm = c => DD.idName[c] || DD.byKey[c] || String(c);
+      return { i: String(x[0]), at: N(x[7]), q: N(x[9]), w: x[2] ? 1 : 0, s: N(g[0]), t: (g[1] || []).map(nm), b: (g[2] || []).map(nm), e: (g[3] || []).map(nm), eb: (g[4] || []).map(nm), n: (g[5] || []).map(String) }; }),
     ms: (Array.isArray(d.mastery) ? d.mastery : []).slice(0, 8).map(x => ({ c: DD.byKey[x[0]] || String(x[0]), p: N(x[1]), lv: N(x[2]), t: N(x[3]) }))
   };
 }
@@ -2990,7 +3057,7 @@ async function riotLoadRoles(teamId, roles){
 const riotLoadRole = (teamId, r) => riotLoadRoles(teamId, [r]).then(n => n > 0);
 async function riotLoadAll(teamId){
   const t = team(teamId); if (!t) return;
-  const roles = ROLES.filter(r => parseRiotId(roleOf(t, r).player, t.region));
+  const roles = teamKeys(t).filter(r => parseRiotId(roleOf(t, r).player, t.region));
   if (!roles.length) return toast("Erst Riot-IDs eintragen.");
   const ok = await riotLoadRoles(teamId, roles);
   if (riotKeyBad && Date.now() - riotKeyBad < 60e3 && !ok) return toast(RIOT_KEY_MSG);
@@ -3007,6 +3074,7 @@ function riotView(rd){
     recent: (Array.isArray(rd.recent) ? rd.recent : []).map(x => x && typeof x === "object" ? { w: !!x.w, c: x.c ? officialName(String(x.c)) : "", k: x.k == null ? null : N(x.k), d: N(x.d), a: N(x.a) } : { w: !!x, c: "", k: null }),
     m: (Array.isArray(rd.m) ? rd.m : []).filter(x => x && x.i).map(x => ({ i: String(x.i), c: officialName(String(x.c || "?")), w: !!x.w })),
     part: rd.part && typeof rd.part === "object" ? { got: N(rd.part.got), of: N(rd.part.of) } : null, err: rd.err ? String(rd.err) : "", errAt: N(rd.errAt),
+    tg: (Array.isArray(rd.tg) ? rd.tg : []).filter(x => x && x.i).map(x => ({ i: String(x.i), at: N(x.at), q: N(x.q), w: !!x.w, s: N(x.s), t: (x.t || []).map(c => officialName(String(c))), b: (x.b || []).map(c => officialName(String(c))), e: (x.e || []).map(c => officialName(String(c))), eb: (x.eb || []).map(c => officialName(String(c))), n: (x.n || []).map(String) })),
     season: !!rd.ss, ms: (Array.isArray(rd.ms) ? rd.ms : []).filter(x => x && x.c && !/^\d+$/.test(String(x.c))).map(x => ({ c: officialName(String(x.c)), p: N(x.p), lv: N(x.lv), t: N(x.t) })) };
 }
 // Gehören die Daten noch zur eingetragenen Riot-ID?
@@ -3087,6 +3155,64 @@ function scoutReport(t){
     if (x.rd.kda && x.rd.kda.d && (x.rd.kda.k + x.rd.kda.a) / x.rd.kda.d < 2) notes.push({ k: "good", t: `${x.r}: stirbt oft (KDA ${((x.rd.kda.k + x.rd.kda.a) / x.rd.kda.d).toFixed(1)}) – früh Druck machen` });
   });
   return { P, avg, games, wins, pools, duos: duos.slice(0, 4), flex, notes, bans: riotBanIdeas(t, true).slice(0, 3), missing: ROLES.filter(r => !P.some(x => x.r === r)) };
+}
+// ---------- Team-Drafts: Spiele, in denen mindestens 3 Gegner zusammen gespielt haben (Flex, Clash, Turnier …) ----------
+const TG_Q = { 0: "Turnier/Custom", 400: "Normal", 430: "Normal", 440: "Flex", 490: "Quickplay", 700: "Clash" };
+const teamKeys = t => [...ROLES, ...subKeys(t)];
+function teamDrafts(t){
+  const by = {};
+  teamKeys(t).forEach(r => { const sr = roleOf(t, r), rd = riotView(sr.riot); if (!rd || !riotFresh(sr, t, rd)) return;
+    rd.tg.forEach(g => { const x = by[g.i] = by[g.i] || { ...g, who: [] }; if (!x.who.includes(r)) x.who.push(r); }); });
+  const known = teamKeys(t).map(r => ({ r, id: norm(roleOf(t, r).player) })).filter(x => x.id);
+  return Object.values(by).filter(g => g.who.length >= 3 || g.n.filter(n => known.some(k => k.id === norm(n))).length >= 3)
+    .map(g => ({ ...g, players: g.n.map(n => (known.find(k => k.id === norm(n)) || {}).r || "") }))
+    .sort((a, b) => b.at - a.at);
+}
+function teamDraftsHtml(t){
+  const G = teamDrafts(t), anyTg = teamKeys(t).some(r => { const rd = riotView(roleOf(t, r).riot); return rd && rd.games; });
+  if (!anyTg) return "";
+  const cnt = arr => { const o = {}; arr.forEach(c => c && (o[c] = (o[c] || 0) + 1)); return Object.entries(o).sort((a, b) => b[1] - a[1]); };
+  const bans = cnt(G.flatMap(g => g.b)).slice(0, 6), picks = cnt(G.flatMap(g => g.t)).filter(x => x[1] >= 2).slice(0, 6);
+  const blue = G.filter(g => g.s === 100), red = G.filter(g => g.s === 200), wins = G.filter(g => g.w).length;
+  const mini = (c, tip) => `<span class="mini" title="${esc(tip || c)}">${initials(c)}${img(iconUrl(c))}</span>`;
+  const row = g => `<div class="tg-game ${g.w ? "w" : "l"}">
+      <div class="tg-meta"><span class="res on ${g.w ? "win" : "loss"}">${g.w ? "Sieg" : "Niederlage"}</span><span class="side-dot ${g.s === 100 ? "blue" : "red"}">${g.s === 100 ? "Blau" : "Rot"}</span><small>${esc(TG_Q[g.q] || "Queue " + g.q)} · ${g.at ? esc(fmtDay(new Date(g.at).toISOString().slice(0, 10))) : ""}</small></div>
+      <div class="tg-line"><span class="tg-l">Picks</span><span class="opts-row">${g.t.map((c, i) => mini(c, `${c}${g.players[i] ? " – " + g.players[i] : g.n[i] ? " – " + g.n[i] : ""}`)).join("")}</span></div>
+      ${g.b.length ? `<div class="tg-line"><span class="tg-l">Banns</span><span class="opts-row tg-bans">${g.b.map(c => mini(c)).join("")}</span></div>` : ""}
+      <div class="tg-line vs"><span class="tg-l">gegen</span><span class="opts-row">${g.e.map(c => mini(c)).join("")}</span></div>
+    </div>`;
+  return `<section class="panel tg-panel">
+    <div class="sr-head"><h3>Team-Drafts</h3>${G.length ? `<span class="sr-pill">${G.length} gemeinsame Spiele</span><span class="sr-pill ${pct(wins, G.length) >= 50 ? "w" : "l"}">${pct(wins, G.length)} % Siege</span><span class="sr-pill">Blau ${blue.length} · Rot ${red.length}</span>` : ""}</div>
+    ${G.length ? `<div class="tg-sum">
+        ${bans.length ? `<div><span class="flabel">Bannen oft</span><div class="opts-row">${bans.map(([c, n]) => `<span class="tg-cnt">${mini(c)}<small>${n}×</small></span>`).join("")}</div></div>` : ""}
+        ${picks.length ? `<div><span class="flabel">Picken oft</span><div class="opts-row">${picks.map(([c, n]) => `<span class="tg-cnt">${mini(c)}<small>${n}×</small></span>`).join("")}</div></div>` : ""}
+      </div>
+      <div class="tg-list">${G.slice(0, 8).map(row).join("")}</div>`
+    : `<p class="small-hint" style="margin:0">Keine Spiele gefunden, in denen 3 oder mehr Gegner zusammen gespielt haben. Tipp: Filter „Alle“ oder „Turnier“ wählen und Matchdaten neu laden (braucht worker.js ab Version 13).</p>`}
+  </section>`;
+}
+// ---------- Ersatzspieler ----------
+function subsHtml(t, ed, dis){
+  const subs = subKeys(t), G = teamDrafts(t);
+  if (!subs.length && !ed) return "";
+  const played = r => G.filter(g => g.players.includes(r) || g.who.includes(r)).length;
+  return `<section class="panel subs-panel"><div class="subs-head"><h3>Ersatzspieler</h3><span class="hint" style="margin:0">Matchdaten werden mitgeladen. „Tauschen“ setzt den Ersatz in die Rolle (mit Top-Picks und Daten).</span>
+      ${ed && subs.length < SUB_KEYS.length ? `<button class="btn sm" data-action="sub-add">+ Ersatzspieler</button>` : ""}</div>
+    ${subs.map((k, i) => { const sr = roleOf(t, k), hasId = !!sr.player.trim(), n = G.length ? played(k) : null;
+      return `<div class="sub-row">
+        <div class="rr-side">
+          <span class="rr-role">Ersatz ${i + 1}${n != null ? `<small class="sub-played">${n} von ${G.length} Team-Spielen</small>` : ""}</span>
+          <div class="rr-id">
+            <input id="sp-${k}" data-scout-player="${k}" value="${esc(sr.player)}" placeholder="Riot-ID  Name#TAG" maxlength="40" ${dis} aria-label="Riot-ID Ersatzspieler ${i + 1}">
+            <a class="rr-og" id="og-${k}" href="${esc(opggPlayer(sr.player, t.region))}" target="_blank" rel="noopener" ${hasId ? "" : "hidden"}>op.gg ↗</a>
+          </div>
+          ${ed ? `<div class="sub-act"><select data-sub-swap="${k}" aria-label="Mit Rolle tauschen"><option value="">Tauschen mit …</option>${ROLES.map(r => `<option value="${r}">${r}${roleOf(t, r).player ? " (" + esc(roleOf(t, r).player.split("#")[0]) + ")" : ""}</option>`).join("")}</select><button class="btn sm ghost danger" data-action="sub-del" data-k="${k}">Entfernen</button></div>` : ""}
+          ${sr.champs.length ? `<div class="opts-row" style="margin-top:.4rem">${sr.champs.map(x => `<span class="mini" title="${esc(x.c)}">${initials(x.c)}${img(iconUrl(x.c))}</span>`).join("")}</div>` : ""}
+        </div>
+        ${riotBlock(t, k, sr, ed)}
+      </div>`; }).join("")}
+    ${!subs.length ? `<p class="small-hint" style="margin:.3rem 0 0">Noch keine Ersatzspieler eingetragen.</p>` : ""}
+  </section>`;
 }
 function reportHtml(t, ed){
   const R = scoutReport(t); if (!R) return "";
@@ -3804,6 +3930,8 @@ async function checkReminders(){
     } catch(err){ /* nächste Runde */ }
   }
 }
+// Spieltag-Ansicht live halten (Matchdaten, Banns usw. ändern sich während sie offen ist)
+function mdRefresh(){ if (edit && edit.kind === "md" && modal.open) renderModal(); }
 function renderPatch(){
   const cur = patchName(DD.v), pill = $("#patchPill");
   const changed = pill.hidden !== !cur || pill.textContent !== (cur ? "Patch " + cur : "");
@@ -4879,6 +5007,7 @@ function renderScout(){
           </div>
         </div>
         <div class="th-side">
+          <button class="btn sm gold md-btn" data-action="md-open">Spieltag</button>
           ${isActive ? `<span class="active-badge"><i></i>Draft-Gegner</span>` : (ed ? `<button class="btn gold sm" data-action="team-activate">Als Draft-Gegner setzen</button>` : "")}
           ${ed ? `<div class="th-danger"><button class="btn sm ghost" data-action="team-clear">Picks leeren</button><button class="btn sm danger" data-action="team-del">Löschen</button></div>` : ""}
         </div>
@@ -4901,7 +5030,7 @@ function renderScout(){
         </div>
         <label class="tool-field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>
           <input id="tm-link" data-tf="link" value="${esc(t.link)}" placeholder="Link zur Prime-League-Teamseite" ${dis} aria-label="Link">
-          ${/^https?:\/\//.test(t.link) ? `<a class="btn sm" href="${esc(t.link)}" target="_blank" rel="noopener">Öffnen ↗</a>` : ""}</label>
+          ${/^https?:\/\//.test(t.link) ? `<a class="btn sm" href="${esc(t.link)}" target="_blank" rel="noopener">Öffnen ↗</a>` : ""}${ed && /primeleague\.gg/i.test(t.link || "") ? `<button class="btn sm gold" data-action="pl-import" title="Riot-IDs von der Teamseite übernehmen">Spieler importieren</button>` : ""}</label>
       </div>
       <label class="tool-field th-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/></svg>
         <input id="tm-note" data-tf="note" value="${esc(t.note)}" maxlength="240" placeholder="Wie spielt das Team? z. B. alles über Bot, Jungler invadet früh" ${dis} aria-label="Notiz zum Team"></label>
@@ -4930,6 +5059,7 @@ function renderScout(){
         </section></div>`;
     })()}
     ${reportHtml(t, ed)}
+    ${teamDraftsHtml(t)}
     <div class="scout-grid">
       <div class="roster">${ROLES.map(r => { const sr = roleOf(t, r), hasId = !!sr.player.trim();
         return `<section class="roster-row">
@@ -4962,7 +5092,8 @@ function renderScout(){
             ${ed ? `<button class="pick-add" data-action="sc-add" data-role="${r}" aria-label="Champions für ${r} hinzufügen"><span>+</span>${sr.champs.length ? "" : "Top-Picks"}</button>` : (!sr.champs.length ? `<p class="hint" style="margin:auto 0">Keine Top-Picks.</p>` : "")}
           </div>
           ${riotBlock(t, r, sr, ed)}
-        </section>`; }).join("")}</div>
+        </section>`; }).join("")}
+        ${subsHtml(t, ed, dis)}</div>
       <aside class="ban-panel">
         <div class="bp-head"><h3>Bann-Plan</h3>${t.tag || t.name ? `<span>gegen ${esc(t.tag || t.name)}</span>` : ""}</div>
         <div class="ban-slots">${[0,1,2,3,4].map(i => { const c = plan[i];
@@ -5080,6 +5211,104 @@ function download(name, text){
 
 // ---------- Editor (Modal) ----------
 const modal = $("#modal");
+// Riot-IDs aus beliebigem Text (z. B. kopierte Prime-League-Teamseite oder Lobby-Chat)
+function extractRiotIds(text){
+  const lines = String(text).split(/\n+/).map(x => x.replace(/\s+(joined the lobby|ist der Lobby beigetreten|hat die Lobby betreten).*$/i, "").replace(/\s+/g, " ").trim()).filter(Boolean);
+  const label = x => /^(coach|trainer|head coach)\b/i.test(x) ? "Coach" : /^(ersatz|substitute|sub\b|bank)/i.test(x) ? "Ersatz" : "";
+  const out = [], seen = new Set();
+  lines.forEach((ln, i) => {
+    for (const m of ln.matchAll(/(?:^|[\s:,;(])([\p{L}\p{N}_.][\p{L}\p{N}_. ]{2,15}?)\s?#\s?([\p{L}\p{N}]{2,5})(?=$|[\s,;)])/gu)){
+      const id = cleanRiotId(m[1]) + "#" + m[2], k = norm(id); if (seen.has(k)) continue; seen.add(k);
+      const prev = lines[i - 1] || "", hint = /:/.test(ln) ? label(ln) : (/:$/.test(prev) || /^(ersatzspieler|substitutes|coaches)$/i.test(prev)) ? label(prev) : "";
+      out.push({ id, hint });
+    }
+  });
+  return out;
+}
+const PL_ROLES = [...ROLES, "Ersatz", "–"];
+// Zuordnungs-Dialog: gefundene Spieler → Rollen/Ersatz
+function openPlAssign(d){
+  const t = team(viewId); if (!t) return;
+  const free = ROLES.filter(r => !d.players.some(p => norm(p.id) === norm(roleOf(t, r).player)));
+  const players = d.players.map(p => {
+    const cur = [...ROLES, ...subKeys(t)].find(r => norm(roleOf(t, r).player) === norm(p.id));
+    const role = cur ? (ROLES.includes(cur) ? cur : "Ersatz") : p.hint === "Coach" ? "–" : p.hint === "Ersatz" ? "Ersatz" : (free.shift() || "Ersatz");
+    return { ...p, role };
+  });
+  edit = { kind: "pl", isNew: false, buf: { name: d.name || "", tag: d.tag || "", players } };
+  modal.showModal(); renderModal();
+}
+// Prüft, ob Riot eure Prime-League-Spiele (Turniercodes) über Match-V5 herausgibt
+async function riotTourneyTest(){
+  const ids = teamOrder().map(p => duoCfg.ids[p.id]).filter(x => parseRiotId(x || "", duoCfg.region));
+  if (!riotUrl) return toast("Erst den Riot-Proxy eintragen.");
+  if (!ids.length) return toast("Erst unter Verlauf → Duo eure eigenen Riot-IDs eintragen.");
+  toast("Suche Turnierspiele …");
+  const pid = parseRiotId(ids[0], duoCfg.region);
+  try {
+    const d = await riotFetch("", { id: pid.name + "#" + pid.tag, region: duoCfg.region || "euw", queue: "tournament", count: 20 });
+    const last = (d.recent || [])[0];
+    toast(d.games ? `✓ ${d.games} Turnierspiele von ${pid.name} gefunden${last && last.at ? " (zuletzt " + new Date(last.at).toLocaleDateString("de-DE") + ")" : ""} – Prime-League-Spiele lassen sich laden. Für Gegner den Filter „Turnier“ wählen.` : `Für ${pid.name} findet Riot keine Turnierspiele. Entweder noch keine gespielt, oder Riot gibt Turnierspiele nicht heraus – dann bleiben Ranked/Flex/Clash.`);
+  } catch(e){ toast("Test fehlgeschlagen: " + e.message); }
+}
+async function plImport(){
+  const t = team(viewId); if (!t) return;
+  if (!/primeleague\.gg/i.test(t.link || "")) return toast("Erst den Link zur Prime-League-Teamseite eintragen.");
+  if (!riotUrl) return toast("Der Import läuft über den Riot-Proxy – bitte in den Einstellungen eintragen.");
+  toast("Lese die Prime-League-Teamseite …");
+  try {
+    const d = await riotFetch("pl", { url: t.link.trim() });
+    if (!d.players || !d.players.length) throw new Error("Auf der Seite wurden keine Riot-IDs gefunden.");
+    openPlAssign(d);
+  } catch(e){
+    const old = /Riot-ID|Region|Queue/i.test(e.message);
+    toast((old ? "Der Import braucht die neue worker.js (Version 13)." : e.message) + " Alternative: Teamseite öffnen, alles markieren (Strg+A), kopieren und bei „IDs einfügen“ einfügen.");
+  }
+}
+// ---------- Spieltag-Ansicht ----------
+const MD_MANUAL = [["termin", "Termin mit dem Gegner bestätigt"], ["code", "Lobby/Turniercode erhalten"], ["voice", "Alle 30 Min. vorher im Voice"]];
+function mdChecks(t){
+  const ids = ROLES.filter(r => parseRiotId(roleOf(t, r).player, t.region)).length;
+  const riot = ROLES.filter(r => { const sr = roleOf(t, r), rd = riotView(sr.riot); return rd && rd.games && riotFresh(sr, t, rd); }).length;
+  const lm = lineupMap(), lu = ROLES.filter(r => lm[r]).length;
+  return [
+    { k: "ids", t: "Riot-IDs der Gegner eingetragen", ok: ids === 5, info: ids + "/5" },
+    { k: "riot", t: "Matchdaten geladen", ok: riot === 5, info: riot + "/5", act: riot < 5 && riotUrl && ids ? ["riot-all", "Laden"] : null },
+    { k: "bans", t: "Bann-Plan steht (mind. 3)", ok: t.banPlan.length >= 3, info: t.banPlan.length + " geplant" },
+    { k: "plans", t: "Draft-Pläne vorbereitet", ok: (t.plans || []).length >= 1, info: (t.plans || []).length + " Pläne" },
+    { k: "lineup", t: "Eigenes Lineup steht", ok: lu === 5, info: lu + "/5" },
+    { k: "active", t: "Als Draft-Gegner gesetzt", ok: viewId === activeId, act: viewId !== activeId ? ["team-activate", "Setzen"] : null },
+    ...MD_MANUAL.map(([k, l]) => ({ k, t: l, ok: !!(t.check || {})[k], manual: true }))
+  ];
+}
+function mdHtml(){
+  const t = team(viewId); if (!t) return "";
+  const C = mdChecks(t), done = C.filter(c => c.ok).length, lm = lineupMap(), plans = t.plans || [];
+  const liga = seriesGames(viewId), g = n => liga.find(h => (h.game || 1) === n);
+  const sw = liga.filter(h => h.result === "win").length, sl = liga.filter(h => h.result === "loss").length;
+  const days = t.date ? Math.round((new Date(t.date + "T12:00:00") - new Date(new Date().toDateString() + " 12:00")) / 864e5) : null;
+  const when = days == null ? "ohne Datum" : days === 0 ? "heute" : days === 1 ? "morgen" : days > 1 ? `in ${days} Tagen` : `vor ${-days} Tagen`;
+  const foeTop = r => { const sr = roleOf(t, r), rd = riotView(sr.riot), fresh = rd && rd.games && riotFresh(sr, t, rd); const cs = sr.champs.map(x => x.c); if (fresh) rd.champs.forEach(c => !cs.includes(c.c) && cs.push(c.c)); return cs.slice(0, 3); };
+  const mini = c => `<span class="mini" title="${esc(c)}">${initials(c)}${img(iconUrl(c))}</span>`;
+  const game = n => { const h = g(n); return `<div class="md-g ${h ? cl(h.result) : ""}"><b>Spiel ${n}</b>${h ? `<span class="res on ${cl(h.result)}">${h.result === "win" ? "Sieg" : h.result === "loss" ? "Niederlage" : "Offen"}</span>${h.side ? `<span class="side-dot ${cl(h.side)}">${h.side === "blue" ? "Blau" : "Rot"}</span>` : ""}` : `<span class="hint" style="margin:0">offen</span>`}</div>`; };
+  return `<div class="m-head"><h2 id="mTitle">Spieltag vs ${esc(t.tag || t.name || "Gegner")}</h2><button class="x" data-action="close" aria-label="Schließen">×</button></div>
+    <div class="m-body md-body">
+      <div class="md-top"><div><b>${esc(t.name || "Gegner")}</b><small>${t.date ? esc(fmtDay(t.date)) + " · " : ""}${when}</small></div>
+        <div class="md-prog"><span class="ring ${done === C.length ? "" : "l"}" style="--p:${Math.round(done / C.length * 100)}"><span>${done}/${C.length}</span></span><small>vorbereitet</small></div></div>
+      <div class="md-cols">
+        <section><h3>Checkliste</h3><div class="md-checks">${C.map(c => `<div class="md-c ${c.ok ? "ok" : ""}">
+            ${c.manual ? `<label><input type="checkbox" data-md-check="${c.k}" ${c.ok ? "checked" : ""} ${canEdit() ? "" : "disabled"}><span>${esc(c.t)}</span></label>` : `<span class="md-ic">${c.ok ? "✓" : "•"}</span><span>${esc(c.t)}</span>`}
+            ${c.info ? `<small>${esc(c.info)}</small>` : ""}${c.act && canEdit() ? `<button class="btn sm" data-action="${c.act[0]}">${c.act[1]}</button>` : ""}</div>`).join("")}</div></section>
+        <section><h3>Serie ${liga.length ? `<span class="md-score"><b class="w">${sw}</b> : <b class="l">${sl}</b></span>` : ""}</h3><div class="md-gs">${game(1)}${game(2)}${game(3)}</div>
+          ${canEdit() ? `<button class="btn sm gold" data-action="md-result" style="margin-top:.5rem">Ergebnis eintragen</button>` : ""}
+          <h3 style="margin-top:1rem">Bann-Plan</h3>${t.banPlan.length ? `<div class="opts-row">${t.banPlan.slice(0, 5).map(mini).join("")}</div>` : `<p class="hint" style="margin:0">Noch leer.</p>`}
+          <h3 style="margin-top:1rem">Draft-Pläne</h3>${plans.length ? plans.map(pl => `<div class="md-plan"><b>${esc(pl.name)}</b><span class="opts-row">${ROLES.map(r => pl.picks && pl.picks[r] ? mini(pl.picks[r]) : "").join("")}</span>${canEdit() ? `<button class="btn sm ghost" data-action="plan-load" data-id="${esc(pl.id)}" data-team="${esc(viewId)}">Laden</button>` : ""}</div>`).join("") : `<p class="hint" style="margin:0">Noch keine Pläne.</p>`}
+        </section>
+      </div>
+      <section><h3>Aufstellungen</h3><div class="md-lineups">${ROLES.map(r => `<div class="md-lu"><span class="md-role">${r}</span><span class="md-us">${lm[r] ? esc(lm[r].name) : "–"}</span><span class="md-vs">vs</span><span class="md-them">${esc((roleOf(t, r).player || "–").split("#")[0])}<span class="opts-row">${foeTop(r).map(mini).join("")}</span></span></div>`).join("")}</div></section>
+      <div class="md-foot"><button class="btn gold" data-action="md-draft">Zum Draft</button>${scoutReport(t) ? `<button class="btn" data-action="share-report">${discordUrl ? "Scouting an Discord" : "Scouting kopieren"}</button>` : ""}</div>
+    </div>`;
+}
 function openEditor(kind, id){
   if (kind === "he"){
     const h = history.find(x => x.id === id); if (!h) return;
@@ -5138,7 +5367,7 @@ modal.addEventListener("close", () => { edit = null; });
 function renderModal(focusSel){
   if (!edit) return;
   const b = edit.buf;
-  modal.classList.toggle("wide", edit.kind === "he");
+  modal.classList.toggle("wide", edit.kind === "he" || edit.kind === "md");
   modal.classList.toggle("pnx", edit.kind === "pn");
   if (edit.kind === "pn"){ modal.innerHTML = pnHtml(); if (focusSel){ const el = modal.querySelector(focusSel); if (el){ el.focus(); const n = el.value.length; try { el.setSelectionRange(n, n); } catch(e){} } } return; }
   if (edit.kind === "he"){
@@ -5276,11 +5505,23 @@ function renderModal(focusSel){
       </div>
       <div class="m-foot"><button class="btn" data-action="close">Schließen</button></div>`;
     renderLiveGrid(); return;
+  } else if (edit.kind === "md"){
+    modal.innerHTML = mdHtml();
+  } else if (edit.kind === "pl"){
+    modal.innerHTML = `
+      <div class="m-head"><h2 id="mTitle">Spieler zuordnen${b.name ? " · " + esc(b.name) : ""}</h2><button class="x" data-action="close" aria-label="Schließen">×</button></div>
+      <div class="m-body">
+        <p class="small-hint" style="margin:0 0 .7rem">${b.players.length} Riot-IDs gefunden. Rolle wählen – „Ersatz“ landet bei den Ersatzspielern, „–“ wird nicht übernommen (z. B. Coach).</p>
+        <div class="pl-list">${b.players.map((p, i) => `<div class="pl-row"><span class="pl-id"><b>${esc(p.id.split("#")[0])}</b><small>#${esc(p.id.split("#")[1] || "")}${p.hint ? " · " + esc(p.hint) : ""}</small></span>
+          <select data-pl-role="${i}" aria-label="Rolle für ${esc(p.id)}">${PL_ROLES.map(r => `<option value="${r}" ${p.role === r ? "selected" : ""}>${r}</option>`).join("")}</select></div>`).join("")}</div>
+        ${ROLES.filter(r => b.players.filter(p => p.role === r).length > 1).length ? `<p class="small-hint" style="color:var(--warn);margin:.6rem 0 0">Eine Rolle ist doppelt vergeben – der erste Spieler wird genommen, der zweite als Ersatz.</p>` : ""}
+      </div>
+      <div class="m-foot"><button class="btn gold" data-action="save-pl">Übernehmen</button><button class="btn" data-action="close">Abbrechen</button></div>`;
   } else if (edit.kind === "ids"){
     modal.innerHTML = `
       <div class="m-head"><h2 id="mTitle">Riot-IDs einfügen</h2><button class="x" data-action="close" aria-label="Schließen">×</button></div>
       <div class="m-body">
-        <p class="small-hint" style="margin:0 0 .6rem">Eine Riot-ID pro Zeile, in der Reihenfolge Top, Jungle, Mid, Bot, Support. Du kannst sie z. B. von der Prime-League-Teamseite kopieren.</p>
+        <p class="small-hint" style="margin:0 0 .6rem">Eine Riot-ID pro Zeile, in der Reihenfolge Top, Jungle, Mid, Bot, Support. Oder einfach die ganze Prime-League-Teamseite kopieren (Strg+A, Strg+C) und hier einfügen – die Riot-IDs werden herausgesucht und du ordnest sie den Rollen zu.</p>
         <textarea class="inp" id="ids-text" data-bind="text" rows="6" placeholder="TopName#EUW&#10;JungleName#EUW&#10;MidName#EUW&#10;BotName#EUW&#10;SuppName#EUW">${esc(b.text)}</textarea>
       </div>
       <div class="m-foot"><button class="btn gold" data-action="save-ids">Übernehmen</button><button class="btn" data-action="close">Abbrechen</button></div>`;
@@ -5398,7 +5639,7 @@ function renderModal(focusSel){
           ${discordUrl ? "" : `<p class="small-hint" style="margin:.6rem 0 0">Wirkt erst, wenn ein Webhook verbunden ist.</p>`}`),
       riot: card(IC.riot, "Riot-Proxy", badge(!!riotUrl, "verbunden", "nicht eingerichtet"),
           `<p class="small-hint">Lädt unter „Gegner-Picks“ echte Matchdaten: meistgespielte Champions, Winrate, KDA, Rang und den Scouting-Bericht. Der Riot-Key liegt in eurem Cloudflare-Worker (Ordner <code>riot-proxy/</code>), nie im Board.</p>
-          <div class="addrow" style="flex-wrap:wrap"><input class="inp" style="min-width:14rem" data-bind="riot" value="${esc(b.riot || "")}" placeholder="https://draftboard-riot.….workers.dev" autocomplete="off"><button class="btn sm" data-action="riot-test">Testen</button><button class="btn sm gold" data-action="riot-save">Speichern</button></div>`)
+          <div class="addrow" style="flex-wrap:wrap"><input class="inp" style="min-width:14rem" data-bind="riot" value="${esc(b.riot || "")}" placeholder="https://draftboard-riot.….workers.dev" autocomplete="off"><button class="btn sm" data-action="riot-test">Testen</button><button class="btn sm ghost" data-action="riot-tourney" title="Prüft mit euren eigenen Riot-IDs, ob Prime-League-Spiele (Turniercodes) geladen werden können">Turnierspiele testen</button><button class="btn sm gold" data-action="riot-save">Speichern</button></div>`)
         + card(IC.app, "Video-Upload (VOD)", badge(vodCloud.ok, "bereit", vodCloud.checked ? "nicht bereit" : "nicht geprüft"),
           `<p class="small-hint">Lädt Spielvideos in euren Cloudflare-Speicher (R2, 10 GB kostenlos), damit alle sie im Verlauf ansehen können. Läuft über denselben Worker.</p>
           ${vodCloud.usage ? `<div class="up-usage"><div class="up-bar"><div class="up-fill" style="width:${vodLimitGB ? Math.min(100, vodCloud.usage.bytes / (vodLimitGB * 1e9) * 100).toFixed(1) : 0}%"></div></div><span>${fmtBytes(vodCloud.usage.bytes)}${vodLimitGB ? " von " + vodLimitGB + " GB" : ""} · ${vodCloud.usage.files} Video${vodCloud.usage.files === 1 ? "" : "s"}</span></div>
@@ -5667,10 +5908,31 @@ document.addEventListener("click", async e => {
       (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => toast("Riot-IDs kopiert – im op.gg-Multisearch einfügen.")).catch(() => { prompt("Riot-IDs kopieren:", txt); }); break; }
     case "paste-ids": openEditor("ids"); break;
     case "save-ids": {
-      const lines = (b.text || "").split(/\n|,/).map(x => x.replace(/\s+(joined the lobby|ist der Lobby beigetreten|hat die Lobby betreten).*$/i, "").trim()).filter(Boolean).slice(0, 5);
+      const found = extractRiotIds(b.text || "");
+      // ganze Teamseite eingefügt (mehr als 5 IDs oder Hinweise wie Coach/Ersatz) → Zuordnungs-Dialog
+      if (found.length > 5 || found.some(x => x.hint)){ openPlAssign({ players: found }); break; }
+      const lines = found.length ? found.map(x => x.id).slice(0, 5) : (b.text || "").split(/\n|,/).map(x => x.replace(/\s+(joined the lobby|ist der Lobby beigetreten|hat die Lobby betreten).*$/i, "").trim()).filter(Boolean).slice(0, 5);
       if (!lines.length) return toast("Keine Riot-IDs gefunden.");
       mutTeam(viewId, t => { lines.forEach((l, i) => { const r = ROLES[i]; t.roles[r] = { ...roleOf(t, r), player: l }; }); });
       closeEditor(); toast(`${lines.length} Riot-IDs eingetragen.`); break;
+    }
+    case "pl-import": plImport(); break;
+    case "md-open": edit = { kind: "md", isNew: false, buf: {} }; modal.showModal(); renderModal(); break;
+    case "md-draft": closeEditor(); if (viewId !== activeId) setActive(viewId); tab = "draft"; lsSet("draftboard-tab", tab); render(); window.scrollTo({ top: 0 }); break;
+    case "md-result": closeEditor(); if (viewId !== activeId) setActive(viewId); openEditor("h"); break;
+    case "riot-tourney": riotTourneyTest(); break;
+    case "save-pl": {
+      const ps = b.players.filter(p => p.role !== "–"), mainIds = {}, subs = [];
+      ps.forEach(p => { if (ROLES.includes(p.role) && !mainIds[p.role]) mainIds[p.role] = p.id; else subs.push(p.id); });
+      mutTeam(viewId, t => {
+        const old = { ...t.roles };
+        const byId = id => Object.values(old).find(x => x && norm(x.player || "") === norm(id));
+        ROLES.forEach(r => { if (mainIds[r]) { const prev = byId(mainIds[r]); t.roles[r] = prev ? { ...prev, player: mainIds[r] } : { player: mainIds[r], champs: [] }; } });
+        SUB_KEYS.forEach(k => delete t.roles[k]);
+        subs.slice(0, SUB_KEYS.length).forEach((id, i) => { const prev = Object.values(old).find(x => x && norm(x.player || "") === norm(id)); t.roles[SUB_KEYS[i]] = prev ? { ...prev, player: id } : { player: id, champs: [] }; });
+        if (!t.name && b.name) t.name = b.name; if (!t.tag && b.tag) t.tag = b.tag;
+      });
+      closeEditor(); toast(`${Object.keys(mainIds).length} Spieler${subs.length ? ` und ${Math.min(subs.length, 3)} Ersatz` : ""} übernommen.${riotUrl ? " Jetzt „Matchdaten laden“." : ""}`); break;
     }
     case "team-new": newTeam(); break;
     case "team-fearless": mutTeam(viewId, t => { t.fearless = a.checked; }); toast(a.checked ? "Fearless an: frühere Champions der Serie sind gesperrt." : "Fearless aus."); break;
@@ -5797,6 +6059,8 @@ document.addEventListener("click", async e => {
       if (b.stab === "riot" && riotUrl && upKey() && !vodCloud.checked) vodCloudCheck().then(() => edit && renderModal()); break;
     case "riot-all": if (viewId) riotLoadAll(viewId); break;
     case "riot-role": if (viewId) riotLoadRole(viewId, a.dataset.role).then(ok => ok ? toast("Matchdaten geladen.") : riotKeyBad && Date.now() - riotKeyBad < 60e3 && toast(RIOT_KEY_MSG)); break;
+    case "sub-add": if (viewId) mutTeam(viewId, t => { const k = SUB_KEYS.find(x => !t.roles[x]); if (k) t.roles[k] = { player: "", champs: [] }; }); break;
+    case "sub-del": if (viewId) mutTeam(viewId, t => { const k = a.dataset.k, keys = subKeys(t).filter(x => x !== k), vals = keys.map(x => t.roles[x]); SUB_KEYS.forEach(x => delete t.roles[x]); vals.forEach((v, i) => t.roles[SUB_KEYS[i]] = v); }); break;
     case "sc-sug": if (viewId && canEdit()){ const r = a.dataset.role, c = a.dataset.c; mutTeam(viewId, t => { const sr = roleOf(t, r); if (!sr.champs.some(x => x.c === c)) t.roles[r] = { ...sr, champs: [...sr.champs, { c }] }; }); toast(c + " als Top-Pick übernommen."); } break;
     case "riot-take": if (viewId){ riotTake(viewId, a.dataset.role); toast("Als Top-Picks eingetragen."); } break;
     case "riot-test": {
@@ -6171,6 +6435,9 @@ document.addEventListener("input", e => {
 });
 document.addEventListener("change", e => {
   const t = e.target;
+  if (t.dataset && t.dataset.mdCheck && viewId){ const k = t.dataset.mdCheck, v = t.checked; mutTeam(viewId, x => { x.check = { ...(x.check || {}), [k]: v }; }); if (edit && edit.kind === "md") renderModal(); return; }
+  if (t.dataset && t.dataset.plRole != null && edit && edit.kind === "pl"){ edit.buf.players[+t.dataset.plRole].role = t.value; renderModal(); return; }
+  if (t.dataset && t.dataset.subSwap && t.value && viewId){ const k = t.dataset.subSwap, r = t.value; mutTeam(viewId, x => { const a = roleOf(x, r), b = roleOf(x, k); x.roles[r] = b; x.roles[k] = a; }); toast(`Getauscht: Ersatz ist jetzt ${r}.`); return; }
   if (t.dataset && t.dataset.duoId != null){ const v = cleanRiotId(t.value); if (v && !parseRiotId(v)) return toast("Riot-ID bitte als Name#TAG."); duoSetup = true; duoSave({ ids: { [t.dataset.duoId]: v } }); render(); return; }
   if (t.id === "vod-limit"){ vodLimitGB = +t.value; db.doc("config/riot").set({ vodLimit: vodLimitGB }, { merge: true }).catch(writeError); if (edit) renderModal(); return; }
   if (t.id === "duoQueue" || t.id === "duoCount" || t.id === "duoRegion"){ duoSave(t.id === "duoQueue" ? { queue: t.value } : t.id === "duoCount" ? { count: +t.value } : { region: t.value }); render(); return; }
