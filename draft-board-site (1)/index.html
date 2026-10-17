@@ -791,6 +791,33 @@ dialog:has(.pe-body){width:min(800px,calc(100vw - 1.5rem))}
 .pl-steps{padding:.7rem .8rem;margin-bottom:.7rem;border-radius:12px;border:1px solid rgba(215,180,106,.35);background:rgba(215,180,106,.07);font-size:.86rem}
 .pl-steps ol{margin:.5rem 0 0;padding-left:1.2rem;display:flex;flex-direction:column;gap:.4rem}
 .pl-steps kbd{font:inherit;font-size:.75rem;font-weight:800;padding:.05rem .35rem;border-radius:5px;border:1px solid var(--line-2);background:var(--panel-2)}
+.ctr-rows{display:flex;flex-direction:column;gap:.3rem;margin-bottom:.6rem}
+.ctr-row{display:flex;align-items:flex-start;gap:.5rem;padding:.35rem .45rem;border-radius:10px;background:rgba(6,10,18,.35);border-left:3px solid var(--good)}
+.ctr-row.b{border-left-color:var(--bad)}
+.ctr-row .mini{flex:none;width:30px;height:30px}
+.ctr-t{display:flex;flex-direction:column;min-width:0;line-height:1.25}
+.ctr-t b{font-size:.84rem;display:flex;align-items:center;gap:.4rem}
+.ctr-t em{font-style:normal;font-size:.7rem;font-weight:800;padding:.02rem .35rem;border-radius:6px;background:rgba(63,209,127,.14);color:var(--good)}
+.ctr-t em.l{background:rgba(255,106,92,.14);color:var(--bad)}
+.ctr-t small{font-size:.72rem;color:var(--muted)}
+.ctr-t small.none{font-style:italic;opacity:.75}
+.ctr-src{font-size:.7rem;color:var(--muted);margin:.1rem 0 .4rem}
+.ctr-bad{font-size:.8rem;color:var(--warn);margin:.2rem 0 .5rem}
+.card-foot{display:flex;gap:.4rem;flex-wrap:wrap}
+.ki-cta{display:flex;align-items:center;gap:.6rem;justify-content:space-between;flex-wrap:wrap;padding:.55rem .7rem;margin:0 0 .8rem;border-radius:12px;border:1px dashed rgba(215,180,106,.4);font-size:.84rem;color:var(--muted)}
+.ki-head{display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-wrap:wrap;margin-bottom:.4rem;font-size:.84rem;font-weight:700}
+.ki-flip{display:flex;align-items:center;gap:.4rem;font-weight:600;color:var(--muted);font-size:.8rem}
+.ki-list{display:flex;flex-direction:column;gap:.3rem;margin-bottom:.6rem}
+.ki-row{display:grid;grid-template-columns:30px minmax(0,1fr) auto 8.5rem;align-items:center;gap:.5rem;padding:.35rem .5rem;border-radius:10px;border:1px solid var(--line);background:rgba(6,10,18,.35)}
+.ki-row.good{border-color:rgba(63,209,127,.45)}.ki-row.avoid{border-color:rgba(255,106,92,.45)}
+.ki-row .mini{width:30px;height:30px}
+.ki-t{display:flex;flex-direction:column;min-width:0;line-height:1.2}
+.ki-t small{font-size:.7rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ki-wr{font-weight:800;font-size:.84rem;font-variant-numeric:tabular-nums}
+.ki-wr.w{color:var(--good)}.ki-wr.l{color:var(--bad)}
+.ki-row select{padding:.3rem .4rem;border-radius:9px;background:var(--panel-2);color:var(--text);border:1px solid var(--line-2);font-size:.78rem}
+.ki-more summary{cursor:pointer;font-size:.82rem;font-weight:800;color:var(--muted);margin:.3rem 0 .5rem}
+@media (max-width:520px){.ki-row{grid-template-columns:30px minmax(0,1fr) auto}.ki-row select{grid-column:1/-1}}
 .pl-list{display:flex;flex-direction:column;gap:.35rem;max-height:55vh;overflow:auto}
 .pl-row{display:flex;align-items:center;gap:.6rem;padding:.4rem .55rem;border:1px solid var(--line);border-radius:11px;background:rgba(6,10,18,.35)}
 .pl-id{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.2}
@@ -2477,22 +2504,22 @@ const officialName = n => { const id = champId(n); return (id && DD.offById && D
 // Champion-Liste wird pro Patch im Browser zwischengespeichert: spart bei jedem Aufruf ~150 KB
 let ddDone; const ddReady = Promise.race([new Promise(r => ddDone = r), new Promise(r => setTimeout(r, 6000))]);
 function applyDD(v, list){
-  DD.byNorm = {}; DD.byKey = {}; DD.idName = {}; DD.offById = {};
-  list.forEach(([id, key, name]) => { DD.byNorm[norm(name)] = id; DD.byNorm[norm(id)] = id; DD.byKey[key] = name; DD.idName[id] = name; DD.offById[id] = name; });
+  DD.byNorm = {}; DD.byKey = {}; DD.idName = {}; DD.offById = {}; DD.info = {};
+  list.forEach(([id, key, name, tags, range]) => { DD.byNorm[norm(name)] = id; DD.byNorm[norm(id)] = id; DD.byKey[key] = name; DD.idName[id] = name; DD.offById[id] = name; DD.info[id] = { tags: tags || [], range: +range || 0 }; });
   DD.names = list.map(x => x[2]).sort((a, b) => a.localeCompare(b, "de"));
   DD.v = v;
   $("#champList").innerHTML = DD.names.map(n => `<option value="${esc(n)}">`).join("");
   ddDone();
 }
 async function loadDD(){
-  const LS_DD = "draftboard-dd";
+  const LS_DD = "draftboard-dd2"; // v2: mit Klassen und Reichweite (für Counter-Erklärungen)
   let cache = null; try { cache = JSON.parse(lsGet(LS_DD) || "null"); } catch(e){}
   if (cache && cache.v && Array.isArray(cache.list) && cache.list.length){ applyDD(cache.v, cache.list); render(); }
   try {
     const vers = await (await fetch("https://ddragon.leagueoflegends.com/api/versions.json")).json(), v = vers[0]; DD.vers = vers.slice(0, 40);
     if (!cache || cache.v !== v){
       const data = (await (await fetch(`https://ddragon.leagueoflegends.com/cdn/${v}/data/de_DE/champion.json`)).json()).data;
-      const list = Object.values(data).map(c => [c.id, c.key, c.name]);
+      const list = Object.values(data).map(c => [c.id, c.key, c.name, c.tags || [], (c.stats || {}).attackrange || 0]);
       applyDD(v, list); lsSet(LS_DD, JSON.stringify({ v, list }));
     }
   } catch(e){ /* ohne Netz: Cache oder Initialen */ }
@@ -3780,6 +3807,83 @@ function renderBot(picks){
 
 function miniRow(list, pid){ return (list || []).map(o => `<span class="mini" title="${esc(o)}">${initials(o)}${img(iconUrl(o))}${pid ? tierBadge(tierOf(pid, o)) : ""}</span>`).join(""); }
 function fillOurList(){ const all = uniq(players.flatMap(champsOf)).sort((a, b) => a.localeCompare(b, "de")); const html = all.map(n => `<option value="${esc(n)}">`).join(""); if ($("#ourList").innerHTML !== html) $("#ourList").innerHTML = html; }
+// ---------- Counter-Wissen: Faustregeln aus Spielmechaniken (keine Statistik) ----------
+// m mobil · h Heilung/Sustain · s Schilde · c harter CC · e Engage · i unverwundbar/nicht anvisierbar · w blockt Projektile
+// p Poke/Reichweite · a Burst · t Tank · x %-Leben-/True-Schaden · l früh stark · g Scaling · k Skillshot-abhängig · d Peel/Disengage/Anti-Dash · u CC-/Zauberschutz
+const TRAITS = {Aatrox:"hekl",Ahri:"mcka",Akali:"mai",Akshan:"ml",Alistar:"tecdh",Ambessa:"msel",Amumu:"tec",Anivia:"pcgd",Annie:"ace",Aphelios:"g",Ashe:"cpe",AurelionSol:"gp",Aurora:"mpc",Azir:"pgd",Bard:"cdm",Belveth:"mgh",Blitzcrank:"cek",Brand:"pak",Braum:"twdc",Briar:"hel",Caitlyn:"pl",Camille:"mexcl",Cassiopeia:"gcx",Chogath:"tcxg",Corki:"pg",Darius:"lx",Diana:"eam",Draven:"l",DrMundo:"thg",Ekko:"mai",Elise:"calk",Evelynn:"ag",Ezreal:"mpgk",Fiddlesticks:"ec",Fiora:"xmlu",Fizz:"mia",Galio:"tecd",Gangplank:"gp",Garen:"lt",Gnar:"pec",Gragas:"ecdm",Graves:"lm",Gwen:"xi",Hecarim:"me",Heimerdinger:"pl",Hwei:"pck",Illaoi:"hlk",Irelia:"ml",Ivern:"sd",Janna:"sdc",JarvanIV:"ec",Jax:"mg",Jayce:"pl",Jhin:"pc",Jinx:"g",Kaisa:"mg",Kalista:"ml",Karma:"spl",Karthus:"gp",Kassadin:"mg",Katarina:"ma",Kayle:"g",Kayn:"ma",Kennen:"ec",Khazix:"am",Kindred:"img",Kled:"el",KogMaw:"gx",KSante:"tec",Leblanc:"ma",LeeSin:"mle",Leona:"tec",Lillia:"mg",Lissandra:"cei",Lucian:"ml",Lulu:"sd",Lux:"pcsk",Malphite:"tec",Malzahar:"cu",Maokai:"tceh",MasterYi:"gi",Mel:"wp",Milio:"sdh",MissFortune:"lp",MonkeyKing:"em",Mordekaiser:"sl",Morgana:"scpdu",Naafiri:"am",Nami:"hcd",Nasus:"g",Nautilus:"tec",Neeko:"ec",Nidalee:"pmk",Nilah:"mg",Nocturne:"em",Nunu:"teh",Olaf:"ulh",Orianna:"scg",Ornn:"tecg",Pantheon:"le",Poppy:"tcd",Pyke:"eca",Qiyana:"amc",Quinn:"mpl",Rakan:"ecms",Rammus:"tc",RekSai:"me",Rell:"tec",Renata:"sdc",Renekton:"lm",Rengar:"a",Riven:"ms",Rumble:"l",Ryze:"g",Samira:"wml",Sejuani:"tec",Senna:"phg",Seraphine:"hscp",Sett:"es",Shaco:"ai",Shen:"ts",Shyvana:"g",Singed:"t",Sion:"te",Sivir:"ug",Skarner:"tec",Smolder:"gp",Sona:"hs",Soraka:"h",Swain:"hc",Sylas:"he",Syndra:"apc",TahmKench:"tsd",Taliyah:"pc",Talon:"am",Taric:"si",Teemo:"lp",Thresh:"ceds",Tristana:"gm",Trundle:"xh",Tryndamere:"ig",TwistedFate:"c",Twitch:"ga",Udyr:"tm",Urgot:"xc",Varus:"pck",Vayne:"xmg",Veigar:"cg",Velkoz:"pxk",Vex:"dc",Vi:"ec",Viego:"mh",Viktor:"pg",Vladimir:"hig",Volibear:"ecl",Warwick:"hl",Xayah:"di",Xerath:"pk",XinZhao:"el",Yasuo:"wmg",Yone:"mg",Yorick:"g",Yunara:"g",Yuumi:"hsi",Zac:"tech",Zed:"am",Zeri:"mg",Ziggs:"pk",Zilean:"ds",Zoe:"pack",Zyra:"pc"};
+const trait = (n, k) => { const id = champId(n); return !!(id && (TRAITS[id] || "").includes(k)); };
+const isMelee = n => { const id = champId(n), i = id && DD.info && DD.info[id]; return i && i.range ? i.range < 300 : null; };
+const hasTag = (n, t) => { const id = champId(n), i = id && DD.info && DD.info[id]; return !!(i && i.tags.includes(t)); };
+// Warum ist a gut gegen b? Liefert kurze Begründungen (max. 3)
+function counterWhy(a, b){
+  const A = officialName(a), B = officialName(b), r = [], T = k => trait(a, k), E = k => trait(b, k);
+  if (E("m") && T("c")) r.push(`${A} hat verlässlichen CC gegen den mobilen ${B}`);
+  if (E("m") && T("d") && !T("c")) r.push(`${A} hat Peel/Anti-Dash gegen ${B}`);
+  if (E("h") && T("a")) r.push(`Burst von ${A} geht durch die Heilung von ${B}`);
+  if (E("h") && T("x")) r.push(`%-/True-Schaden von ${A} – Heilung hilft ${B} wenig`);
+  if (E("t") && T("x") && !E("h")) r.push(`${A} macht %-Leben-/True-Schaden gegen den Tank ${B}`);
+  if (E("a") && T("t")) r.push(`${B} kann den Tank ${A} nicht bursten`);
+  else if (E("a") && T("s")) r.push(`Schilde von ${A} fangen den Burst von ${B} ab`);
+  if (E("p") && (T("e") || T("m"))) r.push(`${A} kommt per ${T("e") ? "Engage" : "Dash"} an den Poke-Champion ${B} heran`);
+  if (E("e") && T("d")) r.push(`${A} kann den Engage von ${B} abfangen`);
+  else if (E("e") && T("i")) r.push(`${A} kann den Engage von ${B} unverwundbar aussitzen`);
+  if ((E("k") || E("p")) && T("w")) r.push(`${A} blockt die Projektile von ${B}`);
+  if (E("c") && T("u")) r.push(`${A} ist gegen den CC von ${B} geschützt`);
+  if (E("g") && T("l") && !E("l")) r.push(`${A} ist früh stark und bestraft den langsamen Start von ${B}`);
+  const ma = isMelee(a), mb = isMelee(b);
+  if (mb === true && ma === false && !E("m")) r.push(`Fernkampf: ${A} hält den Nahkämpfer ${B} auf Abstand`);
+  if (mb === false && ma === true && (T("m") || T("e")) && !r.some(x => /Dash|Engage/.test(x))) r.push(`${A} kommt mit ${T("e") ? "Engage" : "Dashes"} an den Fernkämpfer ${B} heran`);
+  if (!r.length){
+    if (hasTag(a, "Assassin") && (hasTag(b, "Marksman") || hasTag(b, "Mage")) && !E("m")) r.push(`Assassine gegen wenig mobilen ${hasTag(b, "Marksman") ? "Schützen" : "Magier"}`);
+    else if (hasTag(a, "Tank") && hasTag(b, "Assassin")) r.push(`Tank gegen Assassine – ${B} kommt nicht durch`);
+    else if (hasTag(a, "Fighter") && hasTag(b, "Assassin")) r.push(`Bruiser hält den Burst von ${B} aus`);
+  }
+  return [...new Set(r)].slice(0, 3);
+}
+// ---------- Counter-Import aus kopierten Counter-Seiten (u.gg, op.gg, lolalytics …) ----------
+const ctrSlug = n => { const id = champId(n) || n; return String(id).toLowerCase().replace(/[^a-z0-9]/g, ""); };
+const CTR_SITES = [["u.gg", n => `https://u.gg/lol/champions/${ctrSlug(n) === "monkeyking" ? "wukong" : ctrSlug(n)}/counter`], ["op.gg", n => `https://op.gg/lol/champions/${ctrSlug(n)}/counters`], ["lolalytics", n => `https://lolalytics.com/lol/${ctrSlug(n) === "monkeyking" ? "wukong" : ctrSlug(n)}/counters/`]];
+function parseCounterText(text, enemy){
+  const t = String(text).replace(/ /g, " "), low = t.toLowerCase(), enemyId = champId(enemy), out = [];
+  const names = Object.values(DD.idName).concat(Object.keys(DD.idName)).filter((x, i, a) => a.indexOf(x) === i).sort((a, b) => b.length - a.length);
+  const seen = new Set();
+  for (const nm of names){
+    const id = champId(nm); if (!id || id === enemyId || seen.has(id)) continue;
+    const re = new RegExp(`(^|[^\\p{L}])${nm.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\p{L}])`, "gu");
+    let m;
+    while ((m = re.exec(low))){
+      const after = t.slice(m.index + m[0].length, m.index + m[0].length + 90);
+      const wr = after.match(/(\d{2}(?:[.,]\d{1,2})?)\s?%/);
+      if (!wr) continue;
+      const before = after.slice(0, wr.index); if (names.some(o => o !== nm && champId(o) !== id && before.toLowerCase().includes(o.toLowerCase()) && o.length > 3)) continue; // Prozent gehört zu einem anderen Champion
+      const games = after.match(/(\d{1,3}(?:[.,\s]\d{3})+|\d{2,6})\s*(?:spiele|games|matches|partien)/i);
+      seen.add(id); out.push({ c: DD.idName[id], wr: parseFloat(wr[1].replace(",", ".")), n: games ? +games[1].replace(/[.,\s]/g, "") : 0, at: m.index });
+      break;
+    }
+  }
+  return out.sort((a, b) => a.at - b.at);
+}
+function ctrRowsFrom(parsed, flip){
+  const ours = new Set(uniq(players.flatMap(champsOf)).map(officialName));
+  return parsed.map(x => { const wr = flip ? 100 - x.wr : x.wr; // wr = Siegrate des gelisteten Champions gegen den Gegner
+    return { ...x, wr: +wr.toFixed(2), ours: ours.has(x.c), pick: ours.has(x.c) ? (wr >= 51 ? "good" : wr <= 49 ? "avoid" : "") : "" }; })
+    .sort((a, b) => b.wr - a.wr);
+}
+function openCounterImport(enemy){
+  const name = officialName(enemy || "");
+  if (!champId(name)) return toast("Erst einen gültigen Gegner-Champion eintragen.");
+  const prev = edit && edit.kind === "k" ? { ...edit } : null;
+  edit = { kind: "ki", isNew: false, buf: { enemy: name, text: "", parsed: [], flip: false, rows: [], back: prev } };
+  if (!modal.open) modal.showModal(); renderModal("#ki-text");
+}
+// Zeilen mit Siegrate und „Warum?“ für eine Counter-Karte
+function ctrList(enemy, c, key){
+  const arr = c[key] || []; if (!arr.length) return "";
+  const st = c.stats || {}, good = key === "good";
+  return `<div class="gl"><span class="dot" style="background:var(${good ? "--good" : "--bad"})"></span>${good ? "Gut dagegen" : "Lieber nicht"}</div>
+    <div class="ctr-rows">${arr.map(o => { const why = good ? counterWhy(o, enemy) : counterWhy(enemy, o), x = st[o];
+      return `<div class="ctr-row ${good ? "g" : "b"}"><span class="mini">${initials(o)}${img(iconUrl(o))}</span><div class="ctr-t"><b>${esc(o)}${x ? `<em class="${x.wr >= 50 ? "w" : "l"}">${String(x.wr).replace(".", ",")} %</em>` : ""}</b>${why.length ? `<small>${why.map(esc).join(" · ")}</small>` : `<small class="none">Eigene Erfahrung${x && x.n ? ` · ${x.n.toLocaleString("de-DE")} Spiele` : ""}</small>`}</div></div>`; }).join("")}</div>`;
+}
 function renderCounters(){
   fillOurList();
   const keys = Object.keys(counters).sort((a, b) => a.localeCompare(b, "de"));
@@ -3788,9 +3892,10 @@ function renderCounters(){
     return `<article class="card ${(draft.enemy||[]).includes(k) ? "full" : ""}">
       <div class="card-head"><span class="avatar">${initials(k)}${img(iconUrl(k))}</span><div><h2>${esc(k)}</h2><div class="sub">${(draft.enemy||[]).includes(k) ? "Gerade im Gegnerteam" : "Gegner-Champion"}</div></div></div>
       ${c.note ? `<p class="note" style="margin:.3rem 0 .6rem">${esc(c.note)}</p>` : ""}
-      ${(c.good||[]).length ? `<div class="gl"><span class="dot" style="background:var(--good)"></span>Gut dagegen</div><div class="opts-row">${miniRow(c.good)}</div>` : ""}
-      ${(c.avoid||[]).length ? `<div class="gl"><span class="dot" style="background:var(--bad)"></span>Lieber nicht</div><div class="opts-row">${miniRow(c.avoid)}</div>` : ""}
-      ${canEdit() ? `<div class="card-foot"><button class="btn sm gold" data-action="counter-for" data-c="${esc(k)}">Bearbeiten</button></div>` : ""}
+      ${!champId(k) ? `<p class="ctr-bad">„${esc(k)}“ ist kein bekannter Champion – Name beim Bearbeiten korrigieren.</p>` : ""}
+      ${ctrList(k, c, "good")}${ctrList(k, c, "avoid")}
+      ${c.src ? `<p class="ctr-src">Siegraten: ${esc(c.src)}${c.at ? " · " + esc(new Date(c.at).toLocaleDateString("de-DE")) : ""}</p>` : ""}
+      ${canEdit() ? `<div class="card-foot"><button class="btn sm gold" data-action="counter-for" data-c="${esc(k)}">Bearbeiten</button>${champId(k) ? `<button class="btn sm ghost" data-action="ctr-import" data-c="${esc(k)}">Importieren</button>` : ""}</div>` : ""}
     </article>`; }).join("") || `<p class="loading">Noch keine Counter-Notizen. Leg eine an oder tippe im Draft auf einen Gegner-Champion.</p>`;
 }
 const DTF_DATE = new Intl.DateTimeFormat("de-DE", { day:"2-digit", month:"2-digit", year:"2-digit", hour:"2-digit", minute:"2-digit" }); // einmal anlegen statt pro Aufruf
@@ -5492,6 +5597,7 @@ function renderModal(focusSel){
       <div class="m-head"><h2 id="mTitle">${edit.isNew ? "Neue Counter-Notiz" : "Counter-Notiz: " + esc(edit.orig)}</h2><button class="x" data-action="close" aria-label="Schließen">×</button></div>
       <div class="m-body">
         <div class="field"><label for="k-name">Gegner-Champion</label><input class="inp" id="k-name" list="champList" data-bind="name" value="${esc(b.name)}" autocomplete="off" placeholder="z. B. Malphite"></div>
+        <div class="ki-cta"><span>Siegraten von u.gg, op.gg oder lolalytics übernehmen?</span><button class="btn sm gold" data-action="ctr-import" data-c="${esc(b.name || "")}">Importieren</button></div>
         <div class="egroup"><span class="flabel" style="color:var(--good)">Gut dagegen</span>${list(b.good, "good")}</div>
         <div class="egroup"><span class="flabel" style="color:var(--bad)">Lieber nicht picken</span>${list(b.avoid, "avoid")}</div>
         <div class="field"><label for="k-note">Notiz</label><input class="inp" id="k-note" data-bind="note" value="${esc(b.note)}" maxlength="200" placeholder="z. B. Früh Ult abwarten, dann engagen"></div>
@@ -5533,6 +5639,28 @@ function renderModal(focusSel){
     renderLiveGrid(); return;
   } else if (edit.kind === "md"){
     modal.innerHTML = mdHtml();
+  } else if (edit.kind === "ki"){
+    const rows = b.rows || [], ours = rows.filter(r => r.ours), rest = rows.filter(r => !r.ours);
+    const row = (r, i) => { const why = r.pick === "avoid" ? counterWhy(b.enemy, r.c) : counterWhy(r.c, b.enemy);
+      return `<div class="ki-row ${r.pick}"><span class="mini">${initials(r.c)}${img(iconUrl(r.c))}</span><div class="ki-t"><b>${esc(r.c)}</b><small>${why[0] ? esc(why[0]) : r.n ? r.n.toLocaleString("de-DE") + " Spiele" : ""}</small></div>
+        <span class="ki-wr ${r.wr >= 50 ? "w" : "l"}">${String(r.wr).replace(".", ",")} %</span>
+        <select data-ki="${rows.indexOf(r)}" aria-label="Einordnung ${esc(r.c)}"><option value="" ${!r.pick ? "selected" : ""}>–</option><option value="good" ${r.pick === "good" ? "selected" : ""}>Gut dagegen</option><option value="avoid" ${r.pick === "avoid" ? "selected" : ""}>Lieber nicht</option></select></div>`; };
+    modal.innerHTML = `
+      <div class="m-head"><h2 id="mTitle" style="display:flex;align-items:center;gap:.5rem"><span class="mini" style="flex:none">${initials(b.enemy)}${img(iconUrl(b.enemy))}</span>Counter importieren: ${esc(b.enemy)}</h2><button class="x" data-action="close" aria-label="Schließen">×</button></div>
+      <div class="m-body">
+        ${!rows.length ? `<div class="pl-steps"><b>So geht's:</b><ol>
+          <li>Counter-Seite öffnen: ${CTR_SITES.map(([n, f]) => `<a class="btn sm gold" href="${esc(f(b.enemy))}" target="_blank" rel="noopener">${n} ↗</a>`).join(" ")}</li>
+          <li>Dort <kbd>Strg</kbd>+<kbd>A</kbd> und <kbd>Strg</kbd>+<kbd>C</kbd> (am Handy: alles markieren → Kopieren)</li>
+          <li>Hier einfügen – das Board erkennt Champions und Siegraten.</li></ol></div>
+          <textarea class="inp" id="ki-text" rows="5" placeholder="Kopierte Counter-Seite hier einfügen …">${esc(b.text || "")}</textarea>
+          ${b.text && !rows.length ? `<p class="small-hint" style="color:var(--warn)">Keine Champions mit Siegrate erkannt. Bitte die ganze Seite kopieren (mit Prozentwerten).</p>` : ""}`
+        : `<div class="ki-head"><span>${rows.length} Champions erkannt · ${ours.length} aus euren Pools</span>
+            <label class="ki-flip"><input type="checkbox" data-ki-flip ${b.flip ? "checked" : ""}> Prozent sind die Siegrate von ${esc(b.enemy)}</label></div>
+          <p class="small-hint" style="margin:0 0 .5rem">Vorbelegt: eure Champions ab 51 % → „Gut dagegen“, bis 49 % → „Lieber nicht“. Passt die Richtung nicht (z. B. Riven 60 % obwohl sie verliert), Haken oben setzen.</p>
+          ${ours.length ? `<span class="flabel">Eure Champions</span><div class="ki-list">${ours.map(row).join("")}</div>` : `<p class="hint">Keiner eurer Pool-Champions ist dabei.</p>`}
+          ${rest.length ? `<details class="ki-more"><summary>Weitere Champions (${rest.length})</summary><div class="ki-list">${rest.map(row).join("")}</div></details>` : ""}`}
+      </div>
+      <div class="m-foot">${rows.length ? `<button class="btn gold" data-action="ki-save">Übernehmen</button><button class="btn" data-action="ki-reset">Neu einfügen</button>` : ""}<button class="btn" data-action="close">Abbrechen</button></div>`;
   } else if (edit.kind === "pl"){
     modal.innerHTML = `
       <div class="m-head"><h2 id="mTitle">Spieler zuordnen${b.name ? " · " + esc(b.name) : ""}</h2><button class="x" data-action="close" aria-label="Schließen">×</button></div>
@@ -5736,6 +5864,9 @@ function heSummary(){
   el.querySelector(".hs-picks").innerHTML = b.team.map(x => { const ok = x.champ && champId(x.champ); return `<span class="mini${ok ? "" : " he-empty"}">${ok ? initials(officialName(x.champ)) + img(iconUrl(x.champ)) : "?"}</span>`; }).join("");
 }
 modal.addEventListener("input", () => { if (edit && edit.kind === "he") requestAnimationFrame(heSummary); });
+// Counter-Seite eingefügt → erkennen
+modal.addEventListener("paste", e => { if (!edit || edit.kind !== "ki" || e.target.id !== "ki-text") return; setTimeout(() => { const b = edit.buf; b.text = e.target.value; b.parsed = parseCounterText(b.text, b.enemy); b.rows = ctrRowsFrom(b.parsed, b.flip); renderModal(); }, 0); });
+modal.addEventListener("input", e => { if (edit && edit.kind === "ki" && e.target.id === "ki-text"){ clearTimeout(edit.kiT); const el = e.target; edit.kiT = setTimeout(() => { if (!edit || edit.kind !== "ki") return; const b = edit.buf; b.text = el.value; if (b.text.length > 200){ b.parsed = parseCounterText(b.text, b.enemy); b.rows = ctrRowsFrom(b.parsed, b.flip); if (b.rows.length) renderModal(); } }, 600); } });
 // Teamseite eingefügt → sofort zuordnen
 modal.addEventListener("paste", e => { if (!edit || edit.kind !== "ids" || e.target.id !== "ids-text") return; setTimeout(() => { const txt = e.target.value; edit.buf.text = txt; const found = extractRiotIds(txt); if (found.length > 5 || (found.length >= 3 && found.some(x => x.hint)) || (edit.buf.pl && found.length)) openPlAssign({ players: found }); }, 0); });
 modal.addEventListener("input", e => { if (edit && edit.kind === "pn" && e.target.id === "pn-q"){ pn.q = e.target.value; const l = modal.querySelector("#pn-ov"); if (l) l.innerHTML = pnOverview(); } });
@@ -5989,13 +6120,29 @@ document.addEventListener("click", async e => {
     case "new-counter": openEditor("k"); break;
     case "k-add": { const key = a.dataset.key; const inp = modal.querySelector(`[data-kadd="${key}"]`); if (addChampTo(b[key], inp.value)) renderModal(`[data-kadd="${key}"]`); break; }
     case "k-del": b[a.dataset.key].splice(+a.dataset.oi, 1); renderModal(); break;
+    case "ctr-import": { const c = a.dataset.c || (edit && edit.kind === "k" ? edit.buf.name : ""); openCounterImport(c); break; }
+    case "ki-reset": b.text = ""; b.parsed = []; b.rows = []; renderModal("#ki-text"); break;
+    case "ki-save": {
+      const name = b.enemy, cur = counters[name] || { good: [], avoid: [], note: "" }, stats = { ...(cur.stats || {}) };
+      b.rows.forEach(r => { stats[r.c] = { wr: r.wr, n: r.n || 0 }; });
+      const pick = k => b.rows.filter(r => r.pick === k).map(r => r.c);
+      const good = uniq([...(cur.good || []).filter(c => !pick("avoid").includes(c)), ...pick("good")]);
+      const avoid = uniq([...(cur.avoid || []).filter(c => !pick("good").includes(c)), ...pick("avoid")]);
+      // nur Siegraten der eingetragenen Champions speichern (klein halten)
+      const keep = Object.fromEntries(Object.entries(stats).filter(([c]) => good.includes(c) || avoid.includes(c)));
+      const map = { ...counters, [name]: { ...cur, good, avoid, stats: keep, src: "kopierte Counter-Seite", at: Date.now() } };
+      counters = map; queueSet("config/counters", { map });
+      if (b.back){ edit = { ...b.back, buf: { ...b.back.buf, good: [...good], avoid: [...avoid] } }; renderModal(); } else { closeEditor(); render(); }
+      toast(`${pick("good").length} gut, ${pick("avoid").length} lieber nicht übernommen.`); break;
+    }
     case "save-counter": {
       modal.querySelectorAll("[data-kadd]").forEach(inp => addChampTo(b[inp.dataset.kadd], inp.value));
       const name = officialName(b.name || "");
       if (!name) return toast("Bitte den Gegner-Champion eintragen.");
       const map = { ...counters };
       if (edit.orig && edit.orig !== name) delete map[edit.orig];
-      map[name] = { good: b.good, avoid: b.avoid, note: (b.note || "").trim() };
+      const old = counters[edit.orig] || counters[name] || {};
+      map[name] = { good: b.good, avoid: b.avoid, note: (b.note || "").trim(), ...(old.stats ? { stats: old.stats, src: old.src || "", at: old.at || 0 } : {}) };
       counters = map; closeEditor(); render(); queueSet("config/counters", { map }); toast("Gespeichert."); break;
     }
     case "delete-counter": {
@@ -6471,6 +6618,8 @@ document.addEventListener("input", e => {
 });
 document.addEventListener("change", e => {
   const t = e.target;
+  if (t.dataset && t.dataset.ki != null && edit && edit.kind === "ki"){ edit.buf.rows[+t.dataset.ki].pick = t.value; renderModal(); return; }
+  if (t.dataset && "kiFlip" in t.dataset && edit && edit.kind === "ki"){ const b = edit.buf; b.flip = t.checked; b.rows = ctrRowsFrom(b.parsed, b.flip); renderModal(); return; }
   if (t.dataset && t.dataset.mdCheck && viewId){ const k = t.dataset.mdCheck, v = t.checked; mutTeam(viewId, x => { x.check = { ...(x.check || {}), [k]: v }; }); if (edit && edit.kind === "md") renderModal(); return; }
   if (t.dataset && t.dataset.plRole != null && edit && edit.kind === "pl"){ edit.buf.players[+t.dataset.plRole].role = t.value; renderModal(); return; }
   if (t.dataset && t.dataset.subSwap && t.value && viewId){ const k = t.dataset.subSwap, r = t.value; mutTeam(viewId, x => { const a = roleOf(x, r), b = roleOf(x, k); x.roles[r] = b; x.roles[k] = a; }); toast(`Getauscht: Ersatz ist jetzt ${r}.`); return; }
