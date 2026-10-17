@@ -3445,8 +3445,10 @@ const TIER_HEX = { IRON:"#8a7f7a", BRONZE:"#c08a62", SILVER:"#aab6c6", GOLD:"#e2
 const imgCache = new Map();
 function loadImg(url){
   if (!url) return Promise.resolve(null);
-  if (!imgCache.has(url)) imgCache.set(url, new Promise(res => { const im = new Image(); im.crossOrigin = "anonymous"; const t = setTimeout(() => res(null), 4000);
-    im.onload = () => { clearTimeout(t); res(im); }; im.onerror = () => { clearTimeout(t); res(null); }; im.src = url; }));
+  if (!imgCache.has(url)) imgCache.set(url, new Promise(res => { const im = new Image(); im.crossOrigin = "anonymous"; const t = setTimeout(() => res(null), 8000);
+    // Remote-Icons mit eigenem Query laden: so wird die ohne CORS gecachte <img>-Version nicht wiederverwendet (sonst scheitert das Zeichnen auf Canvas)
+    const src = /^https?:/.test(url) ? url + (url.includes("?") ? "&" : "?") + "cors=1" : url;
+    im.onload = () => { clearTimeout(t); res(im); }; im.onerror = () => { clearTimeout(t); res(null); }; im.src = src; }));
   return imgCache.get(url);
 }
 function rr(c, x, y, w, h, r){ c.beginPath(); if (c.roundRect) c.roundRect(x, y, w, h, r); else c.rect(x, y, w, h); }
@@ -3461,6 +3463,7 @@ function cpill(c, s, x, y, bg, fg, size = 15){
   rr(c, x, y, w, h, h / 2); c.fillStyle = bg; c.fill(); ctext(c, s, x + 11, y + size + 3, { size, weight: 800, color: fg }); return w;
 }
 async function cchamp(c, name, x, y, s, o = {}){
+  if (name && !DD.v) await ddReady; // ohne Data-Dragon-Version wären alle Icons leer
   c.save(); rr(c, x, y, s, s, s * .2); c.clip();
   c.fillStyle = "#1c2c48"; c.fillRect(x, y, s, s);
   const im = name ? await loadImg(iconUrl(name)) : null;

@@ -198,9 +198,13 @@ def main():
     ap.add_argument("--limit", default="20,100", help="Personal Key: 20,100 · Production Key z. B. 500,30000")
     ap.add_argument("--out", default=os.path.join(HERE, "counters.json"))
     ap.add_argument("--nur-export", action="store_true", help="nichts laden, nur counters.json schreiben")
+    ap.add_argument("--neu", action="store_true", help="komplett von vorne: crawl.db löschen und neu sammeln")
     args = ap.parse_args()
 
-    db = db_open(os.path.join(HERE, "crawl.db"))
+    dbpath = os.path.join(HERE, "crawl.db")
+    if args.neu and os.path.exists(dbpath):
+        os.remove(dbpath); print("Neu: crawl.db gelöscht, es wird von vorne gesammelt.")
+    db = db_open(dbpath)
     patch = "" if args.alle_patches else (args.patch or current_patch())
     leagues = [x.strip().lower() for x in args.ligen.split(",") if x.strip()]
     if "alle" in leagues or "all" in leagues:
