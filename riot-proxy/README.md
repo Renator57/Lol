@@ -121,7 +121,9 @@ Darauf ist alles abgestimmt:
 - **Mastery · alle Saisons**: die 10 Champions mit den meisten Mastery-Punkten
   (1 Aufruf pro Spieler, 6 Std. gecacht).
 
-Braucht die `worker.js` ab **Version 11**.
+Braucht die `worker.js` ab **Version 12** (Version 11 scheitert im Cloudflare-Gratis-Tarif an der
+Grenze von 50 Unteranfragen pro Aufruf; ab Version 12 holt der Worker höchstens 30 neue Spiele pro
+Aufruf und merkt sich die Spiele je Spieler).
 
 ## Duo-Queue (Verlauf → Duo)
 

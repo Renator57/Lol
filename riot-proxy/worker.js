@@ -33,7 +33,7 @@ const QUEUES = {
   tournament: "type=tournament", // Turnier-Codes (z. B. Prime League)
   all:        "",
 };
-const VERSION = 11;          // vom Board geprüft (Einstellungen → Testen)
+const VERSION = 12;          // vom Board geprüft (Einstellungen → Testen)
 const MAX_COUNT = 100;         // „Saison“ im Board: bis 100 Spiele seit Saisonstart
 // Cloudflare-eigener Standard-Cache (caches.default fehlt in den Browser-Typen)
 const edgeCache = () => /** @type {Cache} */ (/** @type {any} */ (caches).default);
@@ -42,7 +42,11 @@ const CACHE_ACCOUNT = 2592000; // Riot-ID → PUUID: 30 Tage (PUUID ändert sich
 const CACHE_IDS = 300;         // Liste der letzten Spiele: 5 Min.
 const CACHE_LEAGUE = 1800;     // Rang: 30 Min.
 const CACHE_MATCH = 2592000;
-const CACHE_MASTERY = 21600;   // Champion-Mastery: 6 Std.   // Match-Details ändern sich nie: 30 Tage
+const CACHE_MASTERY = 21600;   // Champion-Mastery: 6 Std.
+// Cloudflare (Gratis-Tarif) erlaubt höchstens 50 Unteranfragen pro Aufruf → neue Spiele pro Aufruf begrenzen,
+// den Rest lädt das Board automatisch nach
+const MAX_NEW = 30;
+const STORE_MAX = 300;        // gemerkte Spiele pro Spieler   // Match-Details ändern sich nie: 30 Tage
 
 export default {
   async fetch(req, env, ctx) {
@@ -105,26 +109,37 @@ export default {
         [ids, leagues, mastery] = await load(acc);
       }
       const puuid = acc.puuid;
-      // Erst alles aus dem Cache holen (kostet kein Riot-Limit) …
-      const urls = ids.map(mid => `${api(reg.regional)}/lol/match/v5/matches/${mid}`);
-      const matches = await Promise.all(urls.map(u => cached(u, kt)));
-      // … dann nur so viele neue Spiele laden, wie ins 2-Minuten-Budget passen
-      const missing = urls.map((u, i) => (matches[i] ? -1 : i)).filter(i => i >= 0);
-      const allowed = Math.min(missing.length, budgetLeft(reg.regional));
-      await pool(missing.slice(0, allowed), 4, async i => {
+      // Pro Spieler EIN Cache-Eintrag mit den kompakten Zeilen aller schon geladenen Spiele
+      // (statt je Spiel ~50 KB einzeln) – spart Unteranfragen und CPU
+      const storeReq = new Request(`https://cache.local/pm1/${kt}/${puuid}`);
+      let store = {};
+      try { const c = await edgeCache().match(storeReq); if (c) store = await c.json(); } catch (e) { store = {}; }
+      const missing = ids.filter(mid => !(mid in store));
+      const n = Math.min(missing.length, budgetLeft(reg.regional), MAX_NEW);
+      let added = 0;
+      await pool(missing.slice(0, n), 4, async mid => {
         if (budgetLeft(reg.regional) <= 0) return; // Budget unterwegs aufgebraucht
-        matches[i] = await riot(urls[i], CACHE_MATCH, "Match").catch(() => null);
+        const m = await riot(`${api(reg.regional)}/lol/match/v5/matches/${mid}`, 0, "Match").catch(() => null);
+        if (!m) return;
+        const info = m.info || {}, p = (info.participants || []).find(x => x.puuid === puuid);
+        store[mid] = p ? [mid, p.championName, p.win ? 1 : 0, p.teamPosition || p.individualPosition || "", p.kills, p.deaths, p.assists, info.gameStartTimestamp || info.gameCreation || 0, info.gameDuration || 0, info.queueId || 0] : 0;
+        added++;
       });
-      const loaded = matches.filter(Boolean);
-      const partial = loaded.length < ids.length;
-      const result = summarize(acc, puuid, loaded, leagues, { region, queue, requested: ids.length });
+      if (added) {
+        const keep = Object.entries(store).sort((x, y) => (y[1] ? y[1][7] : 0) - (x[1] ? x[1][7] : 0)).slice(0, STORE_MAX);
+        ctx.waitUntil(edgeCache().put(storeReq, new Response(JSON.stringify(Object.fromEntries(keep)), { headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${CACHE_MATCH}` } })));
+      }
+      const rows = ids.map(mid => store[mid]).filter(Boolean);
+      const loadedN = ids.filter(mid => mid in store).length;
+      const partial = loadedN < ids.length;
+      const result = summarize(acc, rows, leagues, { region, queue, requested: ids.length });
       // Mastery: [Champion-Key, Punkte, Stufe, zuletzt gespielt]
       result.mastery = (Array.isArray(mastery) ? mastery : []).map(m => [m.championId, m.championPoints, m.championLevel, m.lastPlayTime]);
       result.season = season;
       result.partial = partial;
-      result.loaded = loaded.length;
+      result.loaded = loadedN;
       result.requested = ids.length;
-      if (partial) result.retryIn = retryEstimate(reg.regional);
+      if (partial) result.retryIn = budgetLeft(reg.regional) > 0 ? 2 : retryEstimate(reg.regional); // nur Häppchen-Grenze → gleich weiter
       const res = json(result, 200, partial ? { "Cache-Control": "no-store" } : { "Cache-Control": `public, max-age=${CACHE_RESULT}` });
       if (!partial) ctx.waitUntil(edgeCache().put(cacheKey, res.clone()));
       return withCors(res, cors);
@@ -136,7 +151,7 @@ export default {
         : status === 400 ? "Riot lehnt die Anfrage ab" + detail + "."
         : status === 429 ? "Riot-Limit erreicht."
         : status === 401 || status === 403 ? "API-Key ungültig oder abgelaufen."
-        : "Riot-API nicht erreichbar.";
+        : e.status ? "Riot-API nicht erreichbar." : "Worker-Fehler: " + String(e && e.message || e).slice(0, 120);
       const retryAfter = status === 429 ? (e.retryAfter || retryEstimate(reg.regional)) : 0;
       return json({ error: msg, status, ...(retryAfter ? { retryAfter } : {}) }, status === 404 || status === 400 ? status : status === 429 ? 429 : 502, { ...cors, ...(retryAfter ? { "Retry-After": String(retryAfter) } : {}) });
     }
@@ -217,27 +232,25 @@ class RiotError extends Error {
   }
 }
 
-function summarize(acc, puuid, matches, leagues, meta) {
+// rows: [Match-ID, Champion, Sieg, Position, K, D, A, Start, Dauer (s), Queue] – neueste zuerst
+function summarize(acc, rows, leagues, meta) {
   const champs = {}, positions = {};
   let games = 0, wins = 0, k = 0, d = 0, a = 0;
   const recent = [], list = [];
-  for (const m of matches) {
-    const info = m.info || {};
-    if (info.gameDuration && info.gameDuration < 300) continue; // Remakes ignorieren
-    const p = (info.participants || []).find(x => x.puuid === puuid);
-    if (!p) continue;
-    games++; if (p.win) wins++;
-    k += p.kills; d += p.deaths; a += p.assists;
-    const pos = p.teamPosition || p.individualPosition || "";
-    if (pos && pos !== "Invalid") positions[pos] = (positions[pos] || 0) + 1;
-    const c = champs[p.championName] || (champs[p.championName] = { id: p.championName, games: 0, wins: 0, k: 0, d: 0, a: 0, pos: {} });
-    c.games++; if (p.win) c.wins++;
-    c.k += p.kills; c.d += p.deaths; c.a += p.assists;
+  for (const r of rows) {
+    const [mid, champ, win, pos0, kk, dd, aa, start, dur, queueId] = r;
+    if (dur && dur < 300) continue; // Remakes ignorieren
+    const pos = pos0 && pos0 !== "Invalid" ? pos0 : "";
+    games++; if (win) wins++;
+    k += kk; d += dd; a += aa;
+    if (pos) positions[pos] = (positions[pos] || 0) + 1;
+    const c = champs[champ] || (champs[champ] = { id: champ, games: 0, wins: 0, k: 0, d: 0, a: 0, pos: {} });
+    c.games++; if (win) c.wins++;
+    c.k += kk; c.d += dd; c.a += aa;
     if (pos) c.pos[pos] = (c.pos[pos] || 0) + 1;
-    // kompakte Spieleliste: erkennt im Board gemeinsame Spiele (Duos) der Gegner
-    // [id, Champion, Sieg, Position, K, D, A, Start, Dauer (s), Queue] – Board erkennt daraus Duos (eigene und gegnerische)
-    if (m.metadata && m.metadata.matchId) list.push([m.metadata.matchId, p.championName, p.win ? 1 : 0, pos, p.kills, p.deaths, p.assists, info.gameStartTimestamp || info.gameCreation || 0, info.gameDuration || 0, info.queueId || 0]);
-    if (recent.length < 10) recent.push({ champ: p.championName, win: !!p.win, k: p.kills, d: p.deaths, a: p.assists, pos, queue: info.queueId, at: info.gameStartTimestamp || info.gameCreation, dur: info.gameDuration });
+    // kompakte Spieleliste: erkennt im Board gemeinsame Spiele (Duos)
+    list.push([mid, champ, win ? 1 : 0, pos, kk, dd, aa, start, dur, queueId]);
+    if (recent.length < 10) recent.push({ champ, win: !!win, k: kk, d: dd, a: aa, pos, queue: queueId, at: start, dur });
   }
   return {
     riotId: `${acc.gameName}#${acc.tagLine}`,
