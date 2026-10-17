@@ -1,7 +1,7 @@
 // Riot-API-Proxy für das Draft Board (Cloudflare Worker)
 // Hält den Riot-API-Key geheim und fasst die letzten Spiele eines Spielers zusammen.
 //
-//   GET /?id=Name%23TAG&region=euw&queue=ranked&count=20
+//   GET /?id=Name%23TAG&region=euw&queue=ranked&count=20[&season=1]   season=1: nur Spiele seit Saisonstart (1. Januar)
 //   GET /health
 //   GET /live?ids=Name%23TAG,Name2%23TAG&region=euw   laufendes Spiel (Spectator-V5) des ersten Spielers, der gerade spielt
 //   GET /patch?v=26.20&lang=de-de   offizielle Patchnotes (leagueoflegends.com erlaubt kein CORS)
@@ -33,15 +33,16 @@ const QUEUES = {
   tournament: "type=tournament", // Turnier-Codes (z. B. Prime League)
   all:        "",
 };
-const VERSION = 10;          // vom Board geprüft (Einstellungen → Testen)
-const MAX_COUNT = 30;
+const VERSION = 11;          // vom Board geprüft (Einstellungen → Testen)
+const MAX_COUNT = 100;         // „Saison“ im Board: bis 100 Spiele seit Saisonstart
 // Cloudflare-eigener Standard-Cache (caches.default fehlt in den Browser-Typen)
 const edgeCache = () => /** @type {Cache} */ (/** @type {any} */ (caches).default);
 const CACHE_RESULT = 600;      // fertige Antwort: 10 Min.
 const CACHE_ACCOUNT = 2592000; // Riot-ID → PUUID: 30 Tage (PUUID ändert sich nie)
 const CACHE_IDS = 300;         // Liste der letzten Spiele: 5 Min.
 const CACHE_LEAGUE = 1800;     // Rang: 30 Min.
-const CACHE_MATCH = 2592000;   // Match-Details ändern sich nie: 30 Tage
+const CACHE_MATCH = 2592000;
+const CACHE_MASTERY = 21600;   // Champion-Mastery: 6 Std.   // Match-Details ändern sich nie: 30 Tage
 
 export default {
   async fetch(req, env, ctx) {
@@ -67,6 +68,8 @@ export default {
     const region = (url.searchParams.get("region") || "euw").toLowerCase();
     const queue = (url.searchParams.get("queue") || "ranked").toLowerCase();
     const count = Math.min(MAX_COUNT, Math.max(1, parseInt(url.searchParams.get("count") || "20", 10) || 20));
+    const season = url.searchParams.get("season") === "1";
+    const seasonStart = Math.floor(Date.UTC(new Date().getUTCFullYear(), 0, 1) / 1000);
     const reg = REGIONS[region];
     if (!reg) return json({ error: "Unbekannte Region." }, 400, cors);
     if (!(queue in QUEUES)) return json({ error: "Unbekannter Queue-Filter." }, 400, cors);
@@ -78,7 +81,7 @@ export default {
     // fertige Antwort aus dem Cache?
     // PUUIDs sind je API-Key verschlüsselt: Cache deshalb pro Key trennen (sonst 400 nach Key-Wechsel)
     const kt = await keyTag(env.RIOT_API_KEY);
-    const cacheKey = new Request(`https://cache.local/v4/${kt}/${region}/${queue}/${count}/${encodeURIComponent(name.toLowerCase() + "#" + tag.toLowerCase())}`);
+    const cacheKey = new Request(`https://cache.local/v5/${kt}/${region}/${queue}/${count}${season ? "s" : ""}/${encodeURIComponent(name.toLowerCase() + "#" + tag.toLowerCase())}`);
     const hit = await edgeCache().match(cacheKey);
     if (hit) return withCors(hit, cors);
 
@@ -89,16 +92,17 @@ export default {
       let acc = await riot(accUrl, CACHE_ACCOUNT, "Konto");
       const q = QUEUES[queue];
       const load = a => Promise.all([
-        riot(`${api(reg.regional)}/lol/match/v5/matches/by-puuid/${a.puuid}/ids?start=0&count=${count}${q ? "&" + q : ""}`, CACHE_IDS, "Spieleliste"),
+        riot(`${api(reg.regional)}/lol/match/v5/matches/by-puuid/${a.puuid}/ids?start=0&count=${count}${q ? "&" + q : ""}${season ? "&startTime=" + seasonStart : ""}`, CACHE_IDS, "Spieleliste"),
         riot(`${api(reg.platform)}/lol/league/v4/entries/by-puuid/${a.puuid}`, CACHE_LEAGUE, "Rang").catch(() => []),
+        riot(`${api(reg.platform)}/lol/champion-mastery/v4/champion-masteries/by-puuid/${a.puuid}/top?count=10`, CACHE_MASTERY, "Mastery").catch(() => []),
       ]);
-      let ids, leagues;
-      try { [ids, leagues] = await load(acc); }
+      let ids, leagues, mastery;
+      try { [ids, leagues, mastery] = await load(acc); }
       catch (e) {
         // veraltete PUUID im Cache? Konto einmal frisch abfragen und erneut versuchen
         if (e.status !== 400 && e.status !== 404 && e.status !== 403) throw e;
         acc = await riot(accUrl, CACHE_ACCOUNT, "Konto", true);
-        [ids, leagues] = await load(acc);
+        [ids, leagues, mastery] = await load(acc);
       }
       const puuid = acc.puuid;
       // Erst alles aus dem Cache holen (kostet kein Riot-Limit) …
@@ -114,6 +118,9 @@ export default {
       const loaded = matches.filter(Boolean);
       const partial = loaded.length < ids.length;
       const result = summarize(acc, puuid, loaded, leagues, { region, queue, requested: ids.length });
+      // Mastery: [Champion-Key, Punkte, Stufe, zuletzt gespielt]
+      result.mastery = (Array.isArray(mastery) ? mastery : []).map(m => [m.championId, m.championPoints, m.championLevel, m.lastPlayTime]);
+      result.season = season;
       result.partial = partial;
       result.loaded = loaded.length;
       result.requested = ids.length;

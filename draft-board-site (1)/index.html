@@ -757,6 +757,14 @@ dialog:has(.pe-body){width:min(800px,calc(100vw - 1.5rem))}
 .pc-actions .on-danger{background:rgba(255,106,92,.22);border-color:rgba(255,106,92,.55);color:#ff8b7f}
 .pc-actions .on-ban{background:rgba(157,134,255,.24);border-color:rgba(157,134,255,.55);color:#cfc4ff}
 .pc-actions .on-exp{background:rgba(215,180,106,.24);border-color:var(--gold-dim);color:var(--gold-hi)}
+.riot-old{font-size:.72rem;font-weight:800;color:var(--warn);white-space:nowrap}
+.rms{display:flex;flex-wrap:wrap;gap:.35rem}
+.rm{display:flex;align-items:center;gap:.4rem;padding:.25rem .55rem .25rem .25rem;border-radius:999px;border:1px solid var(--line);background:rgba(6,10,18,.35)}
+.rm .mini{width:26px;height:26px}
+.rm-t{display:flex;flex-direction:column;line-height:1.1}
+.rm-t b{font-size:.76rem}
+.rm-t small{font-size:.66rem;color:var(--muted);font-weight:700}
+.rm.in{border-color:rgba(215,180,106,.45)}
 .pick-card.is-sug .pc-art{display:block;width:100%;padding:0;font:inherit;color:inherit;border-style:dashed;border-color:rgba(255,122,107,.45);opacity:.78;cursor:pointer;transition:opacity .15s,border-color .15s,transform .15s}
 .pick-card.is-sug .pc-img{filter:saturate(.6) brightness(.8)}
 .pick-card.is-sug:hover .pc-art{opacity:1;border-color:#ff7a6b}
@@ -2889,6 +2897,8 @@ const EV_TYPE = { liga: "Liga", scrim: "Scrim", ranked: "Ranked", training: "Tra
 let discordUrl = "", discordAuto = false, remindOn = false, remindLead = 60;
 // ---------- Riot-API (über eigenen Proxy, siehe riot-proxy/) ----------
 let riotUrl = "", riotQueue = "ranked", riotCount = 15;
+// 50/100 = ganze Saison (seit 1. Januar), braucht worker.js ab Version 11
+const RIOT_COUNTS = [[10, "10 Spiele"], [15, "15 Spiele (schnell)"], [20, "20 Spiele"], [30, "30 Spiele"], [50, "Saison · bis 50 Spiele"], [100, "Saison · bis 100 Spiele"]];
 const riotBusy = new Set();
 const RIOT_QUEUES = [["ranked","Ranked"],["solo","Solo/Duo"],["flex","Flex"],["tournament","Turnier"],["all","Alle"]];
 const RIOT_POS = { TOP:"Top", JUNGLE:"Jungle", MIDDLE:"Mid", BOTTOM:"Bot", UTILITY:"Support" };
@@ -2913,7 +2923,9 @@ function riotCompact(d){
     kda: d.kda || null,
     recent: (d.recent || []).map(x => ({ w: x.win ? 1 : 0, c: DD.idName[x.champ] || x.champ || "", k: x.k, d: x.d, a: x.a })),
     m: (Array.isArray(d.matches) ? d.matches : []).slice(0, 30).map(x => ({ i: String(x[0]), c: DD.idName[x[1]] || x[1] || "", w: x[2] ? 1 : 0 })),
-    part: d.partial && d.requested ? { got: N(d.loaded), of: N(d.requested) } : null
+    part: d.partial && d.requested ? { got: N(d.loaded), of: N(d.requested) } : null,
+    ss: d.season ? 1 : 0,
+    ms: (Array.isArray(d.mastery) ? d.mastery : []).slice(0, 8).map(x => ({ c: DD.byKey[x[0]] || String(x[0]), p: N(x[1]), lv: N(x[2]), t: N(x[3]) }))
   };
 }
 // Personal Key: höchstens 100 Riot-Aufrufe in 2 Min. Liefert der Proxy nur einen Teil,
@@ -2938,7 +2950,7 @@ async function riotFetchRole(teamId, r){
   const key = teamId + ":" + r;
   riotBusy.add(key); renderScout();
   let d = null, err = null;
-  try { d = await riotFetch("", { id: pid.name + "#" + pid.tag, region: t.region || "euw", queue: riotQueue, count: riotCount }); } catch(e){ err = e; }
+  try { d = await riotFetch("", { id: pid.name + "#" + pid.tag, region: t.region || "euw", queue: riotQueue, count: riotCount, ...(riotCount >= 50 ? { season: 1 } : {}) }); } catch(e){ err = e; }
   riotBusy.delete(key);
   if (d){
     const oldProxy = d.partial && d.requested == null; // erste Proxy-Version meldet keinen Fortschritt
@@ -2994,7 +3006,8 @@ function riotView(rd){
   return { at: N(rd.at), q: String(rd.q || ""), id: String(rd.id || ""), games: rd.games == null ? null : N(rd.games), wins: N(rd.wins), pos, rank: rk, champs, kda: kd,
     recent: (Array.isArray(rd.recent) ? rd.recent : []).map(x => x && typeof x === "object" ? { w: !!x.w, c: x.c ? officialName(String(x.c)) : "", k: x.k == null ? null : N(x.k), d: N(x.d), a: N(x.a) } : { w: !!x, c: "", k: null }),
     m: (Array.isArray(rd.m) ? rd.m : []).filter(x => x && x.i).map(x => ({ i: String(x.i), c: officialName(String(x.c || "?")), w: !!x.w })),
-    part: rd.part && typeof rd.part === "object" ? { got: N(rd.part.got), of: N(rd.part.of) } : null, err: rd.err ? String(rd.err) : "", errAt: N(rd.errAt) };
+    part: rd.part && typeof rd.part === "object" ? { got: N(rd.part.got), of: N(rd.part.of) } : null, err: rd.err ? String(rd.err) : "", errAt: N(rd.errAt),
+    season: !!rd.ss, ms: (Array.isArray(rd.ms) ? rd.ms : []).filter(x => x && x.c && !/^\d+$/.test(String(x.c))).map(x => ({ c: officialName(String(x.c)), p: N(x.p), lv: N(x.lv), t: N(x.t) })) };
 }
 // Gehören die Daten noch zur eingetragenen Riot-ID?
 function riotFresh(sr, t, rd){
@@ -3163,9 +3176,12 @@ function riotBlock(t, r, sr, ed){
       <div class="rc-bar" aria-hidden="true"><i style="width:${pct(c.w, c.g)}%"></i></div>
       <div class="rc-sub"><b class="${pct(c.w, c.g) >= 50 ? "w" : "l"}">${pct(c.w, c.g)}%</b><span>${kda(c)} KDA</span>${c === mainC ? `<span class="rc-kda"><span class="kk">${(c.k / c.g).toFixed(1)}</span>/<span class="kd">${(c.d / c.g).toFixed(1)}</span>/<span class="ka">${(c.a / c.g).toFixed(1)}</span></span>` : ""}</div>
     </div>`;
-  const list = big.length ? `<div class="rsec"><span>Meistgespielt</span><i></i>${offRole ? `<span class="rwarn" title="Meistgespielte Position in den geladenen Spielen">⚠ spielt meist ${RIOT_POS[mainPos[0]]}</span>` : ""}${rd.at ? `<span class="rh-time" title="Geladen ${esc(new Date(rd.at).toLocaleString("de-DE"))}">${relTime(rd.at)}</span>` : ""}</div><div class="rcs">${big.map(card).join("")}</div>
+  const list = big.length ? `<div class="rsec"><span>${rd.season ? "Meistgespielt · Saison" : "Meistgespielt"}</span><i></i>${offRole ? `<span class="rwarn" title="Meistgespielte Position in den geladenen Spielen">⚠ spielt meist ${RIOT_POS[mainPos[0]]}</span>` : ""}${rd.at ? `<span class="rh-time" title="Geladen ${esc(new Date(rd.at).toLocaleString("de-DE"))}">${relTime(rd.at)}</span>` : ""}</div><div class="rcs">${big.map(card).join("")}</div>
     ${rest.length ? `<div class="rmore"><span>Außerdem je ${rest.every(c => c.g === 1) ? "1 Spiel" : "wenige Spiele"}:</span>${rest.map(c => `<span class="mini" title="${esc(c.c)}: ${c.g} Sp · ${pct(c.w, c.g)}% · ${kda(c)} KDA">${initials(c.c)}${img(iconUrl(c.c))}</span>`).join("")}</div>` : ""}` : "";
-  return `<div class="rr-riot ${busy ? "busy" : ""} ${rd && !fresh ? "stale" : ""}" style="--tc:${rk ? TIER_COLOR[rk.tier] || "#8b97ab" : "#8b97ab"}">${head}${err}${stale}${part}${list}</div>`;
+  const fmtP = p => p >= 1e6 ? (p / 1e6).toFixed(1).replace(".", ",") + " Mio." : p >= 1e3 ? Math.round(p / 1e3) + "k" : String(p);
+  const ms = rd && fresh ? rd.ms : [];
+  const mastery = ms.length ? `<div class="rsec"><span>Mastery · alle Saisons</span><i></i></div><div class="rms">${ms.map(m => `<span class="rm${have.has(m.c) ? " in" : ""}" title="${esc(m.c)}: ${m.p.toLocaleString("de-DE")} Punkte · Stufe ${m.lv}${m.t ? " · zuletzt " + esc(new Date(m.t).toLocaleDateString("de-DE")) : ""}"><span class="mini">${initials(m.c)}${img(iconUrl(m.c))}</span><span class="rm-t"><b>${esc(m.c)}</b><small>${fmtP(m.p)}${m.t && Date.now() - m.t > 180 * 864e5 ? " · lange her" : ""}</small></span></span>`).join("")}</div>` : "";
+  return `<div class="rr-riot ${busy ? "busy" : ""} ${rd && !fresh ? "stale" : ""}" style="--tc:${rk ? TIER_COLOR[rk.tier] || "#8b97ab" : "#8b97ab"}">${head}${err}${stale}${part}${list}${mastery}</div>`;
 }
 let polls = {}, tasks = [], showDoneTasks = false, meta = {};
 // Eine Stimme abgeben – gilt für Chat-Umfragen und Termine, landet auch in der Verfügbarkeit
@@ -4813,6 +4829,7 @@ function renderHistory(){
   if (focusId){ const el = document.getElementById(focusId); if (el){ el.focus(); try { el.setSelectionRange(selS, selE); } catch(e){} } }
 }
 function renderScout(){
+  if (riotUrl && riotCount >= 50 && riotVer == null && Date.now() - riotVerAt > 60e3) setTimeout(riotCheckVer, 0); // Saison braucht Worker v11
   const ae = document.activeElement, fid = ae && ae.id && ae.closest && ae.closest("#view-scout") ? ae.id : null;
   const fval = fid ? ae.value : null, fs1 = fid ? ae.selectionStart : 0, fs2 = fid ? ae.selectionEnd : 0;
   const ed = canEdit(), { up, past } = teamsSorted(), t = vt();
@@ -4878,7 +4895,7 @@ function renderScout(){
           ${!riotUrl ? `<span class="hint" style="margin:0">Matchdaten: Riot-Proxy in den Einstellungen eintragen.</span>${ed ? `<button class="btn sm ghost" data-action="riot-settings">Einrichten</button>` : ""}`
             : !riotIds(t).length ? `<span class="hint" style="margin:0">Riot-IDs eintragen, dann lassen sich echte Matchdaten laden.</span>`
             : ed ? `<select id="riot-q" aria-label="Welche Spiele?">${RIOT_QUEUES.map(([v, l]) => `<option value="${v}" ${riotQueue === v ? "selected" : ""}>${l}</option>`).join("")}</select>
-              <select id="riot-n" aria-label="Anzahl Spiele">${[10,15,20,30].map(n => `<option value="${n}" ${riotCount === n ? "selected" : ""}>${n} Spiele${n === 15 ? " (empfohlen)" : ""}</option>`).join("")}</select>
+              <select id="riot-n" aria-label="Anzahl Spiele">${RIOT_COUNTS.map(([n, l]) => `<option value="${n}" ${riotCount === n ? "selected" : ""}>${l}</option>`).join("")}</select>${riotCount >= 50 && riotVer != null && riotVer < 11 ? `<span class="riot-old" title="Der Worker lädt sonst nur 30 Spiele und keine Mastery">Saison braucht worker.js v11</span>` : ""}
               <button class="btn sm gold" data-action="riot-all" ${[...riotBusy, ...Object.keys(riotWait)].some(k => k.startsWith(viewId + ":")) ? "disabled" : ""}>Matchdaten laden</button>`
             : `<span class="hint" style="margin:0">Matchdaten werden vom Team geladen.</span>`}
         </div>
@@ -6133,7 +6150,7 @@ modal.addEventListener("keydown", e => {
 document.addEventListener("change", e => {
   if (e.target.id === "rm-lead" && edit){ edit.buf.lead = +e.target.value; remindLead = edit.buf.lead; if (discordUrl) db.doc("config/discord").set({ lead: remindLead }, { merge: true }).catch(writeError); return; }
   if (e.target.id === "riot-q"){ riotQueue = e.target.value; db.doc("config/riot").set({ queue: riotQueue }, { merge: true }).catch(writeError); return; }
-  if (e.target.id === "riot-n"){ riotCount = +e.target.value || 15; db.doc("config/riot").set({ count: riotCount }, { merge: true }).catch(writeError); return; }
+  if (e.target.id === "riot-n"){ riotCount = +e.target.value || 15; if (riotCount >= 50){ riotVerAt = 0; riotCheckVer(); } db.doc("config/riot").set({ count: riotCount }, { merge: true }).catch(writeError); return; }
   if (e.target.id === "tm-reg" && viewId){ mutTeam(viewId, t => { t.region = e.target.value; }); return; }
   if (e.target.id === "oppSelect"){ setActive(e.target.value || null); if (e.target.value) viewId = e.target.value; return; }
   const sel = e.target.closest(".slot-select"); if (!sel || !canEdit()) return;
@@ -6369,7 +6386,7 @@ loadDD();
   db.doc("config/presence").onSnapshot(s => { presence = s.exists ? { ...(s.data().users || {}) } : {}; renderPresence(); }, () => {});
   setTimeout(() => presenceBeat(true), 2500);
   db.doc("config/duo").onSnapshot(s => { const d = s.exists ? s.data() : {}; duoCfg = { ids: { ...(d.ids || {}) }, data: { ...(d.data || {}) }, queue: DUO_QUEUES.some(x => x[0] === d.queue) ? d.queue : "solo", count: [10, 20, 30].includes(+d.count) ? +d.count : 20, region: d.region || "euw" }; scheduleRender(); }, onErr);
-  db.doc("config/riot").onSnapshot(s => { const d = s.exists ? s.data() : {}; riotUrl = d.url || ""; riotQueue = RIOT_QUEUES.some(x => x[0] === d.queue) ? d.queue : "ranked"; riotCount = [10,15,20,30].includes(+d.count) ? +d.count : 15; vodLimitGB = [10, 20, 50, 100, 0].includes(+d.vodLimit) ? +d.vodLimit : 10; scheduleRender(); }, onErr);
+  db.doc("config/riot").onSnapshot(s => { const d = s.exists ? s.data() : {}; riotUrl = d.url || ""; riotQueue = RIOT_QUEUES.some(x => x[0] === d.queue) ? d.queue : "ranked"; riotCount = RIOT_COUNTS.some(x => x[0] === +d.count) ? +d.count : 15; vodLimitGB = [10, 20, 50, 100, 0].includes(+d.vodLimit) ? +d.vodLimit : 10; scheduleRender(); }, onErr);
   db.doc("config/availability").onSnapshot(s => { avail = s.exists ? { ...(s.data().weeks || {}) } : {}; scheduleRender(); }, onErr);
   db.doc("config/events").onSnapshot(s => { events = s.exists ? [...(s.data().items || [])] : []; scheduleRender(); clearTimeout(checkReminders.t); checkReminders.t = setTimeout(checkReminders, 2500); }, onErr);
   db.doc("config/goals").onSnapshot(s => { goals = s.exists ? [...(s.data().items || [])] : []; scheduleRender(); }, onErr);

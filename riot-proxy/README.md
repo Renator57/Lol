@@ -112,6 +112,17 @@ Darauf ist alles abgestimmt:
 - „API-Key ungültig oder abgelaufen“ heißt meistens, dass noch der 24-Stunden-Development-Key
   eingetragen ist. Dann den Personal Key als `RIOT_API_KEY` eintragen.
 
+## Saison & Mastery (Gegner-Picks)
+
+- **Anzahl Spiele → „Saison · bis 50/100 Spiele“** lädt die Ranked-Spiele seit
+  dem 1. Januar, ähnlich wie op.gg „Meistgespielte Champions“. Mit dem Personal
+  Key (100 Aufrufe / 2 Min.) dauert das beim ersten Mal ca. 2 Min. pro Spieler;
+  das Board lädt den Rest automatisch nach. Danach liegen die Spiele im Cache.
+- **Mastery · alle Saisons**: die 10 Champions mit den meisten Mastery-Punkten
+  (1 Aufruf pro Spieler, 6 Std. gecacht).
+
+Braucht die `worker.js` ab **Version 11**.
+
 ## Duo-Queue (Verlauf → Duo)
 
 Das Board findet Ranked-Spiele, in denen zwei aus eurem Team zusammen im selben Team waren.
