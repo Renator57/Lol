@@ -3943,12 +3943,14 @@ function countersFromCrawler(data, minGames){
   });
   return { map: out, enemies };
 }
+const CI_OPTS = [200, 150, 100, 75, 50, 30, 20, 10, 5, 1];
 function crawlerCoverage(data, minGames){ return countersFromCrawler(data, minGames).enemies; }
 function openCrawlerImport(data){
   const ours = uniq(players.flatMap(champsOf)).map(officialName).filter(champId);
   if (!ours.length) return toast("Erst in den Pools eure Champions eintragen – sonst gibt es nichts zuzuordnen.");
-  const opts = [20, 10, 5, 3, 2, 1], cov = {}; opts.forEach(t => cov[t] = crawlerCoverage(data, t));
-  const auto = opts.find(t => cov[t] >= Math.min(120, Math.round(cov[1] * 0.9))) || 5;
+  const opts = CI_OPTS, cov = {}; opts.forEach(t => cov[t] = crawlerCoverage(data, t));
+  // Standard 100 Spiele je Matchup; nur wenn das gar nichts ergibt, die höchste Schwelle mit Treffern
+  const auto = cov[100] > 0 ? 100 : (opts.find(t => cov[t] > 0) || 1);
   edit = { kind: "ci", isNew: false, buf: { data, min: auto, cov } };
   if (!modal.open) modal.showModal(); renderModal();
 }
@@ -5750,7 +5752,7 @@ function renderModal(focusSel){
       <div class="m-body">
         <p class="small-hint" style="margin:0 0 .7rem">${data.matches ? (+data.matches).toLocaleString("de-DE") + " Spiele" : ""}${data.patch ? " · Patch " + esc(String(data.patch)) : ""}${data.region ? " · " + esc(String(data.region).toUpperCase()) : ""}. Für jeden Gegner-Champion werden eure Pool-Champions mit echter Siegrate eingetragen.</p>
         <div class="field"><label for="ci-min">Mindestens wie viele Spiele je Matchup?</label>
-          <select class="inp" id="ci-min" data-ci-min>${[20,10,5,3,2,1].map(t => `<option value="${t}" ${b.min === t ? "selected" : ""}>ab ${t} ${t === 1 ? "Spiel" : "Spielen"} → ${b.cov[t]} Gegner-Karten</option>`).join("")}</select></div>
+          <select class="inp" id="ci-min" data-ci-min>${CI_OPTS.map(t => `<option value="${t}" ${b.min === t ? "selected" : ""}>ab ${t} ${t === 1 ? "Spiel" : "Spielen"} → ${b.cov[t]} Gegner-Karten${t === 100 ? " (empfohlen)" : ""}</option>`).join("")}</select></div>
         <p class="small-hint" style="margin:.5rem 0 0">Weniger Spiele = mehr Champions, aber unsicherere Siegraten. Matchups mit wenigen Spielen werden auf den Karten als „wenig Daten“ markiert. Für verlässliche Zahlen mehr Spiele crawlen (längere Laufzeit).</p>
         <p class="small-hint" style="margin:.5rem 0 0;color:var(--muted)">Übernimmt ${n} Gegner-Champions. Eure Pool-Champions ab 51 % Siegrate werden „Gut dagegen“, bis 49 % „Lieber nicht“.</p>
       </div>
