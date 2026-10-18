@@ -808,6 +808,9 @@ dialog:has(.pe-body){width:min(800px,calc(100vw - 1.5rem))}
 .rec-badge.bad.light{color:var(--bad);border:1px solid var(--bad)}
 .rec-badge.strong{font-size:.68rem}
 .ctr-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(66px,1fr));gap:.5rem;margin-bottom:.6rem}
+.ctr-tiles{align-items:start}
+.ctr-legend{display:inline-flex;align-items:center;gap:.4rem;font-size:.74rem;color:var(--muted)}
+.ctr-legend i{width:9px;height:9px;border-radius:50%;background:var(--warn);flex:none}
 .ctr-tile{display:flex;flex-direction:column;align-items:center;gap:.22rem;min-width:0}
 .ct-port{position:relative;width:52px;height:52px;border-radius:12px;overflow:hidden;background:var(--panel-3);display:grid;place-items:center;box-shadow:0 0 0 2px var(--cc,#7fb2ff);flex:none}
 .ctr-tile.g .ct-port{--cc:rgba(63,209,127,.6)}
@@ -821,9 +824,8 @@ dialog:has(.pe-body){width:min(800px,calc(100vw - 1.5rem))}
 .ctr-tile.g .ct-port em{color:#7dffb8}
 .ctr-tile.b .ct-port em{color:#ffb3aa}
 .ctr-tile.thin .ct-port{opacity:.8}
-.ctr-tile.thin .ct-port::after{content:"";position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;background:var(--warn);box-shadow:0 0 0 1.5px rgba(5,10,18,.8)}
+.ctr-tile.thin .ct-port::after{content:"";position:absolute;top:3px;right:3px;width:9px;height:9px;border-radius:50%;background:var(--warn);box-shadow:0 0 0 2px rgba(5,10,18,.85)}
 .ct-nm{font-size:.72rem;font-weight:700;text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
-.ct-thin{font-size:.58rem;font-weight:800;color:var(--warn);line-height:1}
 .ctr-src{font-size:.7rem;color:var(--muted);margin:.1rem 0 .4rem}
 .ctr-bad{font-size:.8rem;color:var(--warn);margin:.2rem 0 .5rem}
 .card-foot{display:flex;gap:.4rem;flex-wrap:wrap}
@@ -2402,7 +2404,8 @@ main.wrap{padding-top:1.4rem}
       <div class="ch-actions"><label class="btn ghost ctr-load" title="counters.json vom Counter-Crawler einlesen (Riot-API)">Counter-Daten laden<input type="file" accept=".json,application/json" id="ctrFile" hidden></label><button class="btn gold" id="addCounter" hidden>Notiz hinzufügen</button></div>
     </div>
     <div class="ctr-tools"><label class="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" id="ctrQ" placeholder="Gegner- oder eigenen Champion suchen" aria-label="Counter-Notizen durchsuchen" autocomplete="off"></label>
-      <div class="cf-bar" id="ctrF"></div></div>
+      <div class="cf-bar" id="ctrF"></div>
+      <span class="ctr-legend"><i></i>wenig Daten (unter 10 Spielen) · Maus drauf zeigt Spielzahl &amp; Begründung</span></div>
     <div class="cards" id="counters"></div>
     <div class="view-head" style="margin-top:2rem">
       <div><h2>Bot-Lane-Paarungen</h2><p id="botHelp"></p></div>
@@ -3972,7 +3975,7 @@ function ctrList(enemy, c, key){
     const tip = `${o}${x ? ": " + wrTxt(x.wr) + " Siegrate" + (x.n ? " · " + x.n + " Spiele" : "") : ""}${why.length ? " – " + why.join(" · ") : ""}`;
     return `<div class="ctr-tile ${good ? "g" : "b"}${strong ? " strong" : ""}${thin ? " thin" : ""}${q && norm(o).includes(q) ? " hit" : ""}" title="${esc(tip)}">
       <span class="ct-port">${img(iconUrl(o))}<i>${esc(initials(o))}</i>${x ? `<em>${wrTxt(x.wr)}</em>` : ""}</span>
-      <span class="ct-nm">${esc(o)}</span>${thin ? `<span class="ct-thin">wenig Daten</span>` : ""}</div>`; };
+      <span class="ct-nm">${esc(o)}</span></div>`; };
   return `<div class="gl"><span class="dot" style="background:var(${good ? "--good" : "--bad"})"></span>${good ? "Gut dagegen" : "Lieber nicht"} <small class="ctr-n">${arr.length}</small></div>
     <div class="ctr-tiles">${show.map(tile).join("")}</div>
     ${arr.length > show.length ? `<button class="ctr-more" data-action="ctr-more" data-k="${esc(enemy + ":" + key)}">+ ${arr.length - show.length} weitere</button>` : open && arr.length > LIM + 2 ? `<button class="ctr-more" data-action="ctr-more" data-k="${esc(enemy + ":" + key)}">Weniger</button>` : ""}`;
