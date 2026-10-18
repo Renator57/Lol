@@ -11,13 +11,14 @@ Nur Python 3.8+ nötig (keine Zusatzpakete).
     set RIOT_API_KEY=RGAPI-...            (Windows, oder Datei .env mit RIOT_API_KEY=... daneben)
     python crawl.py                       (Standard: EUW, Challenger–Master, 2 Stunden)
     python crawl.py --stunden 6 --ligen alle          (ALLE Ränge Iron–Challenger, sehr viele Daten)
+    Limits werden automatisch aus Riots Antwort gelesen – mit Production Key einfach den neuen Key in .env eintragen.
     python crawl.py --ligen diamond,emerald,platinum   (nur bestimmte Ränge)
     python crawl.py --nur-export          (nur counters.json aus den bisher gesammelten Daten schreiben)
 
 Abbrechen mit Strg+C ist jederzeit ok – beim nächsten Start geht es dort weiter (crawl.db).
 """
-import argparse, json, os, sqlite3, sys, time, urllib.error, urllib.parse, urllib.request
-from collections import deque
+import argparse, bisect, json, os, sqlite3, sys, threading, time, urllib.error, urllib.parse, urllib.request
+from concurrent.futures import ThreadPoolExecutor
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REGIONS = {  # Plattform → regionaler Host für Match-V5
@@ -47,38 +48,66 @@ def load_key():
 
 
 class Riot:
-    """Hält beide Limits des Personal Keys ein (Standard 20/1 s und 100/120 s) und wartet bei 429."""
-    def __init__(self, key, per_sec=20, per_2min=100):
-        self.key, self.calls = key, deque()
+    """Hält die Limits des Keys ein. Startwerte = Personal Key (20/1 s, 100/120 s); sobald Riot antwortet,
+    werden die echten Limits aus X-App-Rate-Limit / X-Method-Rate-Limit übernommen – ein Production Key
+    wird also automatisch voll genutzt. Thread-sicher, bei 429 pausieren alle Threads gemeinsam."""
+    def __init__(self, key, per_sec=20, per_2min=100, auto=True):
+        self.key, self.calls, self.auto = key, [], auto
         self.limits = [(per_sec, 1.0), (per_2min, 120.0)]
-        self.count = 0
+        self.count, self.lock, self.block_until, self.announced = 0, threading.Lock(), 0.0, ""
 
-    def _wait(self):
+    @staticmethod
+    def _parse(h):
+        out = []
+        for part in (h or "").split(","):
+            try:
+                n, w = part.strip().split(":"); out.append((int(n), float(w)))
+            except ValueError:
+                pass
+        return out
+
+    def _adopt(self, headers):
+        if not self.auto:
+            return
+        lim = self._parse(headers.get("X-App-Rate-Limit")) + self._parse(headers.get("X-Method-Rate-Limit"))
+        if lim:
+            key = ",".join(f"{n}/{int(w)}s" for n, w in lim)
+            with self.lock:
+                self.limits = lim
+            if key != self.announced:
+                self.announced = key; print(f"  Limits laut Riot: {key}")
+
+    def _reserve(self):
         while True:
-            now = time.time()
-            while self.calls and now - self.calls[0] > 120:
-                self.calls.popleft()
-            pause = 0
-            for n, win in self.limits:
-                recent = [t for t in self.calls if now - t < win]
-                if len(recent) >= n - 1:  # ein Aufruf Reserve
-                    pause = max(pause, win - (now - recent[0]) + 0.05)
-            if pause <= 0:
-                return
-            time.sleep(pause)
+            with self.lock:
+                now = time.time()
+                maxw = max(w for _, w in self.limits)
+                cut = bisect.bisect_left(self.calls, now - maxw)
+                if cut: del self.calls[:cut]
+                pause = max(0.0, self.block_until - now)
+                for n, win in self.limits:
+                    i = bisect.bisect_left(self.calls, now - win)
+                    if len(self.calls) - i >= max(1, n - 1):  # ein Aufruf Reserve
+                        pause = max(pause, win - (now - self.calls[i]) + 0.05)
+                if pause <= 0:
+                    self.calls.append(now); self.count += 1
+                    return
+            time.sleep(min(pause, 5))
 
     def get(self, url):
         for attempt in range(6):
-            self._wait()
-            self.calls.append(time.time()); self.count += 1
+            self._reserve()
             req = urllib.request.Request(url, headers={"X-Riot-Token": self.key, "User-Agent": UA})
             try:
                 with urllib.request.urlopen(req, timeout=30) as r:
+                    self._adopt(r.headers)
                     return json.loads(r.read().decode("utf-8"))
             except urllib.error.HTTPError as e:
                 if e.code == 429:
                     wait = int(e.headers.get("Retry-After") or 10)
-                    print(f"  Riot-Limit erreicht – warte {wait} s …"); time.sleep(wait + 1); continue
+                    with self.lock:
+                        self.block_until = max(self.block_until, time.time() + wait + 1)
+                    print(f"  Riot-Limit erreicht – warte {wait} s …"); continue
                 if e.code in (500, 502, 503, 504):
                     time.sleep(2 + attempt * 2); continue
                 if e.code in (401, 403):
@@ -89,7 +118,6 @@ class Riot:
             except (urllib.error.URLError, TimeoutError):
                 time.sleep(3 + attempt * 2)
         return None
-
 
 def db_open(path):
     db = sqlite3.connect(path)
@@ -195,7 +223,8 @@ def main():
     ap.add_argument("--tage", type=int, default=14, help="nur Spiele der letzten N Tage (Standard: 14)")
     ap.add_argument("--patch", default="", help="nur dieser Patch, z. B. 15.20 (Standard: aktueller Patch)")
     ap.add_argument("--alle-patches", action="store_true", help="Patch nicht filtern")
-    ap.add_argument("--limit", default="20,100", help="Personal Key: 20,100 · Production Key z. B. 500,30000")
+    ap.add_argument("--limit", default="", help="feste Limits statt automatisch, z. B. 20,100 (sonst liest der Crawler die Limits aus Riots Antwort)")
+    ap.add_argument("--threads", type=int, default=8, help="parallele Downloads (Standard: 8; nützt v. a. mit Production Key)")
     ap.add_argument("--out", default=os.path.join(HERE, "counters.json"))
     ap.add_argument("--nur-export", action="store_true", help="nichts laden, nur counters.json schreiben")
     ap.add_argument("--neu", action="store_true", help="komplett von vorne: crawl.db löschen und neu sammeln")
@@ -215,8 +244,11 @@ def main():
     if args.nur_export:
         return export(db, args.out, args.region, patch, leagues)
 
-    per_sec, per_2min = (int(x) for x in args.limit.split(","))
-    riot = Riot(load_key(), per_sec, per_2min)
+    if args.limit:
+        per_sec, per_2min = (int(x) for x in args.limit.split(","))
+        riot = Riot(load_key(), per_sec, per_2min, auto=False)
+    else:
+        riot = Riot(load_key())
     regional = REGIONS[args.region]
     end = time.time() + args.stunden * 3600
     start_time = int(time.time() - args.tage * 86400)
@@ -228,28 +260,33 @@ def main():
     last_export = time.time()
     try:
         print("2) Spiele laden und Matchups zählen (Strg+C beendet und speichert) …")
+        pool = ThreadPoolExecutor(max_workers=max(1, args.threads))
+        url = lambda mid: f"https://{regional}.api.riotgames.com/lol/match/v5/matches/{mid}"
+        last_print = 0
         while time.time() < end and done() < args.max_spiele:
-            mid = db.execute("SELECT id FROM matches WHERE state = 0 LIMIT 1").fetchone()
-            if not mid:  # neue Match-IDs vom nächsten Spieler holen
-                pu = db.execute("SELECT puuid FROM players WHERE done = 0 ORDER BY RANDOM() LIMIT 1").fetchone()
-                if not pu:
+            batch = [r[0] for r in db.execute("SELECT id FROM matches WHERE state = 0 LIMIT ?", (max(1, args.threads) * 4,)).fetchall()]
+            if not batch:  # neue Match-IDs von den nächsten Spielern holen (parallel)
+                pus = [r[0] for r in db.execute("SELECT puuid FROM players WHERE done = 0 ORDER BY RANDOM() LIMIT ?", (max(1, args.threads),)).fetchall()]
+                if not pus:
                     print("Alle Spieler abgearbeitet."); break
                 q = urllib.parse.urlencode({"queue": 420, "start": 0, "count": args.spiele_pro_spieler, "startTime": start_time})
-                ids = riot.get(f"https://{regional}.api.riotgames.com/lol/match/v5/matches/by-puuid/{pu[0]}/ids?{q}") or []
-                db.executemany("INSERT OR IGNORE INTO matches(id) VALUES (?)", [(i,) for i in ids])
-                db.execute("UPDATE players SET done = 1 WHERE puuid = ?", pu); db.commit()
+                for pu, ids in zip(pus, pool.map(lambda pu: riot.get(f"https://{regional}.api.riotgames.com/lol/match/v5/matches/by-puuid/{pu}/ids?{q}") or [], pus)):
+                    db.executemany("INSERT OR IGNORE INTO matches(id) VALUES (?)", [(i,) for i in ids])
+                    db.execute("UPDATE players SET done = 1 WHERE puuid = ?", (pu,))
+                db.commit()
                 continue
-            m = riot.get(f"https://{regional}.api.riotgames.com/lol/match/v5/matches/{mid[0]}")
-            info = (m or {}).get("info") or {}
-            gv = ".".join(str(info.get("gameVersion", "")).split(".")[:2])
-            if not info or info.get("queueId") != 420 or (info.get("gameDuration") or 0) < 300 or not same_patch(info.get("gameVersion", ""), patch):
-                db.execute("UPDATE matches SET state = 2, patch = ? WHERE id = ?", (gv, mid[0]))
-            else:
-                record(db, info, patch)
-                db.execute("UPDATE matches SET state = 1, patch = ? WHERE id = ?", (patch, mid[0]))
+            for mid, m in zip(batch, pool.map(lambda mid: riot.get(url(mid)), batch)):
+                info = (m or {}).get("info") or {}
+                gv = ".".join(str(info.get("gameVersion", "")).split(".")[:2])
+                if not info or info.get("queueId") != 420 or (info.get("gameDuration") or 0) < 300 or not same_patch(info.get("gameVersion", ""), patch):
+                    db.execute("UPDATE matches SET state = 2, patch = ? WHERE id = ?", (gv, mid))
+                else:
+                    record(db, info, patch)
+                    db.execute("UPDATE matches SET state = 1, patch = ? WHERE id = ?", (patch, mid))
             db.commit()
             n = done()
-            if n % 25 == 0:
+            if n - last_print >= 25:
+                last_print = n
                 left = max(0, int((end - time.time()) / 60))
                 print(f"  {n} Spiele ausgewertet · {riot.count} Riot-Aufrufe · noch {left} Min.")
             if time.time() - last_export > 600:  # alle 10 Minuten Zwischenstand schreiben
