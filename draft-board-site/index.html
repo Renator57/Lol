@@ -791,7 +791,7 @@ dialog:has(.pe-body){width:min(800px,calc(100vw - 1.5rem))}
 .pl-steps{padding:.7rem .8rem;margin-bottom:.7rem;border-radius:12px;border:1px solid rgba(215,180,106,.35);background:rgba(215,180,106,.07);font-size:.86rem}
 .pl-steps ol{margin:.5rem 0 0;padding-left:1.2rem;display:flex;flex-direction:column;gap:.4rem}
 .pl-steps kbd{font:inherit;font-size:.75rem;font-weight:800;padding:.05rem .35rem;border-radius:5px;border:1px solid var(--line-2);background:var(--panel-2)}
-#counters{align-items:start}
+#counters{align-items:stretch}
 .ch-actions{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
 .btn.ctr-load{cursor:pointer}
 .ctr-tools{display:flex;gap:.7rem;align-items:center;flex-wrap:wrap;margin:-.4rem 0 1rem}
@@ -807,8 +807,15 @@ dialog:has(.pe-body){width:min(800px,calc(100vw - 1.5rem))}
 .rec-badge.ctr-g.light{color:var(--good);border:1px solid var(--good)}
 .rec-badge.bad.light{color:var(--bad);border:1px solid var(--bad)}
 .rec-badge.strong{font-size:.68rem}
-.ctr-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(66px,1fr));gap:.5rem;margin-bottom:.6rem}
-.ctr-tiles{align-items:start}
+.ctr-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.5rem;margin-bottom:.6rem;align-items:start;min-height:74px}
+.ctr-tiles.open{min-height:0}
+.ctr-empty{grid-column:1/-1;align-self:stretch;display:grid;place-items:center;border:1px dashed var(--line-2);border-radius:12px;font-size:.74rem;color:var(--muted)}
+.ctr-plus{border:0;background:none;font:inherit;padding:0;cursor:pointer;color:var(--gold)}
+.ctr-plus .ct-port{--cc:rgba(215,180,106,.55);background:rgba(215,180,106,.1);font-size:.95rem;font-weight:900}
+.ctr-plus:hover .ct-port{--cc:var(--gold)}
+#counters .ctr-hd{min-width:0;flex:1}
+#counters .ctr-hd .sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#counters .ctr-note{color:var(--text);font-style:italic}
 .ctr-legend{display:inline-flex;align-items:center;gap:.4rem;font-size:.74rem;color:var(--muted)}
 .ctr-legend i{width:9px;height:9px;border-radius:50%;background:var(--warn);flex:none}
 .ctr-tile{display:flex;flex-direction:column;align-items:center;gap:.22rem;min-width:0}
@@ -3971,16 +3978,17 @@ let ctrQ = "", ctrF = "all", ctrOpen = new Set();
 function ctrList(enemy, c, key){
   const st = c.stats || {}, good = key === "good", q = norm(ctrQ);
   const arr = [...(c[key] || [])].sort((x, y) => good ? (st[y] ? st[y].wr : 50) - (st[x] ? st[x].wr : 50) : (st[x] ? st[x].wr : 50) - (st[y] ? st[y].wr : 50));
-  if (!arr.length) return "";
-  const open = ctrOpen.has(enemy + ":" + key), LIM = 8, show = open || arr.length <= LIM + 2 ? arr : arr.slice(0, LIM);
+  // Immer genau eine Reihe mit 4 Plätzen, damit alle Karten gleich hoch sind; mehr nur auf Klick
+  const k = enemy + ":" + key, open = ctrOpen.has(k), SLOTS = 4, show = open || arr.length <= SLOTS ? arr : arr.slice(0, SLOTS - 1);
   const tile = o => { const why = good ? counterWhy(o, enemy) : counterWhy(enemy, o), x = st[o], strong = x && Math.abs(x.wr - 50) >= 3, thin = x && x.n && x.n < 10;
     const tip = `${o}${x ? ": " + wrTxt(x.wr) + " Siegrate" + (x.n ? " · " + x.n + " Spiele" : "") : ""}${why.length ? " – " + why.join(" · ") : ""}`;
     return `<div class="ctr-tile ${good ? "g" : "b"}${strong ? " strong" : ""}${thin ? " thin" : ""}${q && norm(o).includes(q) ? " hit" : ""}" title="${esc(tip)}">
       <span class="ct-port">${img(iconUrl(o))}<i>${esc(initials(o))}</i>${x ? `<em>${wrTxt(x.wr)}</em>` : ""}</span>
       <span class="ct-nm">${esc(o)}</span></div>`; };
+  const plus = arr.length > show.length ? `<button class="ctr-tile ctr-plus" data-action="ctr-more" data-k="${esc(k)}" title="Alle ${arr.length} anzeigen"><span class="ct-port">+${arr.length - show.length}</span><span class="ct-nm">weitere</span></button>`
+    : open && arr.length > SLOTS ? `<button class="ctr-tile ctr-plus" data-action="ctr-more" data-k="${esc(k)}" title="Wieder einklappen"><span class="ct-port">▴</span><span class="ct-nm">weniger</span></button>` : "";
   return `<div class="gl"><span class="dot" style="background:var(${good ? "--good" : "--bad"})"></span>${good ? "Gut dagegen" : "Lieber nicht"} <small class="ctr-n">${arr.length}</small></div>
-    <div class="ctr-tiles">${show.map(tile).join("")}</div>
-    ${arr.length > show.length ? `<button class="ctr-more" data-action="ctr-more" data-k="${esc(enemy + ":" + key)}">+ ${arr.length - show.length} weitere</button>` : open && arr.length > LIM + 2 ? `<button class="ctr-more" data-action="ctr-more" data-k="${esc(enemy + ":" + key)}">Weniger</button>` : ""}`;
+    <div class="ctr-tiles${open ? " open" : ""}">${arr.length ? show.map(tile).join("") : `<span class="ctr-empty">Noch keine</span>`}${plus}</div>`;
 }
 function renderCounters(){
   fillOurList();
@@ -3996,8 +4004,7 @@ function renderCounters(){
   $("#addCounter").hidden = !canEdit();
   $("#counters").innerHTML = keys.map(k => { const c = counters[k] || {};
     return `<article class="card ${(draft.enemy||[]).includes(k) ? "full" : ""}">
-      <div class="card-head"><span class="avatar">${initials(k)}${img(iconUrl(k))}</span><div><h2>${esc(k)}</h2><div class="sub">${(draft.enemy||[]).includes(k) ? "Gerade im Gegnerteam" : "Gegner-Champion"}</div></div></div>
-      ${c.note ? `<p class="note" style="margin:.3rem 0 .6rem">${esc(c.note)}</p>` : ""}
+      <div class="card-head"><span class="avatar">${initials(k)}${img(iconUrl(k))}</span><div class="ctr-hd"><h2>${esc(k)}</h2><div class="sub${c.note ? " ctr-note" : ""}"${c.note ? ` title="${esc(c.note)}"` : ""}>${(draft.enemy||[]).includes(k) ? "Gerade im Gegnerteam" + (c.note ? " · " : "") : ""}${c.note ? esc(c.note) : (draft.enemy||[]).includes(k) ? "" : "Gegner-Champion"}</div></div></div>
       ${!champId(k) ? `<p class="ctr-bad">„${esc(k)}“ ist kein bekannter Champion – Name beim Bearbeiten korrigieren.</p>` : ""}
       ${ctrList(k, c, "good")}${ctrList(k, c, "avoid")}
       ${c.src ? `<p class="ctr-src">Siegraten: ${esc(c.src)}${c.at ? " · " + esc(new Date(c.at).toLocaleDateString("de-DE")) : ""}</p>` : ""}
