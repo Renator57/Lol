@@ -3952,13 +3952,26 @@ function countersFromCrawler(data, minGames){
 }
 const CI_OPTS = [200, 150, 100, 75, 50, 30, 20, 10, 5, 1];
 function crawlerCoverage(data, minGames){ return countersFromCrawler(data, minGames).enemies; }
-function openCrawlerImport(data){
+// counters.json ab Version 2 enthält mehrere Patches (byPatch); „all“ = alle zusammengezählt
+const ciPatches = raw => raw && raw.byPatch ? (raw.patches || Object.keys(raw.byPatch)).filter(p => raw.byPatch[p]) : [];
+function crawlerPick(raw, sel){
+  const ps = ciPatches(raw);
+  if (!ps.length) return raw;
+  const use = sel === "all" ? ps : ps.includes(sel) ? [sel] : [ps[0]], m = {};
+  use.forEach(p => Object.entries(raw.byPatch[p].m || {}).forEach(([L, byA]) => Object.entries(byA).forEach(([A, byB]) => Object.entries(byB).forEach(([B, gw]) => {
+    const r = ((m[L] = m[L] || {})[A] = m[L][A] || {})[B] = m[L][A][B] || [0, 0]; r[0] += gw[0] || 0; r[1] += gw[1] || 0; }))));
+  const patch = use.length > 1 ? use[use.length - 1] + "–" + use[0] : use[0];
+  return { ...raw, m, patch, matches: use.reduce((s, p) => s + (+raw.byPatch[p].matches || 0), 0) };
+}
+function ciCoverage(raw, sel){ const data = crawlerPick(raw, sel), cov = {}; CI_OPTS.forEach(t => cov[t] = crawlerCoverage(data, t)); return { data, cov }; }
+function openCrawlerImport(raw){
   const ours = uniq(players.flatMap(champsOf)).map(officialName).filter(champId);
   if (!ours.length) return toast("Erst in den Pools eure Champions eintragen – sonst gibt es nichts zuzuordnen.");
-  const opts = CI_OPTS, cov = {}; opts.forEach(t => cov[t] = crawlerCoverage(data, t));
+  // Standard: alle Patches zusammen (mehr Spiele); der Crawler sammelt den aktuellen Patch zuerst
+  const sel = ciPatches(raw).length > 1 ? "all" : "", { data, cov } = ciCoverage(raw, sel);
   // Standard 100 Spiele je Matchup; nur wenn das gar nichts ergibt, die höchste Schwelle mit Treffern
-  const auto = cov[100] > 0 ? 100 : (opts.find(t => cov[t] > 0) || 1);
-  edit = { kind: "ci", isNew: false, buf: { data, min: auto, cov } };
+  const auto = cov[100] > 0 ? 100 : (CI_OPTS.find(t => cov[t] > 0) || 1);
+  edit = { kind: "ci", isNew: false, buf: { raw, sel, data, min: auto, cov } };
   if (!modal.open) modal.showModal(); renderModal();
 }
 function applyCrawlerCounters(data, minGames){
@@ -5758,6 +5771,9 @@ function renderModal(focusSel){
       <div class="m-head"><h2 id="mTitle">Counter-Daten laden</h2><button class="x" data-action="close" aria-label="Schließen">×</button></div>
       <div class="m-body">
         <p class="small-hint" style="margin:0 0 .7rem">${data.matches ? (+data.matches).toLocaleString("de-DE") + " Spiele" : ""}${data.patch ? " · Patch " + esc(String(data.patch)) : ""}${data.region ? " · " + esc(String(data.region).toUpperCase()) : ""}. Für jeden Gegner-Champion werden eure Pool-Champions mit echter Siegrate eingetragen.</p>
+        ${ciPatches(b.raw).length > 1 ? (() => { const ps = ciPatches(b.raw), bp = b.raw.byPatch, n = p => (+bp[p].matches || 0).toLocaleString("de-DE");
+          return `<div class="field"><label for="ci-patch">Welche Patches?</label>
+          <select class="inp" id="ci-patch" data-ci-patch><option value="all"${b.sel === "all" ? " selected" : ""}>Alle ${ps.length} Patches zusammen (${ps.reduce((s, p) => s + (+bp[p].matches || 0), 0).toLocaleString("de-DE")} Spiele)</option>${ps.map((p, i) => `<option value="${esc(p)}"${b.sel === p ? " selected" : ""}>Nur Patch ${esc(p)}${i === 0 ? " (aktuell)" : ""} – ${n(p)} Spiele</option>`).join("")}</select></div>`; })() : ""}
         <div class="field"><label for="ci-min">Mindestens wie viele Spiele je Matchup?</label>
           <select class="inp" id="ci-min" data-ci-min>${CI_OPTS.map(t => `<option value="${t}" ${b.min === t ? "selected" : ""}>ab ${t} ${t === 1 ? "Spiel" : "Spielen"} → ${b.cov[t]} Gegner-Karten${t === 100 ? " (empfohlen)" : ""}</option>`).join("")}</select></div>
         <p class="small-hint" style="margin:.5rem 0 0">Weniger Spiele = mehr Champions, aber unsicherere Siegraten. Matchups mit wenigen Spielen werden auf den Karten als „wenig Daten“ markiert. Für verlässliche Zahlen mehr Spiele crawlen (längere Laufzeit).</p>
@@ -6747,6 +6763,7 @@ document.addEventListener("input", e => {
 document.addEventListener("change", e => {
   const t = e.target;
   if (t.dataset && "ciMin" in t.dataset && edit && edit.kind === "ci"){ edit.buf.min = +t.value; renderModal(); return; }
+  if (t.dataset && "ciPatch" in t.dataset && edit && edit.kind === "ci"){ const b = edit.buf; b.sel = t.value; Object.assign(b, ciCoverage(b.raw, b.sel)); renderModal(); return; }
   if (t.dataset && t.dataset.ki != null && edit && edit.kind === "ki"){ edit.buf.rows[+t.dataset.ki].pick = t.value; renderModal(); return; }
   if (t.dataset && "kiFlip" in t.dataset && edit && edit.kind === "ki"){ const b = edit.buf; b.flip = t.checked; b.rows = ctrRowsFrom(b.parsed, b.flip); renderModal(); return; }
   if (t.dataset && t.dataset.mdCheck && viewId){ const k = t.dataset.mdCheck, v = t.checked; mutTeam(viewId, x => { x.check = { ...(x.check || {}), [k]: v }; }); if (edit && edit.kind === "md") renderModal(); return; }
